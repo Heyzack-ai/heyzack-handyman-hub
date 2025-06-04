@@ -105,7 +105,7 @@ export default function EditProfileScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <Header title="Edit Profile" onBack={() => router.back()} />
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.avatarSection}>
           <View style={styles.avatarContainer}>
             <Image

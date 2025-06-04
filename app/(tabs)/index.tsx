@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, View, ScrollView, SafeAreaView } from "react-native";
+import { StyleSheet, Text, View, ScrollView, SafeAreaView, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { Calendar as CalendarIcon, Briefcase, Euro } from "lucide-react-native";
 import { useJobStore } from "@/store/job-store";
@@ -8,6 +8,7 @@ import ActionButton from "@/components/ActionButton";
 import Calendar from "@/components/Calendar";
 import Colors from "@/constants/colors";
 import Job from "@/components/Job";
+import {Bell} from 'lucide-react-native';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -40,12 +41,19 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+
+        <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16}}> 
         <View style={styles.header}>
           <Text style={styles.greeting}>Hello, Technician</Text>
           <Text style={styles.subtitle}>
             {isToday ? "Here's your schedule for today" : `Schedule for ${selectedDate}`}
           </Text>
+        </View>
+
+        <TouchableOpacity style={styles.notificationButton} onPress={() => router.push("/notifications")}>  
+          <Bell size={24} color={Colors.light.primary} />
+        </TouchableOpacity>
         </View>
 
         <View style={{ width: '100%', marginBottom: 16}}>
@@ -132,10 +140,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.background,
   },
   content: {
-    padding: 16,
+    paddingHorizontal: 16,
   },
   header: {
-    marginBottom: 24,
+    // marginBottom: 24,
   },
   greeting: {
     fontSize: 24,
@@ -217,4 +225,10 @@ const styles = StyleSheet.create({
   viewAllButton: {
     marginTop: 12,
   },
+  notificationButton: {
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    padding: 8,
+    borderRadius: 16,
+  }
 });

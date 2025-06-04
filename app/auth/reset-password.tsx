@@ -49,13 +49,14 @@ export default function ResetPasswordScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 50 : 0}
       >
+          <Pressable style={styles.backButton} onPress={() => router.back()}>
+            <ArrowLeft size={24} color={Colors.light.text} />
+          </Pressable>
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <Pressable style={styles.backButton} onPress={() => router.back()}>
-            <ArrowLeft size={24} color={Colors.light.text} />
-          </Pressable>
+        
 
           <Text style={styles.title}>Reset Password</Text>
           <Text style={styles.subtitle}>
@@ -142,10 +143,11 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    padding: 24,
+    paddingHorizontal: 16,
   },
   backButton: {
     marginBottom: 24,
+    paddingHorizontal: 16
   },
   title: {
     fontSize: 28,

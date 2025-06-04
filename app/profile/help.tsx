@@ -77,7 +77,7 @@ export default function HelpSupportScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <Header title="Help & Support" onBack={() => router.back()} />
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.contactSection}>
           <Text style={styles.sectionTitle}>Contact Support</Text>
           

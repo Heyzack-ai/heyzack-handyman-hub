@@ -216,23 +216,30 @@ export default function JobDetailScreen() {
     text: string; 
     onPress: () => void;
     buttonColor?: string;
-  }) => (
-    <View style={styles.contactRow}>
-      <View style={styles.contactInfo}>
-        {icon}
-        <Text style={styles.contactText}>{text}</Text>
+  }) => {
+    // Create a clone of the icon with white color for the button
+    const buttonIcon = React.cloneElement(icon as React.ReactElement<{ color?: string }>, { 
+      color: "white" 
+    });
+
+    return (
+      <View style={styles.contactRow}>
+        <View style={styles.contactInfo}>
+          {icon}
+          <Text style={styles.contactText}>{text}</Text>
+        </View>
+        <Pressable style={[styles.contactButton, { backgroundColor: buttonColor }]} onPress={onPress}>
+          {buttonIcon}
+        </Pressable>
       </View>
-      <Pressable style={[styles.contactButton, { backgroundColor: buttonColor }]} onPress={onPress}>
-        {icon}
-      </Pressable>
-    </View>
-  );
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
         <Header title={job.title} onBack={() => router.back()} />
       
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Job Progress Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Job Progress</Text>
@@ -301,7 +308,7 @@ export default function JobDetailScreen() {
           />
           
           <ContactRow
-            icon={<Mail size={20} color={Colors.light.gray[600]} />}
+            icon={<Mail size={20} color={Colors.light.black} />}
             text="ethan.carter@email.com"
             onPress={() => handleEmail("ethan.carter@email.com")}
             buttonColor="#4CD964"
@@ -456,8 +463,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.background,
   },
   content: {
-    padding: 16,
+    paddingHorizontal: 16,
     paddingBottom: 32,
+    marginTop: 16,
   },
   headerButton: {
     padding: 8,
@@ -582,6 +590,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.light.text,
     marginLeft: 12,
+    width: '80%',
   },
   contactButton: {
     width: 40,

@@ -186,11 +186,11 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    padding: 24,
+    paddingHorizontal: 16,
   },
   backButton: {
     marginBottom: 16,
-    paddingHorizontal: 24
+    paddingHorizontal: 16
   },
   logoContainer: {
     alignItems: "center",
@@ -200,7 +200,6 @@ const styles = StyleSheet.create({
   logo: {
     width: 180,
     height: 80, // Explicit height
-    resizeMode: "contain",
   },
   logoText: {
     fontSize: 16,

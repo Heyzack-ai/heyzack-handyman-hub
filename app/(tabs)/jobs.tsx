@@ -67,10 +67,11 @@ export default function JobsScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <View style={styles.header}>
+      <View style={styles.header}>
         <Text style={styles.title}>Jobs</Text>
         </View>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        
         <View style={styles.searchContainer}>
           <Search size={20} color={Colors.light.gray[500]} style={styles.searchIcon} />
           <TextInput
@@ -172,7 +173,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.background,
   },
   content: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 80,
+    marginTop: 16,
   },
   searchContainer: {
     flexDirection: "row",
@@ -263,6 +266,7 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     borderBottomWidth: 1,
     borderBottomColor: Colors.light.border,
+    paddingHorizontal: 16,
   },
   title: {
     fontSize: 24,

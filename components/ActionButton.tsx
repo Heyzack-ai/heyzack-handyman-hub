@@ -81,7 +81,7 @@ export default function ActionButton({
         return {
           container: {
             paddingVertical: 14,
-            paddingHorizontal: 24,
+            paddingHorizontal: 16,
             borderRadius: 10,
           },
           text: {

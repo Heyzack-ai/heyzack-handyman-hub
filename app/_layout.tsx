@@ -51,6 +51,7 @@ function RootLayoutNav({ queryClient }: { queryClient: QueryClient }) {
           }}
         >
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="notifications" options={{ headerShown: false }} />
           <Stack.Screen name="modal" options={{ presentation: "modal" }} />
         </Stack>
       </QueryClientProvider>

@@ -109,7 +109,7 @@ export default function AvailabilityScreen() {
       <Header title="Set Availability" onBack={() => router.back()} />
       
       <View style={styles.container}>
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <Text style={styles.description}>
             Set your weekly availability schedule. This helps customers know when you're available for jobs.
           </Text>

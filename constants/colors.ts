@@ -1,5 +1,6 @@
 const primaryColor = "#243984";
 const secondaryColor = "#E82F89";
+const tertiaryColor = "#243984";
 
 export default {
   light: {
@@ -11,6 +12,9 @@ export default {
     tabIconSelected: primaryColor,
     primary: primaryColor,
     secondary: secondaryColor,
+    tertiary: tertiaryColor,
+    black: "#000000",
+    white: "#FFFFFF",
     border: "#EEEEEE",
     success: "#34C759",
     warning: "#FF9500",

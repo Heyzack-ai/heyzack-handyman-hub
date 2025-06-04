@@ -22,7 +22,7 @@ export default function ChatScreen() {
           )}
         </View>
         
-        <ScrollView style={styles.conversationsList}>
+        <ScrollView style={styles.conversationsList} showsVerticalScrollIndicator={false}>
           {conversations.map((conversation) => (
             <ConversationItem
               key={conversation.id}
@@ -48,7 +48,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
     backgroundColor: "white",
     borderBottomWidth: 1,
     borderBottomColor: Colors.light.border,

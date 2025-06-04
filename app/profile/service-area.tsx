@@ -39,7 +39,7 @@ export default function ServiceAreaScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <Header title="Service Area" onBack={() => router.back()} />
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.description}>
           Set your service area to define where you're available to work. This helps match you with nearby jobs.
         </Text>

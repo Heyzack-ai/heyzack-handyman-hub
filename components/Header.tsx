@@ -34,7 +34,8 @@ export default function Header({ title, onBack }: HeaderProps) {
 
 const styles = StyleSheet.create({
   header: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
     backgroundColor: "white",
     borderBottomWidth: 1,
     borderBottomColor: Colors.light.border,

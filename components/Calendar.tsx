@@ -74,7 +74,7 @@ export default function Calendar({ selectedDate, onDateSelect, jobs = [] }: Cale
     const dateString = formatDate(day);
     const dayJobs = jobs.filter(job => job.scheduledDate === dateString);
     const jobTypes = dayJobs.map(job => job.type);
-    return [...new Set(jobTypes)]; // Remove duplicates
+    return Array.from(new Set(jobTypes)); // Remove duplicates
   };
 
   const isSelected = (day: number) => {
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   selectedCell: {
-    backgroundColor: Colors.light.primary,
+    backgroundColor: Colors.light.secondary + "20",
     borderRadius: 8,
   },
   dayText: {
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   selectedText: {
-    color: "white",
+    color: "black",
     fontWeight: "600",
   },
   dotsContainer: {

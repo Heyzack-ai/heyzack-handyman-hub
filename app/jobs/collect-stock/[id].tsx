@@ -15,6 +15,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
 import { useJobStore } from "@/store/job-store";
 import Colors from "@/constants/colors";
+import Header from "@/components/Header";
 
 export default function CollectStockScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -132,16 +133,7 @@ export default function CollectStockScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <Stack.Screen 
-        options={{
-          title: "Collect Stock",
-          headerLeft: () => (
-            <Pressable onPress={() => router.back()} style={styles.headerButton}>
-              <ArrowLeft size={24} color={Colors.light.text} />
-            </Pressable>
-          ),
-        }} 
-      />
+     <Header title="Collect Stock" onBack={() => router.back()} />
       
       <View style={styles.container}>
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
@@ -217,8 +209,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    padding: 16,
+    paddingHorizontal: 16,
     paddingBottom: 80,
+    marginTop: 16,
   },
   productItem: {
     backgroundColor: "white",

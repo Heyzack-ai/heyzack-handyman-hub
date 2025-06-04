@@ -105,7 +105,7 @@ export default function PartnersScreen() {
       <Header title="Partners" onBack={() => router.back()} />
       
       <View style={styles.container}>
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <Text style={styles.description}>
             Connect with partner companies to receive job assignments and collaborate on projects.
           </Text>
