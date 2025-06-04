@@ -1,0 +1,696 @@
+import React, { useState, useEffect } from "react";
+import {
+  StyleSheet,
+  Text,
+  View,
+  ScrollView,
+  Pressable,
+  Alert,
+  Platform,
+  SafeAreaView,
+  Linking,
+} from "react-native";
+import { Image } from "expo-image";
+import { Stack, useRouter, useLocalSearchParams } from "expo-router";
+import * as ImagePicker from "expo-image-picker";
+import * as Haptics from "expo-haptics";
+import { 
+  ArrowLeft, 
+  Calendar, 
+  Clock, 
+  MapPin, 
+  Phone, 
+  Mail, 
+  Camera, 
+  CheckCircle, 
+  Package, 
+  Truck, 
+  Check,
+  ChevronUp,
+  ChevronDown,
+  Book,
+  FileText,
+} from "lucide-react-native";
+import { useJobStore } from "@/store/job-store";
+import Colors from "@/constants/colors";
+
+export default function JobDetailScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [productsExpanded, setProductsExpanded] = useState(true);
+  const [completionExpanded, setCompletionExpanded] = useState(false);
+  
+  const { 
+    getCurrentJob, 
+    setCurrentJobId, 
+    updateJobStatus, 
+    addInstallationPhoto,
+    sendContract
+  } = useJobStore();
+  
+  useEffect(() => {
+    if (id) {
+      setCurrentJobId(id);
+    }
+    return () => setCurrentJobId(null);
+  }, [id, setCurrentJobId]);
+  
+  const job = getCurrentJob();
+  
+  // Redirect if job is not found or is pending
+  useEffect(() => {
+    if (!job) {
+      Alert.alert("Error", "Job not found");
+      router.back();
+      return;
+    }
+    
+    if (job.status === "pending") {
+      Alert.alert("Access Denied", "You must accept the job request before viewing details");
+      router.back();
+    }
+  }, [job, router]);
+  
+  if (!job || job.status === "pending") {
+    return null;
+  }
+
+  const getProgressPercentage = () => {
+    const statusOrder = ["scheduled", "stock_collected", "en_route", "started", "completed"];
+    const currentIndex = statusOrder.indexOf(job.status);
+    return ((currentIndex + 1) / statusOrder.length) * 100;
+  };
+
+  const getStatusText = () => {
+    switch (job.status) {
+      case "scheduled": return "Accepted";
+      case "stock_collected": return "Stock Collected";
+      case "en_route": return "En Route";
+      case "started": return "Started";
+      case "completed": return "Completed";
+      default: return "Accepted";
+    }
+  };
+
+  const handleCall = (phone: string) => {
+    if (Platform.OS !== "web") {
+      Linking.openURL(`tel:${phone}`);
+    } else {
+      Alert.alert("Phone Call", `Call ${phone}`);
+    }
+  };
+
+  const handleEmail = (email: string) => {
+    Linking.openURL(`mailto:${email}`);
+  };
+
+  const handleNavigate = (address: string) => {
+    const encodedAddress = encodeURIComponent(address);
+    const url = Platform.select({
+      ios: `maps:?q=${encodedAddress}`,
+      android: `geo:0,0?q=${encodedAddress}`,
+      web: `https://maps.google.com/?q=${encodedAddress}`,
+    });
+    
+    if (url) {
+      Linking.openURL(url);
+    }
+  };
+
+  const handleSendContract = async () => {
+    setIsLoading(true);
+    setTimeout(() => {
+      sendContract(job.id);
+      if (Platform.OS !== "web") {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+      Alert.alert("Success", "Contract sent to customer");
+      setIsLoading(false);
+    }, 1000);
+  };
+
+  const handleCollectStock = () => {
+    router.push(`/jobs/collect-stock/${job.id}`);
+  };
+
+  const handleTakePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    
+    if (status !== "granted") {
+      Alert.alert("Permission Required", "Camera permission is needed to take photos");
+      return;
+    }
+    
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+      allowsEditing: true,
+    });
+    
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      addInstallationPhoto(job.id, result.assets[0].uri);
+      if (Platform.OS !== "web") {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    }
+  };
+
+  const handleMarkComplete = () => {
+    Alert.alert(
+      "Complete Job",
+      "Are you sure you want to mark this job as complete?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Complete",
+          onPress: () => {
+            updateJobStatus(job.id, "completed");
+            if (Platform.OS !== "web") {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const ContactRow = ({ 
+    icon, 
+    text, 
+    onPress, 
+    buttonColor = "#4CD964" 
+  }: { 
+    icon: React.ReactNode; 
+    text: string; 
+    onPress: () => void;
+    buttonColor?: string;
+  }) => (
+    <View style={styles.contactRow}>
+      <View style={styles.contactInfo}>
+        {icon}
+        <Text style={styles.contactText}>{text}</Text>
+      </View>
+      <Pressable style={[styles.contactButton, { backgroundColor: buttonColor }]} onPress={onPress}>
+        {icon}
+      </Pressable>
+    </View>
+  );
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <Stack.Screen
+        options={{
+          title: "Job Details",
+          headerLeft: () => (
+            <Pressable onPress={() => router.back()} style={styles.headerButton}>
+              <ArrowLeft size={24} color={Colors.light.text} />
+            </Pressable>
+          ),
+        }}
+      />
+      
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        {/* Job Progress Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Job Progress</Text>
+          <Text style={styles.statusText}>Current Status: {getStatusText()}</Text>
+          
+          <View style={styles.progressContainer}>
+            <View style={styles.progressBar}>
+              <View style={[styles.progressFill, { width: `${getProgressPercentage()}%` }]} />
+            </View>
+            <Text style={styles.progressPercentage}>{Math.round(getProgressPercentage())}%</Text>
+          </View>
+          
+          <Text style={styles.workflowText}>
+            Accepted → Stock Collected → En Route → Contract Sent → Contract Signed → Started → Completed
+          </Text>
+          
+          {job.status === "scheduled" && (
+            <Pressable style={styles.primaryButton} onPress={handleCollectStock}>
+              <Text style={styles.primaryButtonText}>Collect Stock</Text>
+            </Pressable>
+          )}
+        </View>
+
+        {/* Schedule Details */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Schedule Details</Text>
+          
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Date:</Text>
+            <Text style={styles.detailValue}>{job.scheduledDate}</Text>
+          </View>
+          
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Time:</Text>
+            <Text style={styles.detailValue}>{job.scheduledTime}</Text>
+          </View>
+          
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Duration:</Text>
+            <Text style={styles.detailValue}>2 Hours</Text>
+          </View>
+          
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Type:</Text>
+            <Text style={styles.detailValue}>{job.title}</Text>
+          </View>
+          
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Status:</Text>
+            <View style={styles.priorityBadge}>
+              <Text style={styles.priorityText}>High</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Partner Details */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Partner Details</Text>
+          <Text style={styles.companyName}>Home Solutions Inc.</Text>
+          
+          <ContactRow
+            icon={<Phone size={20} color={Colors.light.gray[600]} />}
+            text="(555) 123-4567"
+            onPress={() => handleCall("(555) 123-4567")}
+            buttonColor="#4CD964"
+          />
+          
+          <ContactRow
+            icon={<Mail size={20} color={Colors.light.gray[600]} />}
+            text="ethan.carter@email.com"
+            onPress={() => handleEmail("ethan.carter@email.com")}
+            buttonColor="#4CD964"
+          />
+          
+          <ContactRow
+            icon={<MapPin size={20} color={Colors.light.gray[600]} />}
+            text="123 Elm Street, Anytown, CA 91234"
+            onPress={() => handleNavigate("123 Elm Street, Anytown, CA 91234")}
+            buttonColor="#FF2D55"
+          />
+        </View>
+
+        {/* Products (Bill Of Materials) */}
+        <View style={styles.card}>
+          <Pressable 
+            style={styles.expandableHeader}
+            onPress={() => setProductsExpanded(!productsExpanded)}
+          >
+            <Text style={styles.cardTitle}>Products (Bill Of Materials)</Text>
+            {productsExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+          </Pressable>
+          
+          {productsExpanded && (
+            <>
+              {job.products.map((product) => (
+                <View key={product.id} style={styles.productItem}>
+                  <View>
+                    <Text style={styles.productName}>{product.name}</Text>
+                    <Text style={styles.productRequired}>Required: 1</Text>
+                  </View>
+                  <View style={[
+                    styles.statusBadge, 
+                    product.isCollected ? styles.availableBadge : styles.shortBadge
+                  ]}>
+                    <Text style={product.isCollected ? styles.availableText : styles.shortText}>
+                      {product.isCollected ? "Available" : "Short"}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+              
+              <View style={styles.productActions}>
+                <Pressable style={styles.outlineButton} onPress={handleCollectStock}>
+                  <Package size={16} color={Colors.light.text} />
+                  <Text style={styles.outlineButtonText}>Collect Stock</Text>
+                </Pressable>
+                
+                <Pressable style={styles.outlineButton}>
+                  <Book size={16} color={Colors.light.text} />
+                  <Text style={styles.outlineButtonText}>Installation Guides</Text>
+                </Pressable>
+              </View>
+            </>
+          )}
+        </View>
+
+        {/* Customer Information */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Customer Information</Text>
+          <Text style={styles.customerName}>{job.customer.name}</Text>
+          
+          <ContactRow
+            icon={<Phone size={20} color={Colors.light.gray[600]} />}
+            text={job.customer.phone}
+            onPress={() => handleCall(job.customer.phone)}
+            buttonColor="#4CD964"
+          />
+          
+          <ContactRow
+            icon={<Mail size={20} color={Colors.light.gray[600]} />}
+            text={job.customer.email}
+            onPress={() => handleEmail(job.customer.email)}
+            buttonColor="#4CD964"
+          />
+          
+          <ContactRow
+            icon={<MapPin size={20} color={Colors.light.gray[600]} />}
+            text={job.customer.address}
+            onPress={() => handleNavigate(job.customer.address)}
+            buttonColor="#FF2D55"
+          />
+        </View>
+
+        {/* Contract Status */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Contract Status</Text>
+          
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Status:</Text>
+            <Text style={styles.contractStatus}>
+              {job.contractSent ? "Sent" : "Not Sent"}
+            </Text>
+          </View>
+          
+          {!job.contractSent && (
+            <Pressable style={styles.contractButton} onPress={handleSendContract}>
+              <FileText size={16} color={Colors.light.text} />
+              <Text style={styles.contractButtonText}>Send Contract to Customer</Text>
+            </Pressable>
+          )}
+        </View>
+
+        {/* Job Completion */}
+        <View style={styles.card}>
+          <Pressable 
+            style={styles.expandableHeader}
+            onPress={() => setCompletionExpanded(!completionExpanded)}
+          >
+            <Text style={styles.cardTitle}>Job Completion</Text>
+            {completionExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+          </Pressable>
+          
+          {completionExpanded && (
+            <>
+              {job.installationPhotos && job.installationPhotos.length > 0 ? (
+                <View style={styles.photosList}>
+                  <Text style={styles.photosTitle}>
+                    {job.installationPhotos.length} photo(s) uploaded
+                  </Text>
+                </View>
+              ) : (
+                <Text style={styles.noPhotosText}>No photos uploaded yet</Text>
+              )}
+              
+              <Pressable style={styles.uploadButton} onPress={handleTakePhoto}>
+                <Camera size={20} color={Colors.light.primary} />
+                <Text style={styles.uploadButtonText}>Upload Photos</Text>
+              </Pressable>
+            </>
+          )}
+        </View>
+
+        {/* Mark as Complete Button */}
+        {job.status !== "completed" && (
+          <Pressable style={styles.completeButton} onPress={handleMarkComplete}>
+            <Text style={styles.completeButtonText}>Mark as Complete</Text>
+          </Pressable>
+        )}
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: Colors.light.background,
+  },
+  container: {
+    flex: 1,
+    backgroundColor: Colors.light.background,
+  },
+  content: {
+    padding: 16,
+    paddingBottom: 32,
+  },
+  headerButton: {
+    padding: 8,
+  },
+  section: {
+    marginBottom: 24,
+  },
+  card: {
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  sectionTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: Colors.light.text,
+    marginBottom: 8,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: Colors.light.text,
+    marginBottom: 16,
+  },
+  statusText: {
+    fontSize: 16,
+    color: Colors.light.text,
+    marginBottom: 16,
+  },
+  progressContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  progressBar: {
+    flex: 1,
+    height: 8,
+    backgroundColor: Colors.light.gray[200],
+    borderRadius: 4,
+    marginRight: 12,
+  },
+  progressFill: {
+    height: "100%",
+    backgroundColor: "#FF2D55",
+    borderRadius: 4,
+  },
+  progressPercentage: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: Colors.light.text,
+  },
+  workflowText: {
+    fontSize: 12,
+    color: Colors.light.gray[600],
+    marginBottom: 20,
+    lineHeight: 16,
+  },
+  primaryButton: {
+    backgroundColor: "#000000",
+    borderRadius: 25,
+    paddingVertical: 16,
+    alignItems: "center",
+  },
+  primaryButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  detailRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  detailLabel: {
+    fontSize: 16,
+    color: Colors.light.text,
+  },
+  detailValue: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: Colors.light.text,
+  },
+  priorityBadge: {
+    backgroundColor: "#FFEBEE",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  priorityText: {
+    color: "#D32F2F",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  companyName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: Colors.light.text,
+    marginBottom: 16,
+  },
+  customerName: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: Colors.light.text,
+    marginBottom: 16,
+  },
+  contactRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  contactInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  contactText: {
+    fontSize: 16,
+    color: Colors.light.text,
+    marginLeft: 12,
+  },
+  contactButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  expandableHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  productItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.border,
+  },
+  productName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: Colors.light.text,
+    marginBottom: 4,
+  },
+  productRequired: {
+    fontSize: 14,
+    color: Colors.light.gray[600],
+  },
+  statusBadge: {
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  availableBadge: {
+    backgroundColor: "#E8F5E8",
+  },
+  shortBadge: {
+    backgroundColor: "#FFEBEE",
+  },
+  availableText: {
+    color: "#2E7D32",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  shortText: {
+    color: "#D32F2F",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  productActions: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  outlineButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  outlineButtonText: {
+    fontSize: 14,
+    color: Colors.light.text,
+    marginLeft: 8,
+  },
+  contractStatus: {
+    fontSize: 16,
+    color: Colors.light.gray[600],
+  },
+  contractButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    borderRadius: 8,
+    paddingVertical: 12,
+    marginTop: 12,
+  },
+  contractButtonText: {
+    fontSize: 16,
+    color: Colors.light.text,
+    marginLeft: 8,
+  },
+  photosList: {
+    marginBottom: 12,
+  },
+  photosTitle: {
+    fontSize: 14,
+    color: Colors.light.gray[600],
+  },
+  noPhotosText: {
+    fontSize: 14,
+    color: Colors.light.gray[600],
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  uploadButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    borderRadius: 8,
+    paddingVertical: 12,
+    marginTop: 8,
+  },
+  uploadButtonText: {
+    fontSize: 16,
+    color: Colors.light.primary,
+    marginLeft: 8,
+  },
+  completeButton: {
+    backgroundColor: "#000000",
+    borderRadius: 25,
+    paddingVertical: 16,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  completeButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+});
