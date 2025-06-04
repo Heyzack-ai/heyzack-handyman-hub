@@ -12,6 +12,7 @@ import {
 import { Stack, useRouter } from "expo-router";
 import { Clock } from "lucide-react-native";
 import Colors from "@/constants/colors";
+import Header from "@/components/Header";
 
 type DaySchedule = {
   enabled: boolean;
@@ -105,7 +106,7 @@ export default function AvailabilityScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <Stack.Screen options={{ title: "Set Availability" }} />
+      <Header title="Set Availability" onBack={() => router.back()} />
       
       <View style={styles.container}>
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>

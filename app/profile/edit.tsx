@@ -14,6 +14,7 @@ import { Stack, useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { Camera, Upload, Check } from "lucide-react-native";
 import Colors from "@/constants/colors";
+import Header from "@/components/Header";
 
 export default function EditProfileScreen() {
   const router = useRouter();
@@ -22,7 +23,7 @@ export default function EditProfileScreen() {
   const [email, setEmail] = useState("john.doe@example.com");
   const [phone, setPhone] = useState("+1 (555) 123-4567");
   const [location, setLocation] = useState("San Francisco, CA");
-  const [kycDocument, setKycDocument] = useState(null);
+  const [kycDocument, setKycDocument] = useState<string | null>(null);
   const [isVerified, setIsVerified] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -103,7 +104,7 @@ export default function EditProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <Stack.Screen options={{ title: "Edit Profile" }} />
+      <Header title="Edit Profile" onBack={() => router.back()} />
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <View style={styles.avatarSection}>
           <View style={styles.avatarContainer}>

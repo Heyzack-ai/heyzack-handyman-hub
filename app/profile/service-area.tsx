@@ -12,6 +12,7 @@ import {
 import { Stack, useRouter } from "expo-router";
 import { MapPin, Search } from "lucide-react-native";
 import Colors from "@/constants/colors";
+import Header from "@/components/Header";
 
 export default function ServiceAreaScreen() {
   const router = useRouter();
@@ -37,7 +38,7 @@ export default function ServiceAreaScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <Stack.Screen options={{ title: "Service Area" }} />
+      <Header title="Service Area" onBack={() => router.back()} />
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <Text style={styles.description}>
           Set your service area to define where you're available to work. This helps match you with nearby jobs.

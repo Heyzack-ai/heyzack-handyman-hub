@@ -5,7 +5,7 @@ export default function ProfileLayout() {
   return (
     <Stack
       screenOptions={{
-        headerShown: true,
+        headerShown: false,
         headerBackTitle: "Back",
         contentStyle: { backgroundColor: Colors.light.background },
       }}

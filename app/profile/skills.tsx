@@ -11,6 +11,7 @@ import {
 import { Stack, useRouter } from "expo-router";
 import { Plus, X } from "lucide-react-native";
 import Colors from "@/constants/colors";
+import Header from "@/components/Header";
 
 export default function SkillsScreen() {
   const router = useRouter();
@@ -61,7 +62,7 @@ export default function SkillsScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <Stack.Screen options={{ title: "Skills & Expertise" }} />
+     <Header title="Skills & Expertise" onBack={() => router.back()} />
       
       <View style={styles.container}>
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>

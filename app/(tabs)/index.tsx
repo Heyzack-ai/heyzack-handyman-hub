@@ -7,6 +7,7 @@ import JobCard from "@/components/JobCard";
 import ActionButton from "@/components/ActionButton";
 import Calendar from "@/components/Calendar";
 import Colors from "@/constants/colors";
+import Job from "@/components/Job";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -47,20 +48,16 @@ export default function HomeScreen() {
           </Text>
         </View>
 
-        <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <Euro size={20} color={Colors.light.primary} style={styles.statIcon} />
-            <Text style={styles.statValue}>{earnings}</Text>
-            <Text style={styles.statLabel}>Earnings</Text>
+        <View style={{ width: '100%', marginBottom: 16}}>
+          <View style={{flexDirection: 'row', gap: 12}}>
+            <Job title="Completed Jobs" number="10" />
+            <Job title="Pending Jobs" number="3" />
           </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{completedJobs}</Text>
-            <Text style={styles.statLabel}>Completed</Text>
+
+          <View style={{marginTop: 16, height: 100}}>
+            <Job title="Earnings" number="$300" style={{width: '100%'}} />
           </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{pendingJobs}</Text>
-            <Text style={styles.statLabel}>Pending</Text>
-          </View>
+
         </View>
 
         <View style={styles.section}>
@@ -105,7 +102,12 @@ export default function HomeScreen() {
               <Text style={styles.sectionTitle}>Upcoming Jobs</Text>
             </View>
           
-            {upcomingJobs.map((job) => <JobCard key={job.id} job={job} />)}
+            {upcomingJobs.map((job) => (
+              <JobCard 
+                key={job.id} 
+                job={job} 
+              />
+            ))}
           
             <ActionButton
               title="View All Jobs"

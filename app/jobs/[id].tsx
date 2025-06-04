@@ -33,6 +33,8 @@ import {
 } from "lucide-react-native";
 import { useJobStore } from "@/store/job-store";
 import Colors from "@/constants/colors";
+import { Job } from "@/types/job";
+import Header from "@/components/Header";
 
 export default function JobDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -40,8 +42,10 @@ export default function JobDetailScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [productsExpanded, setProductsExpanded] = useState(true);
   const [completionExpanded, setCompletionExpanded] = useState(false);
+  const [jobData, setJobData] = useState<Job | undefined>(undefined);
   
   const { 
+    jobs,
     getCurrentJob, 
     setCurrentJobId, 
     updateJobStatus, 
@@ -50,19 +54,31 @@ export default function JobDetailScreen() {
   } = useJobStore();
   
   useEffect(() => {
+    console.log("Job details page - ID param:", id);
     if (id) {
+      console.log("Setting current job ID:", id);
       setCurrentJobId(id);
+      
+      // Directly find the job from the jobs array
+      const foundJob = jobs.find(job => job.id === id);
+      if (foundJob) {
+        setJobData(foundJob);
+      } else {
+        console.log("Job not found in jobs array");
+        Alert.alert("Error", "Job not found");
+        router.back();
+      }
     }
     return () => setCurrentJobId(null);
-  }, [id, setCurrentJobId]);
-  
-  const job = getCurrentJob();
+  }, [id, jobs, setCurrentJobId, router]);
+
+  // Use either the directly found job or the one from getCurrentJob
+  const job = jobData || getCurrentJob();
+  console.log("Job found:", !!job);
   
   // Redirect if job is not found or is pending
   useEffect(() => {
     if (!job) {
-      Alert.alert("Error", "Job not found");
-      router.back();
       return;
     }
     
@@ -72,7 +88,17 @@ export default function JobDetailScreen() {
     }
   }, [job, router]);
   
-  if (!job || job.status === "pending") {
+  if (!job) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          <Text style={styles.loadingText}>Loading job details...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (job.status === "pending") {
     return null;
   }
 
@@ -175,6 +201,11 @@ export default function JobDetailScreen() {
     );
   };
 
+  const handleGoBack = () => {
+    router.back();
+  };
+
+
   const ContactRow = ({ 
     icon, 
     text, 
@@ -199,16 +230,7 @@ export default function JobDetailScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <Stack.Screen
-        options={{
-          title: "Job Details",
-          headerLeft: () => (
-            <Pressable onPress={() => router.back()} style={styles.headerButton}>
-              <ArrowLeft size={24} color={Colors.light.text} />
-            </Pressable>
-          ),
-        }}
-      />
+        <Header title={job.title} onBack={() => router.back()} />
       
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         {/* Job Progress Section */}
@@ -692,5 +714,29 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "600",
+  },
+  loadingText: {
+    fontSize: 18,
+    color: Colors.light.text,
+    textAlign: "center",
+    marginTop: 20,
+  },
+  header: {
+    padding: 16,
+    backgroundColor: "white",
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.border,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: Colors.light.text,
+  },
+  backButton: {
+    padding: 8,
+    marginLeft: -4,
   },
 });

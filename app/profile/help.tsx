@@ -10,7 +10,7 @@ import {
   Platform,
   SafeAreaView,
 } from "react-native";
-import { Stack } from "expo-router";
+import { router, Stack } from "expo-router";
 import { 
   Phone, 
   Mail, 
@@ -21,6 +21,7 @@ import {
   MessageSquare 
 } from "lucide-react-native";
 import Colors from "@/constants/colors";
+import Header from "@/components/Header";
 
 export default function HelpSupportScreen() {
   const handleCall = () => {
@@ -75,7 +76,7 @@ export default function HelpSupportScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <Stack.Screen options={{ title: "Help & Support" }} />
+      <Header title="Help & Support" onBack={() => router.back()} />
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <View style={styles.contactSection}>
           <Text style={styles.sectionTitle}>Contact Support</Text>

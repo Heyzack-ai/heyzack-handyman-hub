@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, Text, View, ScrollView, Pressable, SafeAreaView } from "react-native";
+import { StyleSheet, Text, View, ScrollView, Pressable, SafeAreaView, Alert } from "react-native";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { 
@@ -164,12 +164,12 @@ export default function ProfileScreen() {
             "English",
             () => router.push("/profile/language")
           )}
-          {renderMenuItem(
+          {/* {renderMenuItem(
             <Settings size={20} color={Colors.light.gray[600]} />,
             "App Settings",
             undefined,
             () => router.push("/profile/settings")
-          )}
+          )} */}
           {renderMenuItem(
             <HelpCircle size={20} color={Colors.light.gray[600]} />,
             "Help & Support",
@@ -186,6 +186,12 @@ export default function ProfileScreen() {
             style={styles.deleteAccountButton}
             onPress={() => {
               // Show delete account confirmation
+              Alert.alert("Delete Account", "Are you sure you want to delete your account?", [
+                { text: "Cancel", style: "cancel" },
+                { text: "Delete", style: "destructive", onPress: () => {
+                  // TODO: Implement delete account logic
+                } },
+              ]);
             }}
           >
             <Text style={styles.deleteAccountText}>Delete Account</Text>
@@ -378,6 +384,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 16,
     marginTop: 8,
+    borderWidth: 1,
+    borderColor: Colors.light.error,
+    borderRadius: 12,
+    padding: 16,
   },
   deleteAccountText: {
     fontSize: 14,

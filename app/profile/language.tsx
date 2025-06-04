@@ -6,10 +6,12 @@ import {
   ScrollView,
   Pressable,
   Alert,
+  SafeAreaView,
 } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import { Check } from "lucide-react-native";
 import Colors from "@/constants/colors";
+import Header from "@/components/Header";
 
 type Language = {
   code: string;
@@ -44,8 +46,8 @@ export default function LanguageScreen() {
   };
 
   return (
-    <>
-      <Stack.Screen options={{ title: "Language" }} />
+    <SafeAreaView style={styles.container}>
+      <Header title="Language Settings" onBack={() => router.back()} />
       
       <View style={styles.container}>
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
@@ -103,7 +105,7 @@ export default function LanguageScreen() {
           </Pressable>
         </View>
       </View>
-    </>
+    </SafeAreaView>
   );
 }
 

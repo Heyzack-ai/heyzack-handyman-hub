@@ -1,5 +1,5 @@
-const primaryColor = "#4A90E2";
-const secondaryColor = "#F5A623";
+const primaryColor = "#243984";
+const secondaryColor = "#E82F89";
 
 export default {
   light: {

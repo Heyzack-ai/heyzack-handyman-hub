@@ -25,11 +25,27 @@ export const useJobStore = create<JobState>()(
       jobs: mockJobs,
       currentJobId: null,
       
-      setCurrentJobId: (id) => set({ currentJobId: id }),
+      setCurrentJobId: (id) => {
+        console.log("Setting current job ID:", id);
+        set({ currentJobId: id });
+      },
       
       getCurrentJob: () => {
-        const { jobs, currentJobId } = get();
-        return jobs.find(job => job.id === currentJobId);
+        const currentJobId = get().currentJobId;
+        if (!currentJobId) {
+          console.log("No current job ID set");
+          return undefined;
+        }
+        
+        const job = get().jobs.find(j => j.id === currentJobId);
+        console.log("Getting current job:", currentJobId, "Found:", !!job);
+        
+        if (!job) {
+          console.log("Job not found with ID:", currentJobId);
+          console.log("Available job IDs:", get().jobs.map(j => j.id));
+        }
+        
+        return job;
       },
       
       updateJobStatus: (jobId, status) => set(state => ({

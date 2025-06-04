@@ -15,6 +15,7 @@ import { Send, ArrowLeft } from "lucide-react-native";
 import { useChatStore } from "@/store/chat-store";
 import MessageBubble from "@/components/MessageBubble";
 import Colors from "@/constants/colors";
+import Header from "@/components/Header";
 
 export default function ChatConversationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -44,9 +45,12 @@ export default function ChatConversationScreen() {
   
   if (!conversation) {
     return (
-      <View style={styles.container}>
-        <Text>Conversation not found</Text>
-      </View>
+      <SafeAreaView style={styles.safeArea}>
+       
+        <View style={styles.container}>
+          <Text>Conversation not found</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -74,25 +78,13 @@ export default function ChatConversationScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <Stack.Screen
-        options={{
-          title: conversation.title,
-          headerLeft: () => (
-            <Pressable
-              onPress={handleGoBack}
-              style={styles.backButton}
-            >
-              <ArrowLeft size={24} color={Colors.light.text} />
-            </Pressable>
-          ),
-        }}
-      />
       
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
       >
+        <Header title={conversation.title} onBack={() => router.back()} />
         <ScrollView
           ref={scrollViewRef}
           style={styles.messagesContainer}
@@ -102,7 +94,7 @@ export default function ChatConversationScreen() {
           {messages.map((message) => (
             <MessageBubble key={message.id} message={message} />
           ))}
-        </ScrollView>
+        </ScrollView> 
         
         <View style={styles.inputContainer}>
           <TextInput
@@ -144,7 +136,7 @@ const styles = StyleSheet.create({
   },
   backButton: {
     padding: 8,
-    marginLeft: -8,
+    marginLeft: -4,
   },
   messagesContainer: {
     flex: 1,
@@ -184,5 +176,19 @@ const styles = StyleSheet.create({
   },
   sendButtonInactive: {
     backgroundColor: Colors.light.gray[200],
+  },
+  header: {
+    padding: 16,
+    backgroundColor: "white",
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.border,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: Colors.light.text,
   },
 });

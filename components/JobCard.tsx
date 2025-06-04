@@ -1,10 +1,11 @@
 import React from "react";
-import { StyleSheet, Text, View, Pressable } from "react-native";
+import { StyleSheet, Text, View, Pressable, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { Calendar, Clock } from "lucide-react-native";
 import StatusBadge from "./StatusBadge";
 import { Job } from "@/types/job";
 import Colors from "@/constants/colors";
+import { useJobStore } from "@/store/job-store";
 
 type JobCardProps = {
   job: Job;
@@ -13,6 +14,7 @@ type JobCardProps = {
 
 export default function JobCard({ job, disableNavigation = false }: JobCardProps) {
   const router = useRouter();
+  const { jobs } = useJobStore();
 
   const handlePress = () => {
     if (disableNavigation) {
@@ -21,7 +23,16 @@ export default function JobCard({ job, disableNavigation = false }: JobCardProps
     
     // Only navigate to job details if the job is not pending
     if (job.status !== "pending") {
-      router.push(`/jobs/${job.id}`);
+      // Verify the job exists in the store before navigating
+      const jobExists = jobs.some(j => j.id === job.id);
+      
+      if (jobExists) {
+        console.log("Navigating to job:", job.id);
+        router.push(`/jobs/${job.id}`);
+      } else {
+        console.log("Job not found in store:", job.id);
+        Alert.alert("Error", "Job not found");
+      }
     }
   };
 
@@ -53,17 +64,14 @@ export default function JobCard({ job, disableNavigation = false }: JobCardProps
       </View>
       
       <View style={styles.footer}>
-        <View style={styles.scheduleItem}>
-          <Calendar size={14} color={Colors.light.gray[600]} />
-          <Text style={styles.scheduleText}>{job.scheduledDate}</Text>
+        <View style={styles.footerItem}>
+          <Calendar size={16} color={Colors.light.gray[500]} />
+          <Text style={styles.footerText}>{job.scheduledDate}</Text>
         </View>
-        <View style={styles.scheduleItem}>
-          <Clock size={14} color={Colors.light.gray[600]} />
-          <Text style={styles.scheduleText}>{job.scheduledTime}</Text>
+        <View style={styles.footerItem}>
+          <Clock size={16} color={Colors.light.gray[500]} />
+          <Text style={styles.footerText}>{job.scheduledTime}</Text>
         </View>
-        <Text style={styles.productsCount}>
-          {job.products.length} {job.products.length === 1 ? "product" : "products"}
-        </Text>
       </View>
     </Pressable>
   );
@@ -116,19 +124,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
-  scheduleItem: {
+  footerItem: {
     flexDirection: "row",
     alignItems: "center",
     marginRight: 12,
   },
-  scheduleText: {
+  footerText: {
     fontSize: 12,
     color: Colors.light.gray[600],
     marginLeft: 4,
-  },
-  productsCount: {
-    fontSize: 12,
-    color: Colors.light.gray[600],
-    marginLeft: "auto",
   },
 });

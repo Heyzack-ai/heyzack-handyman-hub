@@ -8,10 +8,12 @@ import {
   TextInput,
   Alert,
   Modal,
+  SafeAreaView,
 } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import { Plus, X, Building2, Link2 } from "lucide-react-native";
 import Colors from "@/constants/colors";
+import Header from "@/components/Header";
 
 type Partner = {
   id: string;
@@ -99,8 +101,8 @@ export default function PartnersScreen() {
   };
 
   return (
-    <>
-      <Stack.Screen options={{ title: "Partners" }} />
+    <SafeAreaView style={styles.container}>
+      <Header title="Partners" onBack={() => router.back()} />
       
       <View style={styles.container}>
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
@@ -210,7 +212,7 @@ export default function PartnersScreen() {
           </View>
         </Modal>
       </View>
-    </>
+    </SafeAreaView>
   );
 }
 

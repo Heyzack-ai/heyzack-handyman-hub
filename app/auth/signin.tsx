@@ -56,10 +56,7 @@ export default function SignInScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.logoContainer}>
-            <View style={styles.logoPlaceholder}>
-              <Text style={styles.logoText}>LOGO</Text>
-            </View>
-            <Text style={styles.appName}>TechConnect</Text>
+           <Image source={require('@/assets/images/logo.png')} style={styles.logo} />
           </View>
 
           <Text style={styles.title}>Sign In</Text>
@@ -150,14 +147,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 40,
   },
-  logoPlaceholder: {
-    width: 100,
-    height: 100,
-    borderRadius: 20,
-    backgroundColor: Colors.light.gray[200],
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
+  logo: {
+    width: 180,
+    resizeMode: 'contain',
   },
   logoText: {
     fontSize: 20,

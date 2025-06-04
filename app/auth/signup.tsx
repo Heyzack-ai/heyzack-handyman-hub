@@ -13,6 +13,7 @@ import {
 import { useRouter } from "expo-router";
 import { Eye, EyeOff, ArrowLeft } from "lucide-react-native";
 import Colors from "@/constants/colors";
+import { Image } from "expo-image";
 
 export default function SignUpScreen() {
   const router = useRouter();
@@ -54,18 +55,23 @@ export default function SignUpScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 50 : 0}
       >
+
+<Pressable style={styles.backButton} onPress={() => router.back()}>
+            <ArrowLeft size={24} color={Colors.light.text} />
+          </Pressable>
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <Pressable style={styles.backButton} onPress={() => router.back()}>
-            <ArrowLeft size={24} color={Colors.light.text} />
-          </Pressable>
+         
+          
 
           <View style={styles.logoContainer}>
-            <View style={styles.logoPlaceholder}>
-              <Text style={styles.logoText}>LOGO</Text>
-            </View>
+            <Image 
+              source={require('@/assets/images/logo.png')} 
+              style={styles.logo} 
+              contentFit="contain"
+            />
           </View>
 
           <Text style={styles.title}>Create Account</Text>
@@ -184,18 +190,17 @@ const styles = StyleSheet.create({
   },
   backButton: {
     marginBottom: 16,
+    paddingHorizontal: 24
   },
   logoContainer: {
     alignItems: "center",
-    marginBottom: 32,
+    marginBottom: 24,
+    height: 80, // Explicit height
   },
-  logoPlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 16,
-    backgroundColor: Colors.light.gray[200],
-    alignItems: "center",
-    justifyContent: "center",
+  logo: {
+    width: 180,
+    height: 80, // Explicit height
+    resizeMode: "contain",
   },
   logoText: {
     fontSize: 16,
