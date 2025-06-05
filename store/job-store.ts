@@ -4,6 +4,14 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Job, JobStatus, Product } from "@/types/job";
 import { jobs as mockJobs } from "@/mocks/jobs";
 
+// Log mock data on import
+console.log("Mock jobs loaded:", mockJobs.map(job => ({
+  id: job.id,
+  status: job.status,
+  rating: job.rating,
+  hasRatingProperty: 'rating' in job
+})));
+
 interface JobState {
   jobs: Job[];
   currentJobId: string | null;
@@ -17,7 +25,10 @@ interface JobState {
   addInstallationPhoto: (jobId: string, photoUri: string) => void;
   sendContract: (jobId: string) => void;
   addJobNote: (jobId: string, note: string) => void;
+  requestPayment: (jobId: string) => void;
 }
+
+
 
 export const useJobStore = create<JobState>()(
   persist(
@@ -26,23 +37,24 @@ export const useJobStore = create<JobState>()(
       currentJobId: null,
       
       setCurrentJobId: (id) => {
-        console.log("Setting current job ID:", id);
         set({ currentJobId: id });
       },
       
       getCurrentJob: () => {
         const currentJobId = get().currentJobId;
         if (!currentJobId) {
-          console.log("No current job ID set");
           return undefined;
         }
         
         const job = get().jobs.find(j => j.id === currentJobId);
-        console.log("Getting current job:", currentJobId, "Found:", !!job);
         
-        if (!job) {
-          console.log("Job not found with ID:", currentJobId);
-          console.log("Available job IDs:", get().jobs.map(j => j.id));
+        if (job) {
+          console.log("Current job details:", {
+            id: job.id,
+            status: job.status,
+            rating: job.rating,
+            hasRatingProperty: 'rating' in job
+          });
         }
         
         return job;
@@ -107,6 +119,17 @@ export const useJobStore = create<JobState>()(
             ? { 
                 ...job, 
                 notes: [...(job.notes || []), note] 
+              } 
+            : job
+        )
+      })),
+      
+      requestPayment: (jobId) => set(state => ({
+        jobs: state.jobs.map(job => 
+          job.id === jobId 
+            ? { 
+                ...job, 
+                paymentRequested: true 
               } 
             : job
         )

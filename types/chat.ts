@@ -1,22 +1,20 @@
-export type MessageType = "text" | "image" | "file";
-
-export type Message = {
+export interface Message {
   id: string;
   content: string;
-  type: MessageType;
+  type: "text" | "image" | "file";
   timestamp: string;
-  senderId: string;
-  senderName: string;
   isFromMe: boolean;
-};
+  status: "sending" | "sent" | "delivered" | "read" | "failed";
+  senderName?: string;
+  senderId?: string;
+}
 
-export type Conversation = {
+export interface Conversation {
   id: string;
   title: string;
-  participants: string[];
-  lastMessage?: Message;
-  unreadCount: number;
-  avatar?: string;
+  avatar: string;
   isGroup: boolean;
-  jobId?: string;
-};
+  unreadCount: number;
+  lastMessage?: Message;
+  messages: Message[];
+}

@@ -9,11 +9,13 @@ import {
   Platform,
   ScrollView,
   SafeAreaView,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Eye, EyeOff, ArrowLeft } from "lucide-react-native";
 import Colors from "@/constants/colors";
 import { Image } from "expo-image";
+import { authClient } from "@/lib/auth-client";
 
 export default function SignUpScreen() {
   const router = useRouter();
@@ -25,7 +27,7 @@ export default function SignUpScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSignUp = () => {
+  const handleSignUp = async () => {
     if (!fullName || !email || !password || !confirmPassword) {
       return;
     }
@@ -36,12 +38,23 @@ export default function SignUpScreen() {
     }
 
     setIsLoading(true);
+
+    const request ={
+      email,
+      password,
+      name: fullName,
+      role: "partner",
+    } 
+
     
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+     const {error} = await authClient.signUp.email(request);
+     setIsLoading(false);
+     if (error) {
+      Alert.alert("Error", error.message);
+     } else {
       router.replace("/(tabs)");
-    }, 1500);
+     }
+    
   };
 
   const handleSignIn = () => {
@@ -55,21 +68,17 @@ export default function SignUpScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 50 : 0}
       >
-
-<Pressable style={styles.backButton} onPress={() => router.back()}>
-            <ArrowLeft size={24} color={Colors.light.text} />
-          </Pressable>
+        <Pressable style={styles.backButton} onPress={() => router.back()}>
+          <ArrowLeft size={24} color={Colors.light.text} />
+        </Pressable>
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-         
-          
-
           <View style={styles.logoContainer}>
-            <Image 
-              source={require('@/assets/images/logo.png')} 
-              style={styles.logo} 
+            <Image
+              source={require("@/assets/images/logo.png")}
+              style={styles.logo}
               contentFit="contain"
             />
           </View>
@@ -190,7 +199,7 @@ const styles = StyleSheet.create({
   },
   backButton: {
     marginBottom: 16,
-    paddingHorizontal: 16
+    paddingHorizontal: 16,
   },
   logoContainer: {
     alignItems: "center",

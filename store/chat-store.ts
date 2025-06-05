@@ -46,6 +46,7 @@ export const useChatStore = create<ChatState>()(
           senderId: "user-001",
           senderName: "You",
           isFromMe: true,
+          status: "sent",
         };
         
         set(state => ({

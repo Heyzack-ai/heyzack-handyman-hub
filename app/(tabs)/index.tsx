@@ -41,20 +41,23 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-
-        <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16}}> 
+       <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, marginHorizontal: 16}}> 
         <View style={styles.header}>
           <Text style={styles.greeting}>Hello, Technician</Text>
           <Text style={styles.subtitle}>
             {isToday ? "Here's your schedule for today" : `Schedule for ${selectedDate}`}
           </Text>
         </View>
-
         <TouchableOpacity style={styles.notificationButton} onPress={() => router.push("/notifications")}>  
           <Bell size={24} color={Colors.light.primary} />
         </TouchableOpacity>
         </View>
+
+      <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+
+       
+
+       
 
         <View style={{ width: '100%', marginBottom: 16}}>
           <View style={{flexDirection: 'row', gap: 12}}>

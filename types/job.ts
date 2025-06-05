@@ -5,7 +5,9 @@ export type JobStatus =
   | "en_route" 
   | "started" 
   | "completed"
-  | "declined";
+  | "declined"
+  | "sent"
+  | "not_sent";
 
 export type JobType = "booked_installation" | "job_request";
 
@@ -33,17 +35,24 @@ export type Customer = {
   };
 };
 
-export type Job = {
+export interface Job {
   id: string;
   title: string;
   description: string;
+  status: JobStatus;
   scheduledDate: string;
   scheduledTime: string;
-  status: JobStatus;
-  type: JobType;
+  duration: string;
   customer: Customer;
   products: Product[];
   notes?: string[];
   installationPhotos?: string[];
-  contractSent: boolean;
-};
+  contractSent?: boolean;
+  rating?: number;
+  type: JobType;
+  paymentRequested?: boolean;
+  paymentReceived?: boolean;
+  paymentDate?: string;
+  amount?: string;
+  completedDate?: string;
+}

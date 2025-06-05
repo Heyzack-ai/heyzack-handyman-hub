@@ -15,14 +15,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "app.rork.smarthome-service-hub"
+      "bundleIdentifier": "com.heyzack.handyman"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "app.rork.smarthome-service-hub"
+      "package": "com.heyzack.handyman"
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
@@ -37,6 +37,20 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": "https://rork.com/"
+      },
+      "eas": {
+        "projectId": "b5bd80f4-3604-4379-8312-a5aeafce53fb"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/b5bd80f4-3604-4379-8312-a5aeafce53fb"
     }
   }
 }

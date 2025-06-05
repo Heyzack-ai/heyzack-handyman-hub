@@ -9,19 +9,25 @@ import {
   KeyboardAvoidingView, 
   Platform,
   SafeAreaView,
+  Modal,
+  TouchableOpacity,
+  Alert,
 } from "react-native";
-import { useLocalSearchParams, Stack, useRouter } from "expo-router";
-import { Send, ArrowLeft } from "lucide-react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { Send, ArrowLeft, Paperclip, Camera, Image as ImageIcon, X } from "lucide-react-native";
 import { useChatStore } from "@/store/chat-store";
 import MessageBubble from "@/components/MessageBubble";
 import Colors from "@/constants/colors";
 import Header from "@/components/Header";
+import * as ImagePicker from "expo-image-picker";
+import * as Haptics from "expo-haptics";
 
 export default function ChatConversationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const scrollViewRef = useRef<ScrollView>(null);
   const [messageText, setMessageText] = useState("");
+  const [showMediaOptions, setShowMediaOptions] = useState(false);
   
   const {
     getCurrentConversation,
@@ -46,7 +52,7 @@ export default function ChatConversationScreen() {
   if (!conversation) {
     return (
       <SafeAreaView style={styles.safeArea}>
-       
+        <Header title="Chat" onBack={() => router.back()} />
         <View style={styles.container}>
           <Text>Conversation not found</Text>
         </View>
@@ -56,7 +62,7 @@ export default function ChatConversationScreen() {
 
   const handleSendMessage = () => {
     if (messageText.trim() && conversation) {
-      sendMessage(conversation.id, messageText.trim());
+      sendMessage(conversation.id, messageText.trim(), "text");
       setMessageText("");
       
       // Scroll to bottom after sending message
@@ -66,19 +72,84 @@ export default function ChatConversationScreen() {
     }
   };
 
+  const handleSendImage = (imageUri: string, type: "image") => {
+    if (conversation) {
+      sendMessage(conversation.id, imageUri, type);
+      
+      // Scroll to bottom after sending message
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      
+      if (status !== "granted") {
+        Alert.alert("Permission Required", "Camera permission is needed to take photos");
+        return;
+      }
+      
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.8,
+        allowsEditing: true,
+      });
+      
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        handleSendImage(result.assets[0].uri, "image");
+        if (Platform.OS !== "web") {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+      }
+    } catch (error) {
+      console.error("Error taking photo:", error);
+      Alert.alert("Error", "Failed to take photo");
+    } finally {
+      setShowMediaOptions(false);
+    }
+  };
+
+  const handlePickImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (status !== "granted") {
+        Alert.alert("Permission Required", "Gallery permission is needed to select photos");
+        return;
+      }
+      
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.8,
+        allowsMultipleSelection: false,
+        allowsEditing: true,
+      });
+      
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        handleSendImage(result.assets[0].uri, "image");
+        if (Platform.OS !== "web") {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+      }
+    } catch (error) {
+      console.error("Error picking image:", error);
+      Alert.alert("Error", "Failed to select image");
+    } finally {
+      setShowMediaOptions(false);
+    }
+  };
+
   const scrollToBottom = () => {
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }, 100);
   };
 
-  const handleGoBack = () => {
-    router.back();
-  };
-
   return (
     <SafeAreaView style={styles.safeArea}>
-      
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -97,6 +168,13 @@ export default function ChatConversationScreen() {
         </ScrollView> 
         
         <View style={styles.inputContainer}>
+          <Pressable 
+            style={styles.attachButton} 
+            onPress={() => setShowMediaOptions(true)}
+          >
+            <Paperclip size={20} color={Colors.light.gray[500]} />
+          </Pressable>
+          
           <TextInput
             style={styles.textInput}
             placeholder="Type a message..."
@@ -106,6 +184,7 @@ export default function ChatConversationScreen() {
             maxLength={1000}
             placeholderTextColor={Colors.light.gray[500]}
           />
+          
           <Pressable
             style={[
               styles.sendButton,
@@ -121,6 +200,53 @@ export default function ChatConversationScreen() {
           </Pressable>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Media Options Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showMediaOptions}
+        onRequestClose={() => setShowMediaOptions(false)}
+      >
+        <Pressable 
+          style={styles.modalOverlay} 
+          onPress={() => setShowMediaOptions(false)}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Share Media</Text>
+              <TouchableOpacity 
+                style={styles.closeButton} 
+                onPress={() => setShowMediaOptions(false)}
+              >
+                <X size={20} color={Colors.light.gray[600]} />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.mediaOptions}>
+              <TouchableOpacity 
+                style={styles.mediaOption} 
+                onPress={handleTakePhoto}
+              >
+                <View style={[styles.mediaIconContainer, { backgroundColor: Colors.light.primary }]}>
+                  <Camera size={24} color="#FFFFFF" />
+                </View>
+                <Text style={styles.mediaOptionText}>Camera</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.mediaOption} 
+                onPress={handlePickImage}
+              >
+                <View style={[styles.mediaIconContainer, { backgroundColor: Colors.light.secondary }]}>
+                  <ImageIcon size={24} color="#FFFFFF" />
+                </View>
+                <Text style={styles.mediaOptionText}>Gallery</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -133,10 +259,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.light.background,
-  },
-  backButton: {
-    padding: 8,
-    marginLeft: -4,
   },
   messagesContainer: {
     flex: 1,
@@ -151,6 +273,14 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     borderTopWidth: 1,
     borderTopColor: Colors.light.border,
+  },
+  attachButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 8,
   },
   textInput: {
     flex: 1,
@@ -177,18 +307,52 @@ const styles = StyleSheet.create({
   sendButtonInactive: {
     backgroundColor: Colors.light.gray[200],
   },
-  header: {
-    padding: 16,
-    backgroundColor: "white",
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
   },
-  headerTitle: {
-    fontSize: 20,
+  modalContent: {
+    backgroundColor: Colors.light.background,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    padding: 16,
+    width: "100%",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
     fontWeight: "bold",
     color: Colors.light.text,
+  },
+  closeButton: {
+    padding: 8,
+  },
+  mediaOptions: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+  },
+  mediaOption: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  mediaIconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 8,
+  },
+  mediaOptionText: {
+    fontSize: 14,
+    color: Colors.light.text,
+    textAlign: "center",
   },
 });

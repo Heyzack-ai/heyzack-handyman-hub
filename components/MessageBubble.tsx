@@ -1,104 +1,112 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
-import { Message } from "@/types/chat";
+import { StyleSheet, Text, View, Pressable } from "react-native";
+import { Image } from "expo-image";
 import Colors from "@/constants/colors";
+import { Message } from "@/types/chat";
 
 type MessageBubbleProps = {
   message: Message;
 };
 
 export default function MessageBubble({ message }: MessageBubbleProps) {
+  const isFromMe = message.isFromMe;
+  const isImage = message.type === "image";
+  
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
   return (
-    <View
-      style={[
-        styles.container,
-        message.isFromMe ? styles.myMessage : styles.otherMessage,
-      ]}
-    >
-      <View
-        style={[
-          styles.bubble,
-          message.isFromMe ? styles.myBubble : styles.otherBubble,
-        ]}
-      >
-        {!message.isFromMe && (
-          <Text style={styles.senderName}>{message.senderName}</Text>
-        )}
-        <Text
-          style={[
-            styles.messageText,
-            message.isFromMe ? styles.myMessageText : styles.otherMessageText,
-          ]}
-        >
+    <View style={[
+      styles.container,
+      isFromMe ? styles.containerFromMe : styles.containerFromOther
+    ]}>
+      {!isFromMe && message.senderName && (
+        <Text style={styles.senderName}>{message.senderName}</Text>
+      )}
+      
+      {isImage ? (
+        <View style={styles.imageContainer}>
+          <Image
+            source={{ uri: message.content }}
+            style={styles.image}
+            contentFit="cover"
+            transition={200}
+          />
+        </View>
+      ) : (
+        <Text style={[
+          styles.messageText,
+          isFromMe ? styles.messageTextFromMe : styles.messageTextFromOther
+        ]}>
           {message.content}
         </Text>
-        <Text
-          style={[
-            styles.timestamp,
-            message.isFromMe ? styles.myTimestamp : styles.otherTimestamp,
-          ]}
-        >
-          {formatTime(message.timestamp)}
-        </Text>
-      </View>
+      )}
+      
+      <Text style={[
+        styles.timestamp,
+        isFromMe ? styles.timestampFromMe : styles.timestampFromOther
+      ]}>
+        {formatTime(message.timestamp)}
+      </Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 4,
-    paddingHorizontal: 16,
-  },
-  myMessage: {
-    alignItems: "flex-end",
-  },
-  otherMessage: {
-    alignItems: "flex-start",
-  },
-  bubble: {
     maxWidth: "80%",
+    marginHorizontal: 16,
+    marginBottom: 8,
+    padding: 12,
     borderRadius: 16,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
   },
-  myBubble: {
+  containerFromMe: {
+    alignSelf: "flex-end",
     backgroundColor: Colors.light.primary,
     borderBottomRightRadius: 4,
   },
-  otherBubble: {
+  containerFromOther: {
+    alignSelf: "flex-start",
     backgroundColor: Colors.light.gray[200],
     borderBottomLeftRadius: 4,
   },
   senderName: {
     fontSize: 12,
     fontWeight: "600",
-    color: Colors.light.primary,
-    marginBottom: 2,
+    color: Colors.light.gray[600],
+    marginBottom: 4,
   },
   messageText: {
     fontSize: 16,
-    lineHeight: 20,
+    lineHeight: 22,
   },
-  myMessageText: {
+  messageTextFromMe: {
     color: "white",
   },
-  otherMessageText: {
+  messageTextFromOther: {
     color: Colors.light.text,
   },
   timestamp: {
     fontSize: 11,
     marginTop: 4,
+    alignSelf: "flex-end",
   },
-  myTimestamp: {
+  timestampFromMe: {
     color: "rgba(255, 255, 255, 0.7)",
   },
-  otherTimestamp: {
+  timestampFromOther: {
     color: Colors.light.gray[500],
   },
+  imageContainer: {
+    borderRadius: 12,
+    overflow: "hidden",
+    width: 200,
+    height: 200,
+  },
+  image: {
+    width: "100%",
+    height: "100%",
+  }
 });

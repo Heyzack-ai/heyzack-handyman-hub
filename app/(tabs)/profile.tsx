@@ -15,7 +15,8 @@ import {
   Globe, 
   Shield, 
   Link, 
-  Languages
+  Languages,
+  CreditCard
 } from "lucide-react-native";
 import Colors from "@/constants/colors";
 
@@ -27,7 +28,7 @@ export default function ProfileScreen() {
     role: "Field Service Technician",
     email: "john.doe@example.com",
     phone: "+1 (555) 123-4567",
-    location: "San Francisco, CA",
+    // location: "San Francisco, CA",
     avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300",
     completedJobs: 128,
     rating: 4.8,
@@ -116,6 +117,16 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Payment</Text>
+          {renderMenuItem(
+            <CreditCard size={20} color={Colors.light.primary} />,
+            "Payments",
+            "View your payments",
+            () => router.push("/profile/payments")
+          )}
+        </View>
+
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Contact Information</Text>
           {renderMenuItem(
             <Mail size={20} color={Colors.light.primary} />,
@@ -127,11 +138,11 @@ export default function ProfileScreen() {
             "Phone",
             technician.phone
           )}
-          {renderMenuItem(
+          {/* {renderMenuItem(
             <MapPin size={20} color={Colors.light.primary} />,
             "Location",
             technician.location
-          )}
+          )} */}
         </View>
 
         <View style={styles.section}>

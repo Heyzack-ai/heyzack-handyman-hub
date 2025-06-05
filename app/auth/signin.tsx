@@ -10,10 +10,12 @@ import {
   ScrollView,
   Image,
   SafeAreaView,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Eye, EyeOff } from "lucide-react-native";
 import Colors from "@/constants/colors";
+import { authClient } from "@/lib/auth-client";
 
 export default function SignInScreen() {
   const router = useRouter();
@@ -22,18 +24,25 @@ export default function SignInScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSignIn = () => {
+  const handleSignIn = async () => {
     if (!email || !password) {
       return;
     }
 
     setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+    const request = {
+      email,
+      password,
+    }
+
+    const {error} = await authClient.signIn.email(request);
+    setIsLoading(false);
+    if (error) {  
+      Alert.alert("Error", error.message);
+    } else {
       router.replace("/(tabs)");
-    }, 1500);
+    }
   };
 
   const handleForgotPassword = () => {

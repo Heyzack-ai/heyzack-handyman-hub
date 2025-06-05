@@ -9,6 +9,8 @@ export const jobs: Job[] = [
     scheduledTime: "10:00 AM",
     status: "scheduled",
     type: "booked_installation",
+    duration: "2 hours",
+    rating: 4.5,
     customer: {
       id: "cust-001",
       name: "Alex Johnson",
@@ -67,6 +69,8 @@ export const jobs: Job[] = [
     scheduledTime: "2:00 PM",
     status: "scheduled",
     type: "job_request",
+    duration: "2 hours",
+    rating: 4.5,
     customer: {
       id: "cust-002",
       name: "Sarah Williams",
@@ -114,6 +118,8 @@ export const jobs: Job[] = [
     scheduledTime: "1:00 PM",
     status: "stock_collected",
     type: "booked_installation",
+    duration: "2 hours",
+    // No rating for non-completed jobs
     customer: {
       id: "cust-003",
       name: "Michael Brown",
@@ -161,6 +167,8 @@ export const jobs: Job[] = [
     scheduledTime: "3:00 PM",
     status: "scheduled",
     type: "job_request",
+    duration: "2 hours",
+    rating: 4.5,
     customer: {
       id: "cust-004",
       name: "Emma Davis",
@@ -193,6 +201,8 @@ export const jobs: Job[] = [
     scheduledTime: "11:00 AM",
     status: "scheduled",
     type: "booked_installation",
+    duration: "2 hours",
+    rating: 4.5,
     customer: {
       id: "cust-005",
       name: "James Wilson",
@@ -225,6 +235,8 @@ export const jobs: Job[] = [
     scheduledTime: "9:00 AM",
     status: "completed",
     type: "job_request",
+    duration: "2 hours",
+    rating: 4.5, // Add rating for completed jobs
     customer: {
       id: "cust-006",
       name: "Lisa Chen",
@@ -257,6 +269,8 @@ export const jobs: Job[] = [
     scheduledTime: "2:30 PM",
     status: "completed",
     type: "booked_installation",
+    duration: "2 hours",
+    rating: 4.5, // Add rating for completed jobs
     customer: {
       id: "cust-007",
       name: "Robert Taylor",
@@ -287,8 +301,10 @@ export const jobs: Job[] = [
     description: "Installation of keyless entry smart lock",
     scheduledDate: "2025-06-11",
     scheduledTime: "10:30 AM",
-    status: "scheduled",
+    status: "scheduled",  
     type: "job_request",
+    duration: "2 hours",
+    rating: 4.5,
     customer: {
       id: "cust-008",
       name: "Amanda Rodriguez",
@@ -321,6 +337,8 @@ export const jobs: Job[] = [
     scheduledTime: "1:00 PM",
     status: "scheduled",
     type: "booked_installation",
+    duration: "2 hours",
+    rating: 4.5,
     customer: {
       id: "cust-009",
       name: "David Kim",
@@ -353,6 +371,8 @@ export const jobs: Job[] = [
     scheduledTime: "11:00 AM",
     status: "scheduled",
     type: "job_request",
+    duration: "2 hours",
+    rating: 4.5,
     customer: {
       id: "cust-010",
       name: "Jennifer White",
@@ -386,6 +406,8 @@ export const jobs: Job[] = [
     scheduledTime: "10:00 AM",
     status: "pending",
     type: "job_request",
+    duration: "2 hours",
+    rating: 4.5,
     customer: {
       id: "cust-011",
       name: "Thomas Anderson",
@@ -427,6 +449,8 @@ export const jobs: Job[] = [
     scheduledTime: "2:00 PM",
     status: "pending",
     type: "job_request",
+    duration: "2 hours",
+    rating: 4.5,
     customer: {
       id: "cust-012",
       name: "Olivia Martinez",

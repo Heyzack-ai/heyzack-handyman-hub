@@ -14,17 +14,17 @@ import { Image } from "expo-image";
 import { Stack, useRouter, useLocalSearchParams } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
-import { 
-  ArrowLeft, 
-  Calendar, 
-  Clock, 
-  MapPin, 
-  Phone, 
-  Mail, 
-  Camera, 
-  CheckCircle, 
-  Package, 
-  Truck, 
+import {
+  ArrowLeft,
+  Calendar,
+  Clock,
+  MapPin,
+  Phone,
+  Mail,
+  Camera,
+  CheckCircle,
+  Package,
+  Truck,
   Check,
   ChevronUp,
   ChevronDown,
@@ -35,6 +35,7 @@ import { useJobStore } from "@/store/job-store";
 import Colors from "@/constants/colors";
 import { Job } from "@/types/job";
 import Header from "@/components/Header";
+import StatusBadge from "@/components/StatusBadge";
 
 export default function JobDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -43,24 +44,24 @@ export default function JobDetailScreen() {
   const [productsExpanded, setProductsExpanded] = useState(true);
   const [completionExpanded, setCompletionExpanded] = useState(false);
   const [jobData, setJobData] = useState<Job | undefined>(undefined);
-  
-  const { 
+
+  const {
     jobs,
-    getCurrentJob, 
-    setCurrentJobId, 
-    updateJobStatus, 
+    getCurrentJob,
+    setCurrentJobId,
+    updateJobStatus,
     addInstallationPhoto,
-    sendContract
+    sendContract,
   } = useJobStore();
-  
+
   useEffect(() => {
     console.log("Job details page - ID param:", id);
     if (id) {
       console.log("Setting current job ID:", id);
       setCurrentJobId(id);
-      
+
       // Directly find the job from the jobs array
-      const foundJob = jobs.find(job => job.id === id);
+      const foundJob = jobs.find((job) => job.id === id);
       if (foundJob) {
         setJobData(foundJob);
       } else {
@@ -75,19 +76,22 @@ export default function JobDetailScreen() {
   // Use either the directly found job or the one from getCurrentJob
   const job = jobData || getCurrentJob();
   console.log("Job found:", !!job);
-  
+
   // Redirect if job is not found or is pending
   useEffect(() => {
     if (!job) {
       return;
     }
-    
+
     if (job.status === "pending") {
-      Alert.alert("Access Denied", "You must accept the job request before viewing details");
+      Alert.alert(
+        "Access Denied",
+        "You must accept the job request before viewing details"
+      );
       router.back();
     }
   }, [job, router]);
-  
+
   if (!job) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -103,19 +107,31 @@ export default function JobDetailScreen() {
   }
 
   const getProgressPercentage = () => {
-    const statusOrder = ["scheduled", "stock_collected", "en_route", "started", "completed"];
+    const statusOrder = [
+      "scheduled",
+      "stock_collected",
+      "en_route",
+      "started",
+      "completed",
+    ];
     const currentIndex = statusOrder.indexOf(job.status);
     return ((currentIndex + 1) / statusOrder.length) * 100;
   };
 
   const getStatusText = () => {
     switch (job.status) {
-      case "scheduled": return "Accepted";
-      case "stock_collected": return "Stock Collected";
-      case "en_route": return "En Route";
-      case "started": return "Started";
-      case "completed": return "Completed";
-      default: return "Accepted";
+      case "scheduled":
+        return "Accepted";
+      case "stock_collected":
+        return "Stock Collected";
+      case "en_route":
+        return "En Route";
+      case "started":
+        return "Started";
+      case "completed":
+        return "Completed";
+      default:
+        return "Accepted";
     }
   };
 
@@ -138,7 +154,7 @@ export default function JobDetailScreen() {
       android: `geo:0,0?q=${encodedAddress}`,
       web: `https://maps.google.com/?q=${encodedAddress}`,
     });
-    
+
     if (url) {
       Linking.openURL(url);
     }
@@ -162,18 +178,21 @@ export default function JobDetailScreen() {
 
   const handleTakePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    
+
     if (status !== "granted") {
-      Alert.alert("Permission Required", "Camera permission is needed to take photos");
+      Alert.alert(
+        "Permission Required",
+        "Camera permission is needed to take photos"
+      );
       return;
     }
-    
+
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.8,
       allowsEditing: true,
     });
-    
+
     if (!result.canceled && result.assets && result.assets.length > 0) {
       addInstallationPhoto(job.id, result.assets[0].uri);
       if (Platform.OS !== "web") {
@@ -193,7 +212,9 @@ export default function JobDetailScreen() {
           onPress: () => {
             updateJobStatus(job.id, "completed");
             if (Platform.OS !== "web") {
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              Haptics.notificationAsync(
+                Haptics.NotificationFeedbackType.Success
+              );
             }
           },
         },
@@ -205,22 +226,24 @@ export default function JobDetailScreen() {
     router.back();
   };
 
-
-  const ContactRow = ({ 
-    icon, 
-    text, 
-    onPress, 
-    buttonColor = "#4CD964" 
-  }: { 
-    icon: React.ReactNode; 
-    text: string; 
+  const ContactRow = ({
+    icon,
+    text,
+    onPress,
+    buttonColor = "#4CD964",
+  }: {
+    icon: React.ReactNode;
+    text: string;
     onPress: () => void;
     buttonColor?: string;
   }) => {
     // Create a clone of the icon with white color for the button
-    const buttonIcon = React.cloneElement(icon as React.ReactElement<{ color?: string }>, { 
-      color: "white" 
-    });
+    const buttonIcon = React.cloneElement(
+      icon as React.ReactElement<{ color?: string }>,
+      {
+        color: "white",
+      }
+    );
 
     return (
       <View style={styles.contactRow}>
@@ -228,7 +251,10 @@ export default function JobDetailScreen() {
           {icon}
           <Text style={styles.contactText}>{text}</Text>
         </View>
-        <Pressable style={[styles.contactButton, { backgroundColor: buttonColor }]} onPress={onPress}>
+        <Pressable
+          style={[styles.contactButton, { backgroundColor: buttonColor }]}
+          onPress={onPress}
+        >
           {buttonIcon}
         </Pressable>
       </View>
@@ -237,27 +263,44 @@ export default function JobDetailScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-        <Header title={job.title} onBack={() => router.back()} />
-      
-      <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <Header title={job.title} onBack={() => router.back()} />
+
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Job Progress Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Job Progress</Text>
-          <Text style={styles.statusText}>Current Status: {getStatusText()}</Text>
-          
+          <Text style={styles.statusText}>
+            Current Status: {getStatusText()}
+          </Text>
+
           <View style={styles.progressContainer}>
             <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: `${getProgressPercentage()}%` }]} />
+              <View
+                style={[
+                  styles.progressFill,
+                  { width: `${getProgressPercentage()}%` },
+                ]}
+              />
             </View>
-            <Text style={styles.progressPercentage}>{Math.round(getProgressPercentage())}%</Text>
+            <Text style={styles.progressPercentage}>
+              {Math.round(getProgressPercentage())}%
+            </Text>
           </View>
-          
+
           <Text style={styles.workflowText}>
-            Accepted → Stock Collected → En Route → Contract Sent → Contract Signed → Started → Completed
+            Job Request → Accepted → Stock Collected → En Route → Contract Sent
+            → Contract Signed → Job Started → Job Marked as Done → Job Ended
           </Text>
-          
+
           {job.status === "scheduled" && (
-            <Pressable style={styles.primaryButton} onPress={handleCollectStock}>
+            <Pressable
+              style={styles.primaryButton}
+              onPress={handleCollectStock}
+            >
               <Text style={styles.primaryButtonText}>Collect Stock</Text>
             </Pressable>
           )}
@@ -266,32 +309,36 @@ export default function JobDetailScreen() {
         {/* Schedule Details */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Schedule Details</Text>
-          
+
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Date:</Text>
             <Text style={styles.detailValue}>{job.scheduledDate}</Text>
           </View>
-          
+
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Time:</Text>
             <Text style={styles.detailValue}>{job.scheduledTime}</Text>
           </View>
-          
+
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Duration:</Text>
             <Text style={styles.detailValue}>2 Hours</Text>
           </View>
-          
+
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Type:</Text>
             <Text style={styles.detailValue}>{job.title}</Text>
           </View>
-          
+
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Status:</Text>
-            <View style={styles.priorityBadge}>
-              <Text style={styles.priorityText}>High</Text>
-            </View>
+            {/* <View style={styles.priorityBadge}>
+              <Text style={styles.priorityText}>
+              {job.status.charAt(0).toUpperCase() + job.status.slice(1).toLowerCase()}
+              </Text>
+            </View> */}
+        <StatusBadge status={job.status} size="medium" />
+
           </View>
         </View>
 
@@ -299,21 +346,21 @@ export default function JobDetailScreen() {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Partner Details</Text>
           <Text style={styles.companyName}>Home Solutions Inc.</Text>
-          
+
           <ContactRow
             icon={<Phone size={20} color={Colors.light.gray[600]} />}
             text="(555) 123-4567"
             onPress={() => handleCall("(555) 123-4567")}
             buttonColor="#4CD964"
           />
-          
+
           <ContactRow
             icon={<Mail size={20} color={Colors.light.black} />}
             text="ethan.carter@email.com"
             onPress={() => handleEmail("ethan.carter@email.com")}
             buttonColor="#4CD964"
           />
-          
+
           <ContactRow
             icon={<MapPin size={20} color={Colors.light.gray[600]} />}
             text="123 Elm Street, Anytown, CA 91234"
@@ -324,14 +371,18 @@ export default function JobDetailScreen() {
 
         {/* Products (Bill Of Materials) */}
         <View style={styles.card}>
-          <Pressable 
+          <Pressable
             style={styles.expandableHeader}
             onPress={() => setProductsExpanded(!productsExpanded)}
           >
             <Text style={styles.cardTitle}>Products (Bill Of Materials)</Text>
-            {productsExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+            {productsExpanded ? (
+              <ChevronUp size={20} />
+            ) : (
+              <ChevronDown size={20} />
+            )}
           </Pressable>
-          
+
           {productsExpanded && (
             <>
               {job.products.map((product) => (
@@ -340,26 +391,34 @@ export default function JobDetailScreen() {
                     <Text style={styles.productName}>{product.name}</Text>
                     <Text style={styles.productRequired}>Required: 1</Text>
                   </View>
-                  <View style={[
-                    styles.statusBadge, 
-                    product.isCollected ? styles.availableBadge : styles.shortBadge
-                  ]}>
-                    <Text style={product.isCollected ? styles.availableText : styles.shortText}>
-                      {product.isCollected ? "Available" : "Short"}
+                  <View
+                    style={[
+                      styles.statusBadge,
+                      product.isCollected
+                        ? styles.availableBadge
+                        : styles.shortBadge,
+                    ]}
+                  >
+                    <Text
+                      style={
+                        product.isCollected
+                          ? styles.availableText
+                          : styles.shortText
+                      }
+                    >
+                      {product.isCollected ? "Collected" : "To Collect"}
                     </Text>
                   </View>
                 </View>
               ))}
-              
+
               <View style={styles.productActions}>
-                <Pressable style={styles.outlineButton} onPress={handleCollectStock}>
+                <Pressable
+                  style={styles.outlineButton}
+                  onPress={handleCollectStock}
+                >
                   <Package size={16} color={Colors.light.text} />
                   <Text style={styles.outlineButtonText}>Collect Stock</Text>
-                </Pressable>
-                
-                <Pressable style={styles.outlineButton}>
-                  <Book size={16} color={Colors.light.text} />
-                  <Text style={styles.outlineButtonText}>Installation Guides</Text>
                 </Pressable>
               </View>
             </>
@@ -370,21 +429,21 @@ export default function JobDetailScreen() {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Customer Information</Text>
           <Text style={styles.customerName}>{job.customer.name}</Text>
-          
+
           <ContactRow
             icon={<Phone size={20} color={Colors.light.gray[600]} />}
             text={job.customer.phone}
             onPress={() => handleCall(job.customer.phone)}
             buttonColor="#4CD964"
           />
-          
+
           <ContactRow
             icon={<Mail size={20} color={Colors.light.gray[600]} />}
             text={job.customer.email}
             onPress={() => handleEmail(job.customer.email)}
             buttonColor="#4CD964"
           />
-          
+
           <ContactRow
             icon={<MapPin size={20} color={Colors.light.gray[600]} />}
             text={job.customer.address}
@@ -396,32 +455,39 @@ export default function JobDetailScreen() {
         {/* Contract Status */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Contract Status</Text>
-          
+
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Status:</Text>
-            <Text style={styles.contractStatus}>
-              {job.contractSent ? "Sent" : "Not Sent"}
-            </Text>
+           <StatusBadge status={job.contractSent ? "sent" : "not_sent"} size="medium" />
           </View>
-          
+
           {!job.contractSent && (
-            <Pressable style={styles.contractButton} onPress={handleSendContract}>
+            <Pressable
+              style={styles.contractButton}
+              onPress={handleSendContract}
+            >
               <FileText size={16} color={Colors.light.text} />
-              <Text style={styles.contractButtonText}>Send Contract to Customer</Text>
+              <Text style={styles.contractButtonText}>
+                Send Contract to Customer
+              </Text>
             </Pressable>
           )}
         </View>
 
         {/* Job Completion */}
         <View style={styles.card}>
-          <Pressable 
+          <Pressable
             style={styles.expandableHeader}
             onPress={() => setCompletionExpanded(!completionExpanded)}
           >
             <Text style={styles.cardTitle}>Job Completion</Text>
-            {completionExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+            {completionExpanded ? (
+              <ChevronUp size={20} />
+            ) : (
+              <ChevronDown size={20} />
+            )}
           </Pressable>
-          
+
           {completionExpanded && (
             <>
               {job.installationPhotos && job.installationPhotos.length > 0 ? (
@@ -433,7 +499,7 @@ export default function JobDetailScreen() {
               ) : (
                 <Text style={styles.noPhotosText}>No photos uploaded yet</Text>
               )}
-              
+
               <Pressable style={styles.uploadButton} onPress={handleTakePhoto}>
                 <Camera size={20} color={Colors.light.primary} />
                 <Text style={styles.uploadButtonText}>Upload Photos</Text>
@@ -443,7 +509,7 @@ export default function JobDetailScreen() {
         </View>
 
         {/* Mark as Complete Button */}
-        {job.status !== "completed" && (
+        {job.installationPhotos && job.installationPhotos.length > 0 && (
           <Pressable style={styles.completeButton} onPress={handleMarkComplete}>
             <Text style={styles.completeButtonText}>Mark as Complete</Text>
           </Pressable>
@@ -590,7 +656,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.light.text,
     marginLeft: 12,
-    width: '80%',
+    width: "80%",
   },
   contactButton: {
     width: 40,

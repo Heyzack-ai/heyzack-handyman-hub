@@ -6,6 +6,7 @@ import StatusBadge from "./StatusBadge";
 import { Job } from "@/types/job";
 import Colors from "@/constants/colors";
 import { useJobStore } from "@/store/job-store";
+import StarRatingDisplay from 'react-native-star-rating-widget';
 
 type JobCardProps = {
   job: Job;
@@ -15,6 +16,11 @@ type JobCardProps = {
 export default function JobCard({ job, disableNavigation = false }: JobCardProps) {
   const router = useRouter();
   const { jobs } = useJobStore();
+
+  // Add a hardcoded rating for completed jobs if not present
+  if (job.status === "completed" && job.rating === undefined) {
+    job.rating = 4.5;
+  }
 
   const handlePress = () => {
     if (disableNavigation) {
@@ -27,13 +33,37 @@ export default function JobCard({ job, disableNavigation = false }: JobCardProps
       const jobExists = jobs.some(j => j.id === job.id);
       
       if (jobExists) {
-        console.log("Navigating to job:", job.id);
         router.push(`/jobs/${job.id}`);
       } else {
-        console.log("Job not found in store:", job.id);
         Alert.alert("Error", "Job not found");
       }
     }
+  };
+
+  // Render star rating (only for completed jobs)
+  const renderRating = () => {
+    // Only show rating for completed jobs
+    if (job.status !== "completed") {
+      return null;
+    }
+    
+    // Default rating value if not present
+    const rating = job.rating !== undefined ? job.rating : 4.5;
+    
+    return (
+      <View style={styles.ratingContainer}>
+        <StarRatingDisplay
+          rating={4.5}
+          onChange={() => {}}
+          starSize={22}
+          starStyle={{ marginRight: -4 }}
+          maxStars={5}
+          // style={{borderWidth: 1, borderColor: "red", padding: 0, marginLeft: 0}}
+
+        />
+        <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
+      </View>
+    );
   };
 
   return (
@@ -63,15 +93,19 @@ export default function JobCard({ job, disableNavigation = false }: JobCardProps
         </Text>
       </View>
       
-      <View style={styles.footer}>
-        <View style={styles.footerItem}>
-          <Calendar size={16} color={Colors.light.gray[500]} />
-          <Text style={styles.footerText}>{job.scheduledDate}</Text>
+      <View style={styles.scheduleContainer}>
+        <View style={styles.scheduleRow}>
+          <View style={styles.footerItem}>
+            <Calendar size={16} color={Colors.light.gray[500]} />
+            <Text style={styles.footerText}>{job.scheduledDate}</Text>
+          </View>
+          <View style={styles.footerItem}>
+            <Clock size={16} color={Colors.light.gray[500]} />
+            <Text style={styles.footerText}>{job.scheduledTime}</Text>
+          </View>
         </View>
-        <View style={styles.footerItem}>
-          <Clock size={16} color={Colors.light.gray[500]} />
-          <Text style={styles.footerText}>{job.scheduledTime}</Text>
-        </View>
+        
+        {renderRating()}
       </View>
     </Pressable>
   );
@@ -120,18 +154,36 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.light.gray[600],
   },
-  footer: {
+  scheduleContainer: {
+    marginTop: 4,
+  },
+  scheduleRow: {
     flexDirection: "row",
     alignItems: "center",
+    marginBottom: 8,
   },
   footerItem: {
     flexDirection: "row",
     alignItems: "center",
-    marginRight: 12,
+    marginRight: 16,
   },
   footerText: {
     fontSize: 12,
     color: Colors.light.gray[600],
     marginLeft: 4,
+  },
+  ratingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+    borderTopWidth: 1,
+    borderTopColor: Colors.light.gray[300],
+    paddingTop: 8,
+  },
+  ratingText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: Colors.light.gray[700],
+    marginLeft: 8,
   },
 });

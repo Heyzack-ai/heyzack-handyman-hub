@@ -4,6 +4,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { DevToolsProvider } from "../dev-tools";
 
 
 export const unstable_settings = {
@@ -38,23 +39,25 @@ export default function RootLayout() {
     return null;
   }
 
-  return <RootLayoutNav queryClient={queryClient} />;
+  return (
+    <DevToolsProvider>
+      <RootLayoutNav queryClient={queryClient} />
+    </DevToolsProvider>
+  );
 }
 
 function RootLayoutNav({ queryClient }: { queryClient: QueryClient }) {
   return (
-
-      <QueryClientProvider client={queryClient}>
-        <Stack
-          screenOptions={{
-            headerShown: false,
-          }}
-        >
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="notifications" options={{ headerShown: false }} />
-          <Stack.Screen name="modal" options={{ presentation: "modal" }} />
-        </Stack>
-      </QueryClientProvider>
-
+    <QueryClientProvider client={queryClient}>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+        }}
+      >
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="notifications" options={{ headerShown: false }} />
+        <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+      </Stack>
+    </QueryClientProvider>
   );
 }

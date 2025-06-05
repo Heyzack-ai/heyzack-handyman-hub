@@ -10,7 +10,7 @@ import {
   Platform,
 } from "react-native";
 import { Stack, useRouter, useLocalSearchParams } from "expo-router";
-import { ArrowLeft, CheckCircle, AlertCircle, Package, Camera } from "lucide-react-native";
+import { ArrowLeft, CheckCircle, AlertCircle, Package, Camera, Book } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
 import { useJobStore } from "@/store/job-store";
@@ -172,6 +172,13 @@ export default function CollectStockScreen() {
                 >
                   <Camera size={16} color={Colors.light.text} />
                   <Text style={styles.collectButtonText}>Upload Photo & Collect</Text>
+                </Pressable>
+
+                <Pressable style={[styles.collectButton, { marginTop: 8 }]} onPress={() => router.push(`/jobs/guides/${product.id}`)}>
+                  <Book size={16} color={Colors.light.text} />
+                  <Text style={styles.collectButtonText}>
+                    Installation Guides
+                  </Text>
                 </Pressable>
               </View>
             );

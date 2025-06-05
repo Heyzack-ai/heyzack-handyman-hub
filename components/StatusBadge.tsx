@@ -21,6 +21,10 @@ export default function StatusBadge({ status, size = "medium" }: StatusBadgeProp
         return Colors.light.primary;
       case "completed":
         return Colors.light.success;
+      case "sent":
+        return Colors.light.success;
+      case "not_sent":
+        return Colors.light.error;
       default:
         return Colors.light.gray[500];
     }
@@ -38,6 +42,10 @@ export default function StatusBadge({ status, size = "medium" }: StatusBadgeProp
         return "In Progress";
       case "completed":
         return "Completed";
+      case "sent":
+        return "Sent";
+      case "not_sent":
+        return "Not Sent";
       default:
         return "Unknown";
     }
