@@ -15,33 +15,62 @@ import {
 import { useRouter } from "expo-router";
 import { Eye, EyeOff } from "lucide-react-native";
 import Colors from "@/constants/colors";
-import { authClient } from "@/lib/auth-client";
+import { useAuth } from "@/lib/auth-context";
+import { z } from "zod";
+
+// Define the validation schema
+const signInSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
+
+// Type for form errors
+type FormErrors = {
+  email?: string;
+  password?: string;
+};
 
 export default function SignInScreen() {
   const router = useRouter();
+  const { signIn } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({});
+
+  const validateForm = (): boolean => {
+    try {
+      signInSchema.parse({ email, password });
+      setErrors({});
+      return true;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const newErrors: FormErrors = {};
+        error.errors.forEach((err) => {
+          const path = err.path[0] as keyof FormErrors;
+          newErrors[path] = err.message;
+        });
+        setErrors(newErrors);
+      }
+      return false;
+    }
+  };
 
   const handleSignIn = async () => {
-    if (!email || !password) {
+    if (!validateForm()) {
       return;
     }
 
     setIsLoading(true);
-    
-    const request = {
-      email,
-      password,
-    }
 
-    const {error} = await authClient.signIn.email(request);
-    setIsLoading(false);
-    if (error) {  
-      Alert.alert("Error", error.message);
-    } else {
-      router.replace("/(tabs)");
+    try {
+      await signIn(email, password);
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Error", error instanceof Error ? error.message : "An unknown error occurred");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -77,24 +106,35 @@ export default function SignInScreen() {
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Email</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, errors.email && styles.inputError]}
                 placeholder="Enter your email"
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  if (errors.email) {
+                    setErrors((prev) => ({ ...prev, email: undefined }));
+                  }
+                }}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoComplete="email"
               />
+              {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
             </View>
 
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Password</Text>
-              <View style={styles.passwordContainer}>
+              <View style={[styles.passwordContainer, errors.password && styles.inputError]}>
                 <TextInput
                   style={styles.passwordInput}
                   placeholder="Enter your password"
                   value={password}
-                  onChangeText={setPassword}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    if (errors.password) {
+                      setErrors((prev) => ({ ...prev, password: undefined }));
+                    }
+                  }}
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                 />
@@ -109,6 +149,7 @@ export default function SignInScreen() {
                   )}
                 </Pressable>
               </View>
+              {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
             </View>
 
             <Pressable onPress={handleForgotPassword} style={styles.forgotPassword}>
@@ -260,5 +301,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: Colors.light.primary,
+  },
+  inputError: {
+    borderColor: Colors.light.error,
+  },
+  errorText: {
+    color: Colors.light.error,
+    fontSize: 12,
+    marginTop: 4,
   },
 });

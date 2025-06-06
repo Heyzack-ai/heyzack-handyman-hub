@@ -16,9 +16,34 @@ import { Eye, EyeOff, ArrowLeft } from "lucide-react-native";
 import Colors from "@/constants/colors";
 import { Image } from "expo-image";
 import { authClient } from "@/lib/auth-client";
+import { useAuth } from "@/lib/auth-context";
+import { z } from "zod";
+
+// Define the validation schema
+const signUpSchema = z.object({
+  fullName: z.string().min(1, "Full name is required"),
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number"),
+  confirmPassword: z.string().min(1, "Please confirm your password"),
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+});
+
+// Type for form errors
+type FormErrors = {
+  fullName?: string;
+  email?: string;
+  password?: string;
+  confirmPassword?: string;
+};
 
 export default function SignUpScreen() {
   const router = useRouter();
+  const { signUp } = useAuth();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -26,35 +51,47 @@ export default function SignUpScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({});
+
+  const validateForm = (): boolean => {
+    try {
+      signUpSchema.parse({ fullName, email, password, confirmPassword });
+      setErrors({});
+      return true;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const newErrors: FormErrors = {};
+        error.errors.forEach((err) => {
+          const path = err.path[0] as keyof FormErrors;
+          newErrors[path] = err.message;
+        });
+        setErrors(newErrors);
+      }
+      return false;
+    }
+  };
 
   const handleSignUp = async () => {
-    if (!fullName || !email || !password || !confirmPassword) {
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      // Show error message
+    if (!validateForm()) {
       return;
     }
 
     setIsLoading(true);
 
-    const request ={
-      email,
-      password,
-      name: fullName,
-      role: "partner",
-    } 
-
-    
-     const {error} = await authClient.signUp.email(request);
-     setIsLoading(false);
-     if (error) {
-      Alert.alert("Error", error.message);
-     } else {
-      router.replace("/(tabs)");
-     }
-    
+    try {
+      await signUp({
+        email,
+        password,
+        name: fullName,
+        role: "handyman",
+      });
+      // The auth context will handle the navigation to tabs
+    } catch (error) {
+      console.error('Signup error:', error);
+      Alert.alert("Error", error instanceof Error ? error.message : "An error occurred during signup");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSignIn = () => {
@@ -92,35 +129,52 @@ export default function SignUpScreen() {
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Full Name</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, errors.fullName && styles.inputError]}
                 placeholder="Enter your full name"
                 value={fullName}
-                onChangeText={setFullName}
+                onChangeText={(text) => {
+                  setFullName(text);
+                  if (errors.fullName) {
+                    setErrors((prev) => ({ ...prev, fullName: undefined }));
+                  }
+                }}
                 autoCapitalize="words"
               />
+              {errors.fullName && <Text style={styles.errorText}>{errors.fullName}</Text>}
             </View>
 
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Email</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, errors.email && styles.inputError]}
                 placeholder="Enter your email"
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  if (errors.email) {
+                    setErrors((prev) => ({ ...prev, email: undefined }));
+                  }
+                }}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoComplete="email"
               />
+              {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
             </View>
 
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Password</Text>
-              <View style={styles.passwordContainer}>
+              <View style={[styles.passwordContainer, errors.password && styles.inputError]}>
                 <TextInput
                   style={styles.passwordInput}
                   placeholder="Create a password"
                   value={password}
-                  onChangeText={setPassword}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    if (errors.password) {
+                      setErrors((prev) => ({ ...prev, password: undefined }));
+                    }
+                  }}
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                 />
@@ -135,16 +189,22 @@ export default function SignUpScreen() {
                   )}
                 </Pressable>
               </View>
+              {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
             </View>
 
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Confirm Password</Text>
-              <View style={styles.passwordContainer}>
+              <View style={[styles.passwordContainer, errors.confirmPassword && styles.inputError]}>
                 <TextInput
                   style={styles.passwordInput}
                   placeholder="Confirm your password"
                   value={confirmPassword}
-                  onChangeText={setConfirmPassword}
+                  onChangeText={(text) => {
+                    setConfirmPassword(text);
+                    if (errors.confirmPassword) {
+                      setErrors((prev) => ({ ...prev, confirmPassword: undefined }));
+                    }
+                  }}
                   secureTextEntry={!showConfirmPassword}
                   autoCapitalize="none"
                 />
@@ -159,6 +219,7 @@ export default function SignUpScreen() {
                   )}
                 </Pressable>
               </View>
+              {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
             </View>
 
             <Pressable
@@ -247,6 +308,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.light.text,
     backgroundColor: "white",
+  },
+  inputError: {
+    borderColor: Colors.light.error || 'red',
+  },
+  errorText: {
+    color: Colors.light.error || 'red',
+    fontSize: 12,
+    marginTop: 4,
   },
   passwordContainer: {
     flexDirection: "row",

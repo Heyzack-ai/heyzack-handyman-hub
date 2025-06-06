@@ -5,7 +5,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { DevToolsProvider } from "../dev-tools";
-
+import { AuthProvider } from "@/lib/auth-context";
 
 export const unstable_settings = {
   // Ensure that reloading on `/modal` keeps a back button present.
@@ -20,7 +20,19 @@ export default function RootLayout() {
     ...FontAwesome.font,
   });
 
-  const [queryClient] = useState(() => new QueryClient());
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 5 * 60 * 1000,
+        retry: 2,
+        refetchOnWindowFocus: false,
+        refetchOnMount: false,
+        refetchOnReconnect: false,
+        refetchInterval: false,
+        refetchIntervalInBackground: false,
+      },
+    },
+  });
 
   useEffect(() => {
     if (error) {
@@ -40,13 +52,21 @@ export default function RootLayout() {
   }
 
   return (
-    <DevToolsProvider>
-      <RootLayoutNav queryClient={queryClient} />
-    </DevToolsProvider>
+    <AuthProvider>
+      <DevToolsProvider>
+        <RootLayoutNav queryClient={queryClient} />
+      </DevToolsProvider>
+    </AuthProvider>
   );
 }
 
+
+
+
 function RootLayoutNav({ queryClient }: { queryClient: QueryClient }) {
+
+
+  
   return (
     <QueryClientProvider client={queryClient}>
       <Stack
@@ -57,6 +77,7 @@ function RootLayoutNav({ queryClient }: { queryClient: QueryClient }) {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="notifications" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+        <Stack.Screen name="auth" options={{ headerShown: false }} />
       </Stack>
     </QueryClientProvider>
   );

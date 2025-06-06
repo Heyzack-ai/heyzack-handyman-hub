@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { StyleSheet, Text, View, ScrollView, Pressable, SafeAreaView, Alert } from "react-native";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
+import { useAuth } from "@/lib/auth-context";
 import { 
   Mail, 
   Phone, 
@@ -20,16 +21,25 @@ import {
 } from "lucide-react-native";
 import Colors from "@/constants/colors";
 
+import { useGetUser } from "@/app/api/user/getUser";
+import { authClient } from "@/lib/auth-client";
+
 export default function ProfileScreen() {
   const router = useRouter();
+  const { signOut, deleteAccount } = useAuth();
+
+  const { data: user } = useGetUser();
+
+  console.log("user", user);
+
   
   const technician = {
-    name: "John Doe",
+    name: user?.name,
     role: "Field Service Technician",
-    email: "john.doe@example.com",
+    email: user?.email,
     phone: "+1 (555) 123-4567",
     // location: "San Francisco, CA",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300",
+    avatar: user?.image || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300",
     completedJobs: 128,
     rating: 4.8,
     isVerified: true,
@@ -191,18 +201,41 @@ export default function ProfileScreen() {
             <LogOut size={20} color={Colors.light.error} />,
             "Log Out",
             undefined,
-            () => router.push("/auth/signin")
+            async () => {
+              try {
+                await signOut();
+                // The auth context will automatically redirect to signin
+              } catch (error) {
+                Alert.alert(
+                  "Error",
+                  "Failed to sign out. Please try again."
+                );
+              }
+            }
           )}
           <Pressable 
             style={styles.deleteAccountButton}
-            onPress={() => {
-              // Show delete account confirmation
-              Alert.alert("Delete Account", "Are you sure you want to delete your account?", [
-                { text: "Cancel", style: "cancel" },
-                { text: "Delete", style: "destructive", onPress: () => {
-                  // TODO: Implement delete account logic
-                } },
-              ]);
+            onPress={async () => {
+              try {
+                // Show delete account confirmation
+                const confirmed = await new Promise<boolean>((resolve) => {
+                  Alert.alert(
+                    "Delete Account",
+                    "Are you sure you want to delete your account? This action cannot be undone.",
+                    [
+                      { text: "Cancel", style: "cancel", onPress: () => resolve(false) },
+                      { text: "Delete", style: "destructive", onPress: async () => {
+                        await authClient.deleteUser();
+                        resolve(true);
+                      }
+                      },
+                    ]
+                  );
+                });
+
+              } catch (error) {
+                console.error(error);
+              }
             }}
           >
             <Text style={styles.deleteAccountText}>Delete Account</Text>

@@ -9,31 +9,77 @@ import {
   Platform,
   ScrollView,
   SafeAreaView,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
 import Colors from "@/constants/colors";
+import { authClient } from "@/lib/auth-client";
+import { z } from "zod";
+
+// Define the validation schema
+const forgotPasswordSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+});
+
+// Type for form errors
+type FormErrors = {
+  email?: string;
+};
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({});
 
-  const handleSendCode = () => {
-    if (!email) {
+  const validateForm = (): boolean => {
+    try {
+      forgotPasswordSchema.parse({ email });
+      setErrors({});
+      return true;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const newErrors: FormErrors = {};
+        error.errors.forEach((err) => {
+          const path = err.path[0] as keyof FormErrors;
+          newErrors[path] = err.message;
+        });
+        setErrors(newErrors);
+      }
+      return false;
+    }
+  };
+
+  const handleSendCode = async () => {
+    if (!validateForm()) {
       return;
     }
 
     setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      router.push({
-        pathname: "/auth/verify-code",
-        params: { email }
+    try {
+      const response = await authClient.forgetPassword({
+        email: email,
       });
-    }, 1500);
+
+      console.log("response", response);
+      Alert.alert(
+        "Reset Link Sent",
+        "If an account exists with this email, you will receive a password reset link.",
+        [{ text: "OK", onPress: () => router.replace("/auth/signin") }]
+      );
+    } catch (error) {
+      console.error(error);
+      // Still show success message even on error for security reasons
+      Alert.alert(
+        "Reset Link Sent",
+        "If an account exists with this email, you will receive a password reset link.",
+        [{ text: "OK", onPress: () => router.replace("/auth/signin") }]
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -54,21 +100,27 @@ export default function ForgotPasswordScreen() {
 
           <Text style={styles.title}>Forgot Password</Text>
           <Text style={styles.subtitle}>
-            Enter your email address and we'll send you a code to reset your password
+            Enter your email address and we'll send you a link to your email to reset your password.
           </Text>
 
           <View style={styles.form}>
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Email</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, errors.email && styles.inputError]}
                 placeholder="Enter your email"
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  if (errors.email) {
+                    setErrors((prev) => ({ ...prev, email: undefined }));
+                  }
+                }}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoComplete="email"
               />
+              {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
             </View>
 
             <Pressable
@@ -77,7 +129,7 @@ export default function ForgotPasswordScreen() {
               disabled={isLoading}
             >
               <Text style={styles.buttonText}>
-                {isLoading ? "Sending..." : "Send Code"}
+                {isLoading ? "Sending..." : "Send Reset Link"}
               </Text>
             </Pressable>
           </View>
@@ -143,6 +195,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.light.text,
     backgroundColor: "white",
+  },
+  inputError: {
+    borderColor: Colors.light.error || 'red',
+  },
+  errorText: {
+    color: Colors.light.error || 'red',
+    fontSize: 12,
+    marginTop: 4,
   },
   button: {
     backgroundColor: Colors.light.primary,

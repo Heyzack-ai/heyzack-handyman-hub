@@ -6,6 +6,11 @@ export const auth = betterAuth({
     emailAndPassword: {
         enabled: true, // Enable authentication using email and password.
     },
+    user: {
+        deleteUser: {
+            enabled: true // Enable user deletion
+        }
+    },
     trustedOrigins: [
          // Basic scheme
          "myapp://", 

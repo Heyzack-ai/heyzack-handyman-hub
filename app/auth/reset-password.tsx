@@ -9,21 +9,23 @@ import {
   Platform,
   ScrollView,
   SafeAreaView,
+  Alert,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Eye, EyeOff, ArrowLeft } from "lucide-react-native";
 import Colors from "@/constants/colors";
+import { authClient } from "@/lib/auth-client";
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
-  const { email } = useLocalSearchParams<{ email: string }>();
+  const { token } = useLocalSearchParams<{ token: string }>();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleResetPassword = () => {
+  const handleResetPassword = async () => {
     if (!password || !confirmPassword) {
       return;
     }
@@ -36,10 +38,17 @@ export default function ResetPasswordScreen() {
     setIsLoading(true);
     
     // Simulate API call
-    setTimeout(() => {
+    try {
+      await authClient.resetPassword({
+        token: token,
+        password: password,
+      });
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Error", error instanceof Error ? error.message : "An unknown error occurred");
+    } finally {
       setIsLoading(false);
-      router.push("/auth/reset-success");
-    }, 1500);
+    }
   };
 
   return (
