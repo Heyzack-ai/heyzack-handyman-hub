@@ -23,6 +23,8 @@ import { z } from "zod";
 const signUpSchema = z.object({
   fullName: z.string().min(1, "Full name is required"),
   email: z.string().email("Please enter a valid email address"),
+  phone: z.string()
+    .regex(/^\+33\d{9}$/, "Phone number must be 9 digits after +33"),
   password: z.string()
     .min(8, "Password must be at least 8 characters")
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
@@ -37,6 +39,7 @@ const signUpSchema = z.object({
 type FormErrors = {
   fullName?: string;
   email?: string;
+  phone?: string;
   password?: string;
   confirmPassword?: string;
 };
@@ -46,6 +49,7 @@ export default function SignUpScreen() {
   const { signUp } = useAuth();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("+33"); // Prefilled with France country code
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -55,7 +59,7 @@ export default function SignUpScreen() {
 
   const validateForm = (): boolean => {
     try {
-      signUpSchema.parse({ fullName, email, password, confirmPassword });
+      signUpSchema.parse({ fullName, email, phone, password, confirmPassword });
       setErrors({});
       return true;
     } catch (error) {
@@ -83,9 +87,12 @@ export default function SignUpScreen() {
         email,
         password,
         name: fullName,
+        phone, // Include phone number in signup data
         role: "handyman",
       });
-      // The auth context will handle the navigation to tabs
+      
+      // Navigate to skills page after successful signup
+      router.replace("/auth/add-skills");
     } catch (error) {
       console.error('Signup error:', error);
       Alert.alert("Error", error instanceof Error ? error.message : "An error occurred during signup");
@@ -96,6 +103,29 @@ export default function SignUpScreen() {
 
   const handleSignIn = () => {
     router.push("/auth/signin");
+  };
+
+  // Handle phone number input with validation
+  const handlePhoneChange = (text: string) => {
+    // Ensure the country code remains
+    if (!text.startsWith("+33")) {
+      text = "+33" + text.replace(/^\+33/, "");
+    }
+    
+    // Only allow digits after +33
+    const digits = text.substring(3).replace(/\D/g, "");
+    
+    // Limit to 9 digits after +33
+    const limitedDigits = digits.substring(0, 9);
+    
+    // Set the final value
+    const finalValue = "+33" + limitedDigits;
+    setPhone(finalValue);
+    
+    // Clear error when typing
+    if (errors.phone) {
+      setErrors((prev) => ({ ...prev, phone: undefined }));
+    }
   };
 
   return (
@@ -160,6 +190,19 @@ export default function SignUpScreen() {
                 autoComplete="email"
               />
               {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Contact Number</Text>
+              <TextInput
+                style={[styles.input, errors.phone && styles.inputError]}
+                placeholder="Enter your contact number"
+                value={phone}
+                onChangeText={handlePhoneChange}
+                keyboardType="phone-pad"
+              />
+              {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
+             
             </View>
 
             <View style={styles.inputContainer}>
@@ -366,5 +409,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: Colors.light.primary,
+  },
+  helperText: {
+    fontSize: 12,
+    color: Colors.light.gray[500],
+    marginTop: 4,
   },
 });

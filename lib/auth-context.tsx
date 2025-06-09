@@ -5,7 +5,7 @@ import * as SecureStore from 'expo-secure-store';
 
 type AuthContextType = {
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (data: { email: string; password: string; name: string; role: string }) => Promise<void>;
+  signUp: (data: { email: string; phone: string; password: string; name: string; role: string }) => Promise<void>;
   deleteAccount: (password?: string) => Promise<void>;
   signOut: () => Promise<void>;
   isLoading: boolean;
@@ -128,7 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signUp = async (data: { email: string; password: string; name: string; role: string }) => {
+  const signUp = async (data: { email: string; phone: string; password: string; name: string; role: string }) => {
     try {
       const response = await authClient.signUp.email(data);
       console.log('Sign up response:', response);
@@ -143,6 +143,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // After successful signup, sign in the user
       await signIn(data.email, data.password);
+      
+      // Don't navigate automatically - let the signup component handle navigation
+      // The navigation will be handled in the signup component
     } catch (error) {
       console.error('Sign up error:', error);
       setIsAuthenticated(false);
