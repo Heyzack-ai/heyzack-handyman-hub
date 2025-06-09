@@ -337,8 +337,7 @@ export default function JobDetailScreen() {
               {job.status.charAt(0).toUpperCase() + job.status.slice(1).toLowerCase()}
               </Text>
             </View> */}
-        <StatusBadge status={job.status} size="medium" />
-
+            <StatusBadge status={job.status} size="medium" />
           </View>
         </View>
 
@@ -458,7 +457,10 @@ export default function JobDetailScreen() {
 
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Status:</Text>
-           <StatusBadge status={job.contractSent ? "sent" : "not_sent"} size="medium" />
+            <StatusBadge
+              status={job.contractSent ? "sent" : "not_sent"}
+              size="medium"
+            />
           </View>
 
           {!job.contractSent && (
@@ -476,36 +478,24 @@ export default function JobDetailScreen() {
 
         {/* Job Completion */}
         <View style={styles.card}>
-          <Pressable
-            style={styles.expandableHeader}
-            onPress={() => setCompletionExpanded(!completionExpanded)}
-          >
+          <View style={styles.expandableHeader}>
             <Text style={styles.cardTitle}>Job Completion</Text>
-            {completionExpanded ? (
-              <ChevronUp size={20} />
-            ) : (
-              <ChevronDown size={20} />
-            )}
-          </Pressable>
+          </View>
 
-          {completionExpanded && (
-            <>
-              {job.installationPhotos && job.installationPhotos.length > 0 ? (
-                <View style={styles.photosList}>
-                  <Text style={styles.photosTitle}>
-                    {job.installationPhotos.length} photo(s) uploaded
-                  </Text>
-                </View>
-              ) : (
-                <Text style={styles.noPhotosText}>No photos uploaded yet</Text>
-              )}
-
-              <Pressable style={styles.uploadButton} onPress={handleTakePhoto}>
-                <Camera size={20} color={Colors.light.primary} />
-                <Text style={styles.uploadButtonText}>Upload Photos</Text>
-              </Pressable>
-            </>
+          {job.installationPhotos && job.installationPhotos.length > 0 ? (
+            <View style={styles.photosList}>
+              <Text style={styles.photosTitle}>
+                {job.installationPhotos?.length} photo(s) uploaded
+              </Text>
+            </View>
+          ) : (
+            <Text style={styles.noPhotosText}>No photos uploaded yet</Text>
           )}
+
+          <Pressable style={styles.uploadButton} onPress={handleTakePhoto}>
+            <Camera size={20} color={Colors.light.primary} />
+            <Text style={styles.uploadButtonText}>Upload Photos</Text>
+          </Pressable>
         </View>
 
         {/* Mark as Complete Button */}

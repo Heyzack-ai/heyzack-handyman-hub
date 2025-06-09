@@ -8,7 +8,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Image,
   SafeAreaView,
   Alert,
 } from "react-native";
@@ -17,6 +16,7 @@ import { Eye, EyeOff } from "lucide-react-native";
 import Colors from "@/constants/colors";
 import { useAuth } from "@/lib/auth-context";
 import { z } from "zod";
+import { Image } from "expo-image";
 
 // Define the validation schema
 const signInSchema = z.object({
@@ -68,7 +68,10 @@ export default function SignInScreen() {
       await signIn(email, password);
     } catch (error) {
       console.error(error);
-      Alert.alert("Error", error instanceof Error ? error.message : "An unknown error occurred");
+      Alert.alert(
+        "Error",
+        error instanceof Error ? error.message : "An unknown error occurred"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -94,7 +97,11 @@ export default function SignInScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.logoContainer}>
-           <Image source={require('@/assets/images/logo.png')} style={styles.logo} />
+            <Image
+              source={require("@/assets/images/logo.png")}
+              style={styles.logo}
+              contentFit="contain"
+            />
           </View>
 
           <Text style={styles.title}>Sign In</Text>
@@ -119,12 +126,19 @@ export default function SignInScreen() {
                 autoCapitalize="none"
                 autoComplete="email"
               />
-              {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+              {errors.email && (
+                <Text style={styles.errorText}>{errors.email}</Text>
+              )}
             </View>
 
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Password</Text>
-              <View style={[styles.passwordContainer, errors.password && styles.inputError]}>
+              <View
+                style={[
+                  styles.passwordContainer,
+                  errors.password && styles.inputError,
+                ]}
+              >
                 <TextInput
                   style={styles.passwordInput}
                   placeholder="Enter your password"
@@ -149,10 +163,15 @@ export default function SignInScreen() {
                   )}
                 </Pressable>
               </View>
-              {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
+              {errors.password && (
+                <Text style={styles.errorText}>{errors.password}</Text>
+              )}
             </View>
 
-            <Pressable onPress={handleForgotPassword} style={styles.forgotPassword}>
+            <Pressable
+              onPress={handleForgotPassword}
+              style={styles.forgotPassword}
+            >
               <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
             </Pressable>
 
@@ -199,7 +218,7 @@ const styles = StyleSheet.create({
   },
   logo: {
     width: 180,
-    resizeMode: 'contain',
+    height: 80, // Explicit height
   },
   logoText: {
     fontSize: 20,

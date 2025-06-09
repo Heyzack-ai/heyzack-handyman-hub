@@ -82,7 +82,7 @@ export default function ServiceAreaScreen() {
     setTimeout(() => {
       setIsSaving(false);
       Alert.alert("Success", "Service area updated successfully");
-      router.back();
+      router.replace("/(tabs)");
     }, 1000);
   };
 

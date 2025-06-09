@@ -1,23 +1,32 @@
 import React, { useEffect } from "react";
-import { StyleSheet, Text, View, ScrollView, Pressable, SafeAreaView, Alert } from "react-native";
+import {
+  StyleSheet,
+  Text,
+  View,
+  ScrollView,
+  Pressable,
+  SafeAreaView,
+  Alert,
+} from "react-native";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth-context";
-import { 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Settings, 
-  HelpCircle, 
-  LogOut, 
-  Edit, 
-  User, 
-  Clock, 
-  Globe, 
-  Shield, 
-  Link, 
+import {
+  Mail,
+  Phone,
+  MapPin,
+  Settings,
+  HelpCircle,
+  LogOut,
+  Edit,
+  User,
+  Clock,
+  Globe,
+  Shield,
+  Link,
   Languages,
-  CreditCard
+  CreditCard,
+  Banknote,
 } from "lucide-react-native";
 import Colors from "@/constants/colors";
 
@@ -32,18 +41,18 @@ export default function ProfileScreen() {
 
   console.log("user", user);
 
-  
   const technician = {
     name: user?.name,
-    role: "Field Service Technician",
     email: user?.email,
     phone: "+1 (555) 123-4567",
     // location: "San Francisco, CA",
-    avatar: user?.image || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300",
+    avatar:
+      user?.image ||
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300",
     completedJobs: 128,
     rating: 4.8,
     isVerified: true,
-    skills: ["Electrical work", "HVAC", "Glass work"]
+    skills: ["Electrical work", "HVAC", "Glass work"],
   };
 
   const renderMenuItem = (
@@ -53,10 +62,10 @@ export default function ProfileScreen() {
     onPress?: () => void,
     rightElement?: React.ReactNode
   ) => (
-    <Pressable 
+    <Pressable
       style={({ pressed }) => [
         styles.menuItem,
-        pressed && styles.menuItemPressed
+        pressed && styles.menuItemPressed,
       ]}
       onPress={onPress}
     >
@@ -71,7 +80,11 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.header}>
           <View style={styles.avatarContainer}>
             <Image
@@ -87,9 +100,8 @@ export default function ProfileScreen() {
             )}
           </View>
           <Text style={styles.name}>{technician.name}</Text>
-          <Text style={styles.role}>{technician.role}</Text>
-          
-          <Pressable 
+
+          <Pressable
             style={styles.editProfileButton}
             onPress={() => router.push("/profile/edit")}
           >
@@ -133,6 +145,13 @@ export default function ProfileScreen() {
             "Payments",
             "View your payments",
             () => router.push("/profile/payments")
+          )}
+
+          {renderMenuItem(
+            <Banknote size={20} color={Colors.light.primary} />,
+            "Bank Account",
+            "Your bank accounts",
+            () => router.push("/profile/bankAccounts")
           )}
         </View>
 
@@ -206,14 +225,11 @@ export default function ProfileScreen() {
                 await signOut();
                 // The auth context will automatically redirect to signin
               } catch (error) {
-                Alert.alert(
-                  "Error",
-                  "Failed to sign out. Please try again."
-                );
+                Alert.alert("Error", "Failed to sign out. Please try again.");
               }
             }
           )}
-          <Pressable 
+          <Pressable
             style={styles.deleteAccountButton}
             onPress={async () => {
               try {
@@ -223,16 +239,29 @@ export default function ProfileScreen() {
                     "Delete Account",
                     "Are you sure you want to delete your account? This action cannot be undone.",
                     [
-                      { text: "Cancel", style: "cancel", onPress: () => resolve(false) },
-                      { text: "Delete", style: "destructive", onPress: async () => {
-                        await authClient.deleteUser();
-                        resolve(true);
-                      }
+                      {
+                        text: "Cancel",
+                        style: "cancel",
+                        onPress: () => resolve(false),
+                      },
+                      {
+                        text: "Delete",
+                        style: "destructive",
+                        onPress: async () => {
+                          const response = await authClient.deleteUser();
+                          if (response.data?.success) {
+                            console.log("response", response);
+                            router.replace("/auth/signin");
+                            resolve(true);
+                          } else {
+                            console.log("Error", response);
+                            resolve(false);
+                          }
+                        },
                       },
                     ]
                   );
                 });
-
               } catch (error) {
                 console.error(error);
               }
