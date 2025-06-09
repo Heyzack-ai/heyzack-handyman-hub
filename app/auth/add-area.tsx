@@ -11,13 +11,16 @@ import {
   Keyboard,
 } from "react-native";
 import Slider from '@react-native-community/slider';
-import { Stack, useRouter } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { MapPin, Search } from "lucide-react-native";
 import Colors from "@/constants/colors";
 import Header from "@/components/Header";
+import { useAuth } from "@/lib/auth-context";
 
 export default function ServiceAreaScreen() {
   const router = useRouter();
+  const { signIn } = useAuth();
+  const { email, password } = useLocalSearchParams();
   const [zipCode, setZipCode] = useState("94105");
   const [radius, setRadius] = useState(25);
   const [radiusInput, setRadiusInput] = useState("25");
@@ -75,15 +78,24 @@ export default function ServiceAreaScreen() {
     Alert.alert("Search", `Searching for location with zipcode: ${zipCode}`);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setIsSaving(true);
     
     // Simulate API call
-    setTimeout(() => {
+        
+      
+    try {
+      await signIn(email as string, password as string);
+    } catch (error) {
+      console.error(error);
+      Alert.alert(
+        "Error",
+        error instanceof Error ? error.message : "An unknown error occurred"
+      );
+    } finally {
       setIsSaving(false);
-      Alert.alert("Success", "Service area updated successfully");
-      router.replace("/(tabs)");
-    }, 1000);
+    }
+    
   };
 
   return (

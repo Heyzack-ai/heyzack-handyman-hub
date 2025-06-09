@@ -44,7 +44,7 @@ export default function ProfileScreen() {
   const technician = {
     name: user?.name,
     email: user?.email,
-    phone: "+1 (555) 123-4567",
+    phone: user?.phone,
     // location: "San Francisco, CA",
     avatar:
       user?.image ||
@@ -165,7 +165,7 @@ export default function ProfileScreen() {
           {renderMenuItem(
             <Phone size={20} color={Colors.light.primary} />,
             "Phone",
-            technician.phone
+            technician?.phone || "No phone number"
           )}
           {/* {renderMenuItem(
             <MapPin size={20} color={Colors.light.primary} />,
@@ -248,15 +248,8 @@ export default function ProfileScreen() {
                         text: "Delete",
                         style: "destructive",
                         onPress: async () => {
-                          const response = await authClient.deleteUser();
-                          if (response.data?.success) {
-                            console.log("response", response);
-                            router.replace("/auth/signin");
-                            resolve(true);
-                          } else {
-                            console.log("Error", response);
-                            resolve(false);
-                          }
+                          await deleteAccount();
+                          resolve(true);
                         },
                       },
                     ]

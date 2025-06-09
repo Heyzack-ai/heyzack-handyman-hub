@@ -10,6 +10,7 @@ type User = {
   createdAt: Date;
   updatedAt: Date;
   image?: string | null;
+  phone?: string | null;
 };
 
 /**

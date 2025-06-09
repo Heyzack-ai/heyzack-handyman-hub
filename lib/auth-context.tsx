@@ -24,15 +24,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     checkAuth();
   }, []);
 
+  // useEffect(() => {
+  //   const inAuthGroup = segments[0]?.startsWith('auth');
+    
+  //   if (!isLoading) {
+  //     if (isAuthenticated && inAuthGroup) {
+  //       // Redirect authenticated users to home if they're in auth group
+  //       router.replace('/(tabs)');
+  //     } else if (!isAuthenticated && !inAuthGroup) {
+  //       // Redirect unauthenticated users to sign in
+  //       router.replace('/auth/signin');
+  //     }
+  //   }
+  // }, [isAuthenticated, segments, isLoading]);
+
   useEffect(() => {
     const inAuthGroup = segments[0]?.startsWith('auth');
     
     if (!isLoading) {
-      if (isAuthenticated && inAuthGroup) {
-        // Redirect authenticated users to home if they're in auth group
-        router.replace('/(tabs)');
+      if (isAuthenticated) {
+        // Allow navigation to add-skills even when authenticated
+        if (segments[0] === 'auth' && segments[1] === 'add-skills') {
+          return;
+        }
+        if (inAuthGroup) {
+          router.replace('/(tabs)');
+        }
       } else if (!isAuthenticated && !inAuthGroup) {
-        // Redirect unauthenticated users to sign in
         router.replace('/auth/signin');
       }
     }
@@ -141,11 +159,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error('No data received from sign up');
       }
 
-      // After successful signup, sign in the user
-      await signIn(data.email, data.password);
-      
-      // Don't navigate automatically - let the signup component handle navigation
-      // The navigation will be handled in the signup component
+            // The navigation will be handled in the signup component
     } catch (error) {
       console.error('Sign up error:', error);
       setIsAuthenticated(false);
@@ -154,47 +168,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const deleteAccount = async (password?: string) => {
-    try {
-      // First verify we have an active session
-      const session = await authClient.getSession();
-      console.log('Current session:', session);
-
-      if (!session.data) {
-        throw new Error('No active session found');
-      }
-
-      // Ensure we're properly authenticated
-      if (!isAuthenticated) {
-        throw new Error('Not authenticated');
-      }
-
-      // Make a direct API call to delete the user
-      const response = await fetch('https://api.dev.heyzack.ai/api/v1/auth/user', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.data.session.token}`
-        },
-        body: JSON.stringify({ password })
-      });
-
-      console.log('Delete account response:', response);
-
-      if (!response.ok) {
-        const error = await response.json();
-        console.log('Delete account error:', error);
-        throw new Error(error.message || 'Failed to delete account');
-      }
-
-      // Only clear session and redirect after successful deletion
-      await clearSessionData();
-      setIsAuthenticated(false);
-      router.replace('/auth/signin');
-    } catch (error) {
-      console.error('Delete account error:', error);
-      // Don't clear session on error
-      throw error;
-    }
+   try {
+    await authClient.deleteUser();
+    await clearSessionData();
+    setIsAuthenticated(false);
+    router.replace('/auth/signin');
+   } catch (error) {
+    console.error('Delete account error:', error);
+    throw error;
+   }
   };
 
   const signOut = async () => {

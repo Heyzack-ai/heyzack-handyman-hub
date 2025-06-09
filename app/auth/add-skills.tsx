@@ -8,13 +8,14 @@ import {
   Alert,
   SafeAreaView,
 } from "react-native";
-import { Stack, useRouter } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { Plus, X } from "lucide-react-native";
 import Colors from "@/constants/colors";
 import Header from "@/components/Header";
 
 export default function SkillsScreen() {
   const router = useRouter();
+  const { email, password } = useLocalSearchParams();
   const [selectedSkills, setSelectedSkills] = useState([
     "Electrical work",
     "HVAC",
@@ -56,9 +57,15 @@ export default function SkillsScreen() {
     setTimeout(() => {
       setIsSaving(false);
       Alert.alert("Success", "Skills updated successfully");
-      router.push("/auth/add-area");
-    }, 1000);
-  };
+        router.push({
+          pathname: "/auth/add-area",
+          params: {
+            email,
+            password,
+          },
+        });
+        }, 1000);
+    };
 
   return (
     <SafeAreaView style={styles.safeArea}>
