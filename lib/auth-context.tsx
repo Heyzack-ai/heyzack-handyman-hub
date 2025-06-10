@@ -104,6 +104,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await authClient.signIn.email({ email, password });
       console.log('Sign in response:', response);
+
+      await SecureStore.setItemAsync('auth_token', response.data?.token || '');
       
       if (response.error) {
         throw new Error(response.error.message);
