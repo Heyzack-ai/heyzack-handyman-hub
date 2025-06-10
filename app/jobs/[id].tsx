@@ -55,9 +55,9 @@ export default function JobDetailScreen() {
   } = useJobStore();
 
   useEffect(() => {
-    console.log("Job details page - ID param:", id);
+    // console.log("Job details page - ID param:", id);
     if (id) {
-      console.log("Setting current job ID:", id);
+      // console.log("Setting current job ID:", id);
       setCurrentJobId(id);
 
       // Directly find the job from the jobs array

@@ -1,31 +1,33 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, View, Pressable, ScrollView, Alert, SafeAreaView } from "react-native";
 import { useRouter } from "expo-router";
 import { Stack } from "expo-router";
 import { CreditCard, Plus, Trash2 } from "lucide-react-native";
 import Colors from "@/constants/colors";
 import Header from "@/components/Header";
+import { useGetBank } from "../api/user/addBank";
 
 export default function BankAccountsScreen() {
   const router = useRouter();
-  
-  // Mock data for bank accounts
-  const bankAccounts = [
-    {
-      id: "1",
-      bankName: "Chase Bank",
-      accountType: "Checking",
-      accountNumber: "****6789",
-      isDefault: true
-    },
-    {
-      id: "2",
-      bankName: "Bank of America",
-      accountType: "Savings",
-      accountNumber: "****4321",
-      isDefault: false
+  const { data: bankData, isLoading } = useGetBank();
+
+  useEffect(() => {
+    if (bankData) {
+     
+      bankData.data.bank_details.forEach((bank: any) => {
+        setBankAccounts(prev => [...prev, {
+          id: bank.id,
+          bankName: bank.bank_name,
+          accountType: bank.type,
+          accountNumber: bank.iban_number,
+          isDefault: bank.is_default
+        }]);
+      });
     }
-  ];
+  }, [bankData]);
+
+  // Mock data for bank accounts
+  const [bankAccounts, setBankAccounts] = useState<any[]>([]);
 
   const handleDeleteAccount = (id: string) => {
     Alert.alert(

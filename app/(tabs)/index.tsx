@@ -9,6 +9,7 @@ import Calendar from "@/components/Calendar";
 import Colors from "@/constants/colors";
 import Job from "@/components/Job";
 import {Bell} from 'lucide-react-native';
+import * as SecureStore from 'expo-secure-store';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -18,6 +19,8 @@ export default function HomeScreen() {
   );
   
   const today = new Date().toISOString().split("T")[0];
+
+  const token = SecureStore.getItemAsync('auth_token');
   
   // Filter jobs by selected date
   const selectedDateJobs = jobs.filter(job => job.scheduledDate === selectedDate);

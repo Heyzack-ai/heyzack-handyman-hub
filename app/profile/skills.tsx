@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
   Text,
@@ -12,16 +12,31 @@ import { Stack, useRouter } from "expo-router";
 import { Plus, X } from "lucide-react-native";
 import Colors from "@/constants/colors";
 import Header from "@/components/Header";
+import { useAddSkills, useGetSkills } from "@/app/api/user/addskills";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function SkillsScreen() {
   const router = useRouter();
-  const [selectedSkills, setSelectedSkills] = useState([
-    "Electrical work",
-    "HVAC",
-    "Glass work"
-  ]);
+  const queryClient = useQueryClient();
+  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   
+  const { data: skillsData, isLoading } = useGetSkills();
+
+  useEffect(() => {
+    console.log("skillsData", skillsData);
+    if (skillsData?.data?.skills) {
+      try {
+        const parsedSkills = JSON.parse(skillsData.data.skills);
+        const skillNames = parsedSkills.skills.map((skill: { name: string }) => skill.name);
+        setSelectedSkills(skillNames);
+      } catch (error) {
+        console.error("Error parsing skills:", error);
+      }
+    }
+  }, [skillsData]);
+  
+
   const availableSkills = [
     "Electrical work",
     "HVAC",
@@ -49,15 +64,33 @@ export default function SkillsScreen() {
     setSelectedSkills(selectedSkills.filter(s => s !== skill));
   };
 
+  const { mutate, error, isPending } = useAddSkills(selectedSkills);
+
   const handleSave = () => {
+    if (!selectedSkills || selectedSkills.length === 0) {
+      Alert.alert("Validation", "Please select at least one skill");
+      return;
+    }
+  
     setIsSaving(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsSaving(false);
-      Alert.alert("Success", "Skills updated successfully");
-      router.back();
-    }, 1000);
+  
+    mutate(undefined, {
+      onSuccess: (data) => {
+        setIsSaving(false);
+        queryClient.invalidateQueries({ queryKey: ["get-skills"] });
+        console.log("Skills added successfully", data);
+        Alert.alert("Success", "Skills added successfully", [
+          {
+            text: "OK",
+            onPress: () => router.back()
+          }
+        ]);
+      },
+      onError: (error) => {
+        setIsSaving(false);
+        Alert.alert("Error", error instanceof Error ? error.message : "Failed to add skills");
+      },
+    });
   };
 
   return (

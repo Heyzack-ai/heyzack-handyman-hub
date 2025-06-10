@@ -10,6 +10,7 @@ type AuthContextType = {
   signOut: () => Promise<void>;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isInitialSetup: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -17,6 +18,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isInitialSetup, setIsInitialSetup] = useState(false);
   const segments = useSegments();
   const router = useRouter();
 
@@ -24,37 +26,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     checkAuth();
   }, []);
 
-  // useEffect(() => {
-  //   const inAuthGroup = segments[0]?.startsWith('auth');
-    
-  //   if (!isLoading) {
-  //     if (isAuthenticated && inAuthGroup) {
-  //       // Redirect authenticated users to home if they're in auth group
-  //       router.replace('/(tabs)');
-  //     } else if (!isAuthenticated && !inAuthGroup) {
-  //       // Redirect unauthenticated users to sign in
-  //       router.replace('/auth/signin');
-  //     }
-  //   }
-  // }, [isAuthenticated, segments, isLoading]);
-
   useEffect(() => {
     const inAuthGroup = segments[0]?.startsWith('auth');
+    const isSkillsPage = segments[1] === 'add-skills';
     
     if (!isLoading) {
-      if (isAuthenticated) {
-        // Allow navigation to add-skills even when authenticated
-        if (segments[0] === 'auth' && segments[1] === 'add-skills') {
-          return;
-        }
-        if (inAuthGroup) {
-          router.replace('/(tabs)');
-        }
+      if (isAuthenticated && inAuthGroup && !isSkillsPage && !isInitialSetup) {
+        router.replace('/(tabs)');
       } else if (!isAuthenticated && !inAuthGroup) {
         router.replace('/auth/signin');
       }
     }
-  }, [isAuthenticated, segments, isLoading]);
+  }, [isAuthenticated, segments, isLoading, isInitialSetup]);
 
   async function checkAuth() {
     try {
@@ -159,7 +142,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error('No data received from sign up');
       }
 
-            // The navigation will be handled in the signup component
+      // After successful signup, sign in the user
+      await signIn(data.email, data.password);
+      setIsInitialSetup(true);
+      
     } catch (error) {
       console.error('Sign up error:', error);
       setIsAuthenticated(false);
@@ -193,7 +179,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ signIn, signUp, signOut, deleteAccount, isLoading, isAuthenticated }}>
+    <AuthContext.Provider value={{ signIn, signUp, signOut, deleteAccount, isLoading, isAuthenticated, isInitialSetup }}>
       {children}
     </AuthContext.Provider>
   );

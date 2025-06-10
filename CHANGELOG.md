@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial project setup.
 - README.md file.
 - CHANGELOG.md file.
+- Modified bank data handling to process single bank entry instead of multiple entries
 
 ---
 

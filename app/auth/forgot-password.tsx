@@ -63,7 +63,6 @@ export default function ForgotPasswordScreen() {
         email: email,
       });
 
-      console.log("response", response);
       Alert.alert(
         "Reset Link Sent",
         "If an account exists with this email, you will receive a password reset link.",

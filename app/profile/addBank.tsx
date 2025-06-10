@@ -5,14 +5,29 @@ import { Stack } from "expo-router";
 import { CreditCard, Building, User, Globe } from "lucide-react-native";
 import Colors from "@/constants/colors";
 import Header from "@/components/Header";
+import { useAddBank, useGetBank } from "../api/user/addBank";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function addBank() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [accountType, setAccountType] = useState<"personal" | "business">("personal");
   const [accountName, setAccountName] = useState("");
   const [bankName, setBankName] = useState("");
   const [iban, setIban] = useState("");
   const [bicSwift, setBicSwift] = useState("");
+
+  const bankData = {
+    bank_name: bankName,
+    account_holder_name: accountName,
+    iban_number: iban,
+    bic_code: bicSwift,
+    is_default: true
+  };
+  
+
+
+  const { mutate, error, isPending } = useAddBank(bankData);
 
   const handleSubmit = () => {
     // Validate inputs for French bank account
@@ -22,16 +37,16 @@ export default function addBank() {
     }
 
     // Here you would typically send this data to your backend
-    Alert.alert(
-      "Bank Account Added",
-      "Your bank account has been successfully added",
-      [
-        {
-          text: "OK",
-          onPress: () => router.back()
-        }
-      ]
-    );
+    mutate(undefined, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["get-bank"] });
+        Alert.alert("Bank Account Added", "Your bank account has been successfully added");
+        router.back();
+      },
+      onError: (error) => {
+        Alert.alert("Error", error instanceof Error ? error.message : "Failed to add bank account");
+      }
+    });
   };
 
   return (

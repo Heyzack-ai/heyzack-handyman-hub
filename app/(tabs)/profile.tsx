@@ -41,19 +41,28 @@ export default function ProfileScreen() {
 
   console.log("user", user);
 
+
   const technician = {
-    name: user?.name,
+    name: user?.handyman_name,
     email: user?.email,
-    phone: user?.phone,
+    phone: user?.contact_number,
     // location: "San Francisco, CA",
     avatar:
-      user?.image ||
+     
       "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300",
     completedJobs: 128,
     rating: 4.8,
     isVerified: true,
-    skills: ["Electrical work", "HVAC", "Glass work"],
+    skills: JSON.parse(user?.skills || "{\"skills\":[]}") as Skills,
   };
+
+  interface Skills {
+    skills: Skill[]
+  }
+  
+  interface Skill {
+    name: string
+  }
 
   const renderMenuItem = (
     icon: React.ReactNode,
@@ -118,9 +127,9 @@ export default function ProfileScreen() {
             </Pressable>
           </View>
           <View style={styles.skillTags}>
-            {technician.skills.map((skill, index) => (
+            {technician.skills.skills.map((skill, index) => (
               <View key={index} style={styles.skillTag}>
-                <Text style={styles.skillText}>{skill}</Text>
+                <Text style={styles.skillText}>{skill.name}</Text>
               </View>
             ))}
           </View>

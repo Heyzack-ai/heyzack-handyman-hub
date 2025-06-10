@@ -15,6 +15,8 @@ import { Stack, useRouter } from "expo-router";
 import { MapPin, Search } from "lucide-react-native";
 import Colors from "@/constants/colors";
 import Header from "@/components/Header";
+import { useAddArea, useGetArea } from "../api/user/addArea";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function ServiceAreaScreen() {
   const router = useRouter();
@@ -23,6 +25,17 @@ export default function ServiceAreaScreen() {
   const [radiusInput, setRadiusInput] = useState("25");
   const [isSaving, setIsSaving] = useState(false);
   const [isCustomRadius, setIsCustomRadius] = useState(false);
+  const { data: areaData, isLoading } = useGetArea();
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    console.log("areaData", areaData);
+    if (areaData?.data?.current_location) {
+      setZipCode(areaData.data.current_location);
+    }
+    if (areaData?.data?.service_area) {
+      setRadius(areaData.data.service_area);
+    }
+  }, [areaData]);
 
   // Min and max radius values
   const MIN_RADIUS = 5;
@@ -75,15 +88,24 @@ export default function ServiceAreaScreen() {
     Alert.alert("Search", `Searching for location with zipcode: ${zipCode}`);
   };
 
+  const { mutate, error, isPending } = useAddArea(zipCode, radius);
   const handleSave = () => {
     setIsSaving(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      setIsSaving(false);
-      Alert.alert("Success", "Service area updated successfully");
-      router.back();
-    }, 1000);
+    mutate(undefined, {
+      onSuccess: () => {
+        setIsSaving(false);
+        queryClient.invalidateQueries({ queryKey: ["get-area"] });
+        Alert.alert("Success", "Service area updated successfully");
+        router.back();
+      },
+      onError: (error) => {
+        setIsSaving(false);
+        Alert.alert("Error", error instanceof Error ? error.message : "Failed to update service area");
+      },
+    });
+
+
   };
 
   return (
