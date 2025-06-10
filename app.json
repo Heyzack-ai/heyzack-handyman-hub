@@ -16,7 +16,8 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.heyzack.handyman",
-      "associatedDomains": ["applinks:heyzack.ai"]
+      "associatedDomains": ["applinks:heyzack.ai"],
+      "keychainAccessGroup": null
     },
     "android": {
       "adaptiveIcon": {
