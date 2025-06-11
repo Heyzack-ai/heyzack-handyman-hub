@@ -1,35 +1,37 @@
 import React, { useEffect, useState } from "react";
-import { StyleSheet, Text, View, Pressable, ScrollView, Alert, SafeAreaView } from "react-native";
+import { StyleSheet, Text, View, Pressable, ScrollView, Alert, SafeAreaView, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
-import { Stack } from "expo-router";
 import { CreditCard, Plus, Trash2 } from "lucide-react-native";
 import Colors from "@/constants/colors";
 import Header from "@/components/Header";
-import { useGetBank } from "../api/user/addBank";
+import { useGetBank, useDeleteBank, useAddBank, useSetDefaultBank } from "@/app/api/user/addBank";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function BankAccountsScreen() {
   const router = useRouter();
   const { data: bankData, isLoading } = useGetBank();
+  const { mutate: deleteBank } = useDeleteBank();
+  const queryClient = useQueryClient();
+  const [bankAccounts, setBankAccounts] = useState<any[]>([]);
 
   useEffect(() => {
-    if (bankData) {
-     
-      bankData.data.bank_details.forEach((bank: any) => {
+    if (bankData && bankData.data && Array.isArray(bankData.data.bank_details)) {
+      setBankAccounts([]);
+      bankData.data.bank_details.forEach((bank: any, idx: number) => {
         setBankAccounts(prev => [...prev, {
-          id: bank.id,
-          bankName: bank.bank_name,
-          accountType: bank.type,
-          accountNumber: bank.iban_number,
-          isDefault: bank.is_default
+          id: bank.id || bank.iban_number || `${bank.bank_name}-${bank.iban_number}-${prev.length}`,
+          bankName: bank.bank_name || "",
+          accountType: bank.type || "",
+          accountNumber: bank.iban_number || "",
+          isDefault: !!bank.is_default,
+          accountName: bank.account_holder_name || "",
+          bicCode: bank.bic_code || ""
         }]);
       });
     }
   }, [bankData]);
 
-  // Mock data for bank accounts
-  const [bankAccounts, setBankAccounts] = useState<any[]>([]);
-
-  const handleDeleteAccount = (id: string) => {
+  const handleDeleteAccount = (account: any) => {
     Alert.alert(
       "Remove Bank Account",
       "Are you sure you want to remove this bank account?",
@@ -42,89 +44,121 @@ export default function BankAccountsScreen() {
           text: "Remove",
           style: "destructive",
           onPress: () => {
-            // Here you would typically call your backend to delete the account
-            Alert.alert("Account Removed", "The bank account has been removed successfully");
+            deleteBank({
+              bankName: account.bankName,
+              accountName: account.accountName,
+              accountNumber: account.accountNumber,
+              bicCode: account.bicCode,
+              accountType: account.accountType
+            }, {
+              onSuccess: () => {
+                queryClient.invalidateQueries({ queryKey: ["get-bank"] });
+                setBankAccounts(prev => prev.filter(bank => 
+                  bank.bankName !== account.bankName ||
+                  bank.accountName !== account.accountName ||
+                  bank.accountNumber !== account.accountNumber ||
+                  bank.bicCode !== account.bicCode ||
+                  bank.accountType !== account.accountType
+                ));
+                Alert.alert("Success", "Bank account removed successfully");
+              },
+              onError: (error) => {
+                Alert.alert("Error", "Failed to remove bank account");
+              }
+            });
           }
         }
       ]
     );
   };
 
-  const handleSetDefault = (id: string) => {
-    // Here you would typically call your backend to set this as default
-    Alert.alert("Default Updated", "This bank account is now set as your default payment method");
+  const { mutate: setDefaultBank } = useSetDefaultBank();
+
+  const handleSetDefault = (account: any) => {
+    setDefaultBank(account, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["get-bank"] });
+      },
+    });
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <Header title="Bank Accounts" />
       
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        {bankAccounts.length > 0 ? (
-          <View style={styles.accountsContainer}>
-            {bankAccounts.map((account) => (
-              <View key={account.id} style={styles.accountCard}>
-                <View style={styles.accountIconContainer}>
-                  <CreditCard size={24} color={Colors.light.primary} />
-                </View>
-                <View style={styles.accountDetails}>
-                  <Text style={styles.bankName}>{account.bankName}</Text>
-                  <Text style={styles.accountInfo}>
-                    {account.accountType} • {account.accountNumber}
-                  </Text>
-                  {account.isDefault && (
-                    <View style={styles.defaultBadge}>
-                      <Text style={styles.defaultText}>Default</Text>
-                    </View>
-                  )}
-                </View>
-                <View style={styles.accountActions}>
-                  {!account.isDefault && (
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.light.primary} />
+          <Text style={styles.loadingText}>Loading bank accounts...</Text>
+        </View>
+      ) : (
+        <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+          {bankAccounts.length > 0 ? (
+            <View style={styles.accountsContainer}>
+              {bankAccounts.map((account, idx) => (
+                <View key={`account-${account.id || account.accountNumber || ''}-${idx}`} style={styles.accountCard}>
+                  <View style={styles.accountIconContainer}>
+                    <CreditCard size={24} color={Colors.light.primary} />
+                  </View>
+                  <View style={styles.accountDetails}>
+                    <Text style={styles.bankName}>{account.bankName || "Unknown Bank"}</Text>
+                    <Text style={styles.accountInfo}>
+                      {account.accountType || "Account"} • {account.accountNumber || "No account number"}
+                    </Text>
+                    {account.isDefault && (
+                      <View style={styles.defaultBadge}>
+                        <Text style={styles.defaultText}>Default</Text>
+                      </View>
+                    )}
+                  </View>
+                  <View style={styles.accountActions}>
+                    {!account.isDefault && (
+                      <Pressable
+                        style={styles.actionButton}
+                        onPress={() => handleSetDefault(account)}
+                      >
+                        <Text style={styles.actionButtonText}>Set Default</Text>
+                      </Pressable>
+                    )}
                     <Pressable
-                      style={styles.actionButton}
-                      onPress={() => handleSetDefault(account.id)}
+                      style={[styles.actionButton, styles.deleteButton]}
+                      onPress={() => handleDeleteAccount(account)}
                     >
-                      <Text style={styles.actionButtonText}>Set Default</Text>
+                      <Trash2 size={16} color={Colors.light.error} />
                     </Pressable>
-                  )}
-                  <Pressable
-                    style={[styles.actionButton, styles.deleteButton]}
-                    onPress={() => handleDeleteAccount(account.id)}
-                  >
-                    <Trash2 size={16} color={Colors.light.error} />
-                  </Pressable>
+                  </View>
                 </View>
-              </View>
-            ))}
-          </View>
-        ) : (
-          <View style={styles.emptyState}>
-            <CreditCard size={48} color={Colors.light.gray[400]} />
-            <Text style={styles.emptyTitle}>No Bank Accounts</Text>
-            <Text style={styles.emptyText}>
-              Add a bank account to receive payments for your completed jobs
+              ))}
+            </View>
+          ) : (
+            <View style={styles.emptyState}>
+              <CreditCard size={48} color={Colors.light.gray[400]} />
+              <Text style={styles.emptyTitle}>No Bank Accounts</Text>
+              <Text style={styles.emptyText}>
+                Add a bank account to receive payments for your completed jobs
+              </Text>
+            </View>
+          )}
+
+          <Pressable 
+            style={styles.addButton}
+            onPress={() => router.push("/profile/addBank")}
+          >
+            <Plus size={20} color="white" />
+            <Text style={styles.addButtonText}>Add New Bank Account</Text>
+          </Pressable>
+
+          <View style={styles.infoBox}>
+            <Text style={styles.infoTitle}>About Bank Accounts</Text>
+            <Text style={styles.infoText}>
+              Bank accounts are used to receive payments for completed jobs. You can add multiple accounts and set one as default.
+            </Text>
+            <Text style={styles.infoText}>
+              Your bank information is securely stored and protected.
             </Text>
           </View>
-        )}
-
-        <Pressable 
-          style={styles.addButton}
-          onPress={() => router.push("/profile/addBank")}
-        >
-          <Plus size={20} color="white" />
-          <Text style={styles.addButtonText}>Add New Bank Account</Text>
-        </Pressable>
-
-        <View style={styles.infoBox}>
-          <Text style={styles.infoTitle}>About Bank Accounts</Text>
-          <Text style={styles.infoText}>
-            Bank accounts are used to receive payments for completed jobs. You can add multiple accounts and set one as default.
-          </Text>
-          <Text style={styles.infoText}>
-            Your bank information is securely stored and protected.
-          </Text>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
@@ -259,5 +293,16 @@ const styles = StyleSheet.create({
     color: Colors.light.gray[600],
     marginBottom: 8,
     lineHeight: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: Colors.light.text,
+    marginTop: 10,
   },
 });

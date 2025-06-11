@@ -92,7 +92,13 @@ export default function SignUpScreen() {
       });
       
       // After successful signup and signin, navigate to skills
-      router.replace("/auth/add-skills");
+      router.replace({
+        pathname: "/auth/add-skills",
+        params: {
+          email,
+          password,
+        },
+      });
     } catch (error) {
       console.error('Signup error:', error);
       Alert.alert("Error", error instanceof Error ? error.message : "An error occurred during signup");

@@ -16,16 +16,35 @@ import { MapPin, Search } from "lucide-react-native";
 import Colors from "@/constants/colors";
 import Header from "@/components/Header";
 import { useAuth } from "@/lib/auth-context";
+import { useUpdateUser } from "@/app/api/user/getUser";
+import { Handyman } from "@/types/handyman";
+import { useAddArea } from "@/app/api/user/addArea";
+import { useAddSkills } from "@/app/api/user/addskills";
 
 export default function ServiceAreaScreen() {
   const router = useRouter();
   const { signIn } = useAuth();
-  const { email, password } = useLocalSearchParams();
+  const { email, password, selectedSkills } = useLocalSearchParams();
   const [zipCode, setZipCode] = useState("94105");
   const [radius, setRadius] = useState(25);
   const [radiusInput, setRadiusInput] = useState("25");
   const [isSaving, setIsSaving] = useState(false);
   const [isCustomRadius, setIsCustomRadius] = useState(false);
+
+
+  let skillsArray: string[] = [];
+if (typeof selectedSkills === "string") {
+  try {
+    skillsArray = JSON.parse(selectedSkills);
+  } catch {
+    // fallback: comma-separated string
+    skillsArray = selectedSkills.split(",");
+  }
+} else if (Array.isArray(selectedSkills)) {
+  skillsArray = selectedSkills;
+}
+
+console.log("skillsArray", skillsArray);
 
   // Min and max radius values
   const MIN_RADIUS = 5;
@@ -78,25 +97,109 @@ export default function ServiceAreaScreen() {
     Alert.alert("Search", `Searching for location with zipcode: ${zipCode}`);
   };
 
+  // const { mutate: updateUser } = useAddArea(zipCode, radius);
+  // const { mutate: updateSkills } = useAddSkills(selectedSkills as string[]);
+
+
+  // const handleSave = async () => {
+  //   setIsSaving(true);
+
+  //   try {
+  //     console.log("credentials", email, password);
+  //     await signIn(email as string, password as string);
+
+  //     updateUser(
+  //       undefined, // or {} if your mutation expects some data, otherwise remove this param
+  //       {
+  //         onSuccess: () => {
+  //           Alert.alert("Success", "Service area updated successfully");
+  //         },
+  //         onError: (error: any) => {
+  //           console.error(error);
+  //           Alert.alert(
+  //             "Error",
+  //             error instanceof Error ? error.message : "An unknown error occurred"
+  //           );
+  //         },
+  //         onSettled: () => {
+  //           router.replace("/(tabs)");
+  //         },
+  //       }
+  //     );
+
+  //     // updateSkills expects no data, so call with only callbacks
+  //     updateSkills(undefined, {
+  //       onSuccess: () => {
+  //         Alert.alert("Success", "Skills updated successfully");
+  //       },
+  //       onError: (error: any) => {
+  //         console.error(error);
+  //         Alert.alert(
+  //           "Error",
+  //           error instanceof Error ? error.message : "An unknown error occurred"
+  //         );
+  //       },
+  //       onSettled: () => {
+  //         router.replace("/(tabs)");
+  //       },
+  //     });
+      
+  //   } catch (error) {
+  //     console.error(error);
+  //     Alert.alert(
+  //       "Error",
+  //       error instanceof Error ? error.message : "An unknown error occurred"
+  //     );
+  //   } finally {
+  //     setIsSaving(false);
+  //   }
+  // };
+
+  const { mutate: updateUser } = useAddArea(zipCode, radius);
+  const { mutate: updateSkills } = useAddSkills(skillsArray);
+
   const handleSave = async () => {
     setIsSaving(true);
-    
-    // Simulate API call
-        
-      
-    try {
-      await signIn(email as string, password as string);
-    } catch (error) {
-      console.error(error);
+
+    const showError = (prefix: string, error: unknown) => {
+      console.error(`${prefix} Error:`, error);
       Alert.alert(
         "Error",
         error instanceof Error ? error.message : "An unknown error occurred"
       );
+    };
+
+    const handleSuccess = (message: string) => {
+      Alert.alert("Success", message);
+    };
+
+    const navigateToHome = () => {
+      router.replace("/(tabs)");
+    };
+
+    try {
+      console.log("credentials", email, password);
+      await signIn(email as string, password as string);
+
+      updateUser(undefined, {
+        onSuccess: () => handleSuccess("Service area updated successfully"),
+        onError: (error) => showError("Update Area", error),
+        onSettled: navigateToHome,
+      });
+
+      updateSkills(undefined, {
+        onSuccess: () => handleSuccess("Skills updated successfully"),
+        onError: (error) => showError("Update Skills", error),
+        onSettled: navigateToHome,
+      });
+
+    } catch (error) {
+      showError("Sign In", error);
     } finally {
       setIsSaving(false);
     }
-    
   };
+
 
   return (
     <SafeAreaView style={styles.safeArea}>

@@ -145,7 +145,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // After successful signup, sign in the user
-      await signIn(data.email, data.password);
+      // await signIn(data.email, data.password);
       setIsInitialSetup(true);
       
     } catch (error) {

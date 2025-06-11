@@ -1,5 +1,5 @@
 import { authClient } from "@/lib/auth-client";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import * as SecureStore from 'expo-secure-store';
 import { Handyman } from "@/types/handyman";
@@ -47,7 +47,7 @@ export const useGetUser = (options = {}) => {
           },
         });
 
-        console.log("response", response.data.data);
+        console.log("response of user", response.data);
         
         if (!response.data?.data) {
           throw new Error("User not found");
@@ -93,3 +93,17 @@ export const useGetUserRealtime = () => {
 };
 
 
+export const useUpdateUser = () => {
+  return useMutation({
+    mutationKey: ["update-user"],
+    mutationFn: async (user: Handyman) => {
+      const token = await SecureStore.getItemAsync('auth_token');
+      const response = await axios.put(`${BASE_URL}/resource/Handyman/${user.name}`, user, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+    },
+  });
+};

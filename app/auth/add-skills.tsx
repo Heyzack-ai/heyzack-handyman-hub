@@ -16,12 +16,9 @@ import Header from "@/components/Header";
 export default function SkillsScreen() {
   const router = useRouter();
   const { email, password } = useLocalSearchParams();
-  const [selectedSkills, setSelectedSkills] = useState([
-    "Electrical work",
-    "HVAC",
-    "Glass work"
-  ]);
+  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+
   
   const availableSkills = [
     "Electrical work",
@@ -57,11 +54,13 @@ export default function SkillsScreen() {
     setTimeout(() => {
       setIsSaving(false);
       Alert.alert("Success", "Skills updated successfully");
+
         router.push({
           pathname: "/auth/add-area",
           params: {
             email,
             password,
+            selectedSkills,
           },
         });
         }, 1000);

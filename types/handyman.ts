@@ -8,7 +8,6 @@ export interface Handyman {
     docstatus: number
     doctype: string
     email: string
-    handyman_id: string
     handyman_name: string
     idx: number
     modified: string
@@ -17,6 +16,9 @@ export interface Handyman {
     owner: string
     service_area: number
     skills: string
+    kyc_document: string
+    profile_image: string
+    is_verified: number
   }
   
   export interface Availability {

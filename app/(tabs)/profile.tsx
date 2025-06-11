@@ -38,8 +38,10 @@ export default function ProfileScreen() {
   const { signOut, deleteAccount } = useAuth();
 
   const { data: user } = useGetUser();
+  const BASE_URL = process.env.EXPO_PUBLIC_ASSET_URL;
 
-  console.log("user", user);
+  console.log("user", user?.is_verified);
+
 
 
   const technician = {
@@ -48,11 +50,11 @@ export default function ProfileScreen() {
     phone: user?.contact_number,
     // location: "San Francisco, CA",
     avatar:
-     
+     `${BASE_URL}${user?.profile_image}` ||
       "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300",
     completedJobs: 128,
     rating: 4.8,
-    isVerified: true,
+    isVerified: String(user?.is_verified) === "1" || String(user?.is_verified) === "true",
     skills: JSON.parse(user?.skills || "{\"skills\":[]}") as Skills,
   };
 
@@ -112,7 +114,12 @@ export default function ProfileScreen() {
 
           <Pressable
             style={styles.editProfileButton}
-            onPress={() => router.push("/profile/edit")}
+            onPress={() => router.push({
+              pathname: "/profile/edit",
+              params: {
+                user: JSON.stringify(user),
+              },
+            })}
           >
             <Edit size={16} color={Colors.light.primary} />
             <Text style={styles.editProfileText}>Edit Profile</Text>

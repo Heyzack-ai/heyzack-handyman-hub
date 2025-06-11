@@ -71,6 +71,8 @@ export default function SkillsScreen() {
       Alert.alert("Validation", "Please select at least one skill");
       return;
     }
+
+
   
     setIsSaving(true);
   
@@ -78,7 +80,7 @@ export default function SkillsScreen() {
       onSuccess: (data) => {
         setIsSaving(false);
         queryClient.invalidateQueries({ queryKey: ["get-skills"] });
-        console.log("Skills added successfully", data);
+
         Alert.alert("Success", "Skills added successfully", [
           {
             text: "OK",

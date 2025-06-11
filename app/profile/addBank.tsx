@@ -1,14 +1,41 @@
 import React, { useState } from "react";
 import { StyleSheet, Text, View, TextInput, Pressable, ScrollView, Alert, SafeAreaView } from "react-native";
 import { useRouter } from "expo-router";
-import { Stack } from "expo-router";
 import { CreditCard, Building, User, Globe } from "lucide-react-native";
 import Colors from "@/constants/colors";
 import Header from "@/components/Header";
 import { useAddBank, useGetBank } from "../api/user/addBank";
 import { useQueryClient } from "@tanstack/react-query";
+import { z } from "zod";
 
-export default function addBank() {
+// Define the validation schema
+const bankAccountSchema = z.object({
+  bankName: z.string()
+    .min(1, "Bank name is required")
+    .regex(/^[A-Za-zÀ-ÿ\s\-']+$/, "Bank name should only contain letters, spaces, hyphens and apostrophes"),
+  accountName: z.string()
+    .min(1, "Account holder name is required")
+    .regex(/^[A-Za-zÀ-ÿ\s\-']+$/, "Account holder name should only contain letters, spaces, hyphens and apostrophes"),
+  iban: z.string()
+    .min(1, "IBAN is required")
+    .refine(
+      val => /^FR[0-9A-Z]{25}$/.test(val.replace(/\s+/g, "")),
+      "Invalid IBAN format. French IBAN should start with FR followed by 25 alphanumeric characters"
+    ),
+  bicSwift: z.string()
+    .min(1, "BIC/SWIFT code is required")
+    .regex(/^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/, "Invalid BIC/SWIFT format. Should be 8 or 11 characters, e.g. BNPAFRPP or BNPAFRPPXXX")
+});
+
+// Type for form errors
+type FormErrors = {
+  bankName?: string;
+  accountName?: string;
+  iban?: string;
+  bicSwift?: string;
+};
+
+export default function AddBank() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [accountType, setAccountType] = useState<"personal" | "business">("personal");
@@ -16,6 +43,7 @@ export default function addBank() {
   const [bankName, setBankName] = useState("");
   const [iban, setIban] = useState("");
   const [bicSwift, setBicSwift] = useState("");
+  const [errors, setErrors] = useState<FormErrors>({});
 
   const bankData = {
     bank_name: bankName,
@@ -24,19 +52,32 @@ export default function addBank() {
     bic_code: bicSwift,
     is_default: true
   };
-  
 
+  const { mutate, isPending } = useAddBank(bankData);
 
-  const { mutate, error, isPending } = useAddBank(bankData);
+  const validateForm = (): boolean => {
+    try {
+      bankAccountSchema.parse({ bankName, accountName, iban, bicSwift });
+      setErrors({});
+      return true;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const newErrors: FormErrors = {};
+        error.errors.forEach((err) => {
+          const path = err.path[0] as keyof FormErrors;
+          newErrors[path] = err.message;
+        });
+        setErrors(newErrors);
+      }
+      return false;
+    }
+  };
 
   const handleSubmit = () => {
-    // Validate inputs for French bank account
-    if (!accountName.trim() || !iban.trim() || !bicSwift.trim() || !bankName.trim()) {
-      Alert.alert("Missing Information", "Please fill in all fields");
+    if (!validateForm()) {
       return;
     }
 
-    // Here you would typically send this data to your backend
     mutate(undefined, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["get-bank"] });
@@ -49,56 +90,112 @@ export default function addBank() {
     });
   };
 
+  // Format IBAN as user types
+  const formatIban = (text: string) => {
+    // Remove all spaces first
+    let cleaned = text.replace(/\s/g, '').toUpperCase();
+    
+    // Ensure it starts with FR
+    if (!cleaned.startsWith('FR') && cleaned.length > 0) {
+      cleaned = 'FR' + cleaned;
+    }
+    
+    // Add spaces every 4 characters after the country code
+    let formatted = cleaned.substring(0, 2);
+    
+    // Add the rest with spaces every 4 characters
+    for (let i = 2; i < cleaned.length; i++) {
+      if (i === 2 || (i > 2 && (i - 2) % 4 === 0)) {
+        formatted += ' ';
+      }
+      formatted += cleaned[i];
+    }
+    
+    return formatted.trim();
+  };
+
+  const handleIbanChange = (text: string) => {
+    const formatted = formatIban(text);
+    setIban(formatted);
+    
+    // Clear error when typing
+    if (errors.iban) {
+      setErrors((prev) => ({ ...prev, iban: undefined }));
+    }
+  };
+
+  const handleBicSwiftChange = (text: string) => {
+    const upperCaseText = text.toUpperCase();
+    setBicSwift(upperCaseText);
+    
+    // Clear error when typing
+    if (errors.bicSwift) {
+      setErrors((prev) => ({ ...prev, bicSwift: undefined }));
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <Header title="Add Bank Account" />
       
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-    
-
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account Information</Text>
           
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>Bank Name</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, errors.bankName && styles.inputError]}
               placeholder="Enter bank name (e.g., BNP Paribas, Société Générale)"
               value={bankName}
-              onChangeText={setBankName}
+              onChangeText={(text) => {
+                setBankName(text);
+                if (errors.bankName) {
+                  setErrors((prev) => ({ ...prev, bankName: undefined }));
+                }
+              }}
             />
+            {errors.bankName && <Text style={styles.errorText}>{errors.bankName}</Text>}
           </View>
           
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>Account Holder Name</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, errors.accountName && styles.inputError]}
               placeholder="Enter name on account"
               value={accountName}
-              onChangeText={setAccountName}
+              onChangeText={(text) => {
+                setAccountName(text);
+                if (errors.accountName) {
+                  setErrors((prev) => ({ ...prev, accountName: undefined }));
+                }
+              }}
             />
+            {errors.accountName && <Text style={styles.errorText}>{errors.accountName}</Text>}
           </View>
           
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>IBAN</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, errors.iban && styles.inputError]}
               placeholder="FR76 XXXX XXXX XXXX XXXX XXXX XXX"
               value={iban}
-              onChangeText={setIban}
+              onChangeText={handleIbanChange}
               autoCapitalize="characters"
             />
+            {errors.iban && <Text style={styles.errorText}>{errors.iban}</Text>}
           </View>
           
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>BIC/SWIFT Code</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, errors.bicSwift && styles.inputError]}
               placeholder="BNPAFRPPXXX"
               value={bicSwift}
-              onChangeText={setBicSwift}
+              onChangeText={handleBicSwiftChange}
               autoCapitalize="characters"
             />
+            {errors.bicSwift && <Text style={styles.errorText}>{errors.bicSwift}</Text>}
           </View>
         </View>
 
@@ -110,10 +207,13 @@ export default function addBank() {
         </View>
 
         <Pressable 
-          style={styles.submitButton}
+          style={[styles.submitButton, isPending && styles.submitButtonDisabled]}
           onPress={handleSubmit}
+          disabled={isPending}
         >
-          <Text style={styles.submitButtonText}>Add Bank Account</Text>
+          <Text style={styles.submitButtonText}>
+            {isPending ? "Adding..." : "Add Bank Account"}
+          </Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>
@@ -142,8 +242,6 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
     marginBottom: 16,
   },
-   
-
   inputContainer: {
     marginBottom: 16,
   },
@@ -160,6 +258,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
+  },
+  inputError: {
+    borderColor: Colors.light.error,
+  },
+  errorText: {
+    color: Colors.light.error,
+    fontSize: 12,
+    marginTop: 4,
   },
   infoBox: {
     flexDirection: "row",
@@ -187,5 +293,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "white",
+  },
+  submitButtonDisabled: {
+    backgroundColor: Colors.light.gray[400],
   },
 });

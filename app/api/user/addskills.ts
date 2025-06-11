@@ -41,6 +41,8 @@ export const useAddSkills = (skills: string[]) => {
           })
         };
 
+        
+
         const response = await axios.put(`${BASE_URL}/resource/Handyman/${extendedUser.erpId}`, skillsData, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -81,7 +83,7 @@ export const useGetSkills = () => {
           },
         });
         
-        console.log("API Response:", response.data);
+
         return response.data;
       } catch (error) {
         console.error("Failed to fetch skills:", error);
