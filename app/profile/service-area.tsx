@@ -28,7 +28,7 @@ export default function ServiceAreaScreen() {
   const { data: areaData, isLoading } = useGetArea();
   const queryClient = useQueryClient();
   useEffect(() => {
-    console.log("areaData", areaData);
+    
     if (areaData?.data?.current_location) {
       setZipCode(areaData.data.current_location);
     }

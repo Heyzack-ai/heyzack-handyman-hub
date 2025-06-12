@@ -12,7 +12,8 @@ import { Stack, useRouter } from "expo-router";
 import { Plus, X } from "lucide-react-native";
 import Colors from "@/constants/colors";
 import Header from "@/components/Header";
-import { useAddSkills, useGetSkills } from "@/app/api/user/addskills";
+import useAddSkills from "@/app/api/user/addskills";
+import useGetSkills from "@/app/api/user/getUser";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function SkillsScreen() {
@@ -24,7 +25,7 @@ export default function SkillsScreen() {
   const { data: skillsData, isLoading } = useGetSkills();
 
   useEffect(() => {
-    console.log("skillsData", skillsData);
+    
     if (skillsData?.data?.skills) {
       try {
         const parsedSkills = JSON.parse(skillsData.data.skills);

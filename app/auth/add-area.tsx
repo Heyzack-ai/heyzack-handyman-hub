@@ -44,7 +44,6 @@ if (typeof selectedSkills === "string") {
   skillsArray = selectedSkills;
 }
 
-console.log("skillsArray", skillsArray);
 
   // Min and max radius values
   const MIN_RADIUS = 5;
@@ -97,63 +96,7 @@ console.log("skillsArray", skillsArray);
     Alert.alert("Search", `Searching for location with zipcode: ${zipCode}`);
   };
 
-  // const { mutate: updateUser } = useAddArea(zipCode, radius);
-  // const { mutate: updateSkills } = useAddSkills(selectedSkills as string[]);
-
-
-  // const handleSave = async () => {
-  //   setIsSaving(true);
-
-  //   try {
-  //     console.log("credentials", email, password);
-  //     await signIn(email as string, password as string);
-
-  //     updateUser(
-  //       undefined, // or {} if your mutation expects some data, otherwise remove this param
-  //       {
-  //         onSuccess: () => {
-  //           Alert.alert("Success", "Service area updated successfully");
-  //         },
-  //         onError: (error: any) => {
-  //           console.error(error);
-  //           Alert.alert(
-  //             "Error",
-  //             error instanceof Error ? error.message : "An unknown error occurred"
-  //           );
-  //         },
-  //         onSettled: () => {
-  //           router.replace("/(tabs)");
-  //         },
-  //       }
-  //     );
-
-  //     // updateSkills expects no data, so call with only callbacks
-  //     updateSkills(undefined, {
-  //       onSuccess: () => {
-  //         Alert.alert("Success", "Skills updated successfully");
-  //       },
-  //       onError: (error: any) => {
-  //         console.error(error);
-  //         Alert.alert(
-  //           "Error",
-  //           error instanceof Error ? error.message : "An unknown error occurred"
-  //         );
-  //       },
-  //       onSettled: () => {
-  //         router.replace("/(tabs)");
-  //       },
-  //     });
-      
-  //   } catch (error) {
-  //     console.error(error);
-  //     Alert.alert(
-  //       "Error",
-  //       error instanceof Error ? error.message : "An unknown error occurred"
-  //     );
-  //   } finally {
-  //     setIsSaving(false);
-  //   }
-  // };
+  
 
   const { mutate: updateUser } = useAddArea(zipCode, radius);
   const { mutate: updateSkills } = useAddSkills(skillsArray);
@@ -178,7 +121,6 @@ console.log("skillsArray", skillsArray);
     };
 
     try {
-      console.log("credentials", email, password);
       await signIn(email as string, password as string);
 
       updateUser(undefined, {

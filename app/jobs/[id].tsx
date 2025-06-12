@@ -55,9 +55,9 @@ export default function JobDetailScreen() {
   } = useJobStore();
 
   useEffect(() => {
-    // console.log("Job details page - ID param:", id);
+    
     if (id) {
-      // console.log("Setting current job ID:", id);
+      
       setCurrentJobId(id);
 
       // Directly find the job from the jobs array
@@ -65,7 +65,6 @@ export default function JobDetailScreen() {
       if (foundJob) {
         setJobData(foundJob);
       } else {
-        console.log("Job not found in jobs array");
         Alert.alert("Error", "Job not found");
         router.back();
       }
@@ -75,7 +74,6 @@ export default function JobDetailScreen() {
 
   // Use either the directly found job or the one from getCurrentJob
   const job = jobData || getCurrentJob();
-  console.log("Job found:", !!job);
 
   // Redirect if job is not found or is pending
   useEffect(() => {

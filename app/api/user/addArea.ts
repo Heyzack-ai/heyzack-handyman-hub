@@ -16,7 +16,7 @@ type ExtendedUser = {
   erpId?: string;
 };
 
-export const useAddArea = (current_location: string, service_area: number) => {
+export default function useAddArea(current_location: string, service_area: number) {
   return useMutation({
     mutationKey: ["add-area"],
     mutationFn: async () => {
@@ -78,7 +78,6 @@ export const useGetArea = () => {
           },
         });
         
-        console.log("API Response:", response.data);
         return response.data;
       } catch (error) {
         console.error("Failed to fetch area:", error);

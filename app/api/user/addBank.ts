@@ -16,7 +16,7 @@ type ExtendedUser = {
   erpId?: string;
 };
 
-export const useAddBank = (bankData: any) => {
+export default function useAddBank(bankData: any) {
   return useMutation({
     mutationKey: ["add-bank"],
     mutationFn: async () => {
@@ -59,7 +59,6 @@ export const useAddBank = (bankData: any) => {
           }
         ];
 
-        console.log("bankArray data", bankArray);
 
         const response = await axios.put(`${BASE_URL}/resource/Handyman/${extendedUser.erpId}`, {
             bank_details: bankArray

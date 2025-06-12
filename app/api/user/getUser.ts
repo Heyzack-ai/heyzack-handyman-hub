@@ -22,7 +22,7 @@ type User = {
 };
 
 
-export const useGetUser = (options = {}) => {
+export default function useGetUser(options = {}) {
   return useQuery<Handyman>({
     queryKey: ["user"],
 
@@ -47,7 +47,6 @@ export const useGetUser = (options = {}) => {
           },
         });
 
-        console.log("response of user", response.data);
         
         if (!response.data?.data) {
           throw new Error("User not found");

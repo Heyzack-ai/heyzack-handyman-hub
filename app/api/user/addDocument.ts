@@ -16,7 +16,7 @@ type ExtendedUser = {
   erpId?: string;
 };
 
-export const useUploadKycDocument = () => {
+export default function useUploadKycDocument() {
   return useMutation({
     mutationKey: ["upload-kyc-document"],
     mutationFn: async ({ fileUri }: { fileUri: string }) => {
@@ -46,7 +46,7 @@ export const useUploadKycDocument = () => {
         });
         formData.append("is_private", "1");
 
-        console.log("Starting file upload...");
+
         const uploadRes = await axios.post(
           `${BASE_URL}/upload`,
           formData,
@@ -59,17 +59,13 @@ export const useUploadKycDocument = () => {
           }
         );
 
-        console.log("uploadRes", uploadRes.data);
-
         if (!uploadRes.data?.data?.message?.file_url) {
           throw new Error("Invalid file upload response");
         }
 
-        console.log("File uploaded successfully");
         const fileUrl = uploadRes.data.data.message.file_url;
 
         // 2. Update Handyman record with file URL
-        console.log("Updating handyman record...");
         const response = await axios.put(
           `${BASE_URL}/resource/Handyman/${extendedUser.erpId}`,
           { kyc_document: fileUrl },
@@ -82,7 +78,6 @@ export const useUploadKycDocument = () => {
           }
         );
         
-        console.log("Handyman record updated successfully");
         return response.data;
       } catch (error) {
         console.error("KYC document upload error:", error);

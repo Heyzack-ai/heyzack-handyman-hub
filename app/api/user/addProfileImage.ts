@@ -17,7 +17,7 @@ type ExtendedUser = {
 };
 
 
-export const useUploadProfileImage = () => {
+export default function useUploadProfileImage() {
   return useMutation({
     mutationKey: ["upload-profile-image"],
     mutationFn: async ({ fileUri }: { fileUri: string }) => {
@@ -32,12 +32,10 @@ export const useUploadProfileImage = () => {
 
         // 1. Upload file to ERPNext
         const formData = new FormData();
-        const fileName = fileUri.split("/").pop() || `kyc_${Date.now()}.jpg`;
-        const fileType = fileUri.toLowerCase().endsWith(".pdf") 
-          ? "application/pdf" 
-          : fileUri.toLowerCase().endsWith(".png")
-            ? "image/png"
-            : "image/jpeg";
+        const fileName = fileUri.split("/").pop() || `profile_${Date.now()}.jpg`;
+        const fileType = fileUri.toLowerCase().endsWith(".png") 
+          ? "image/png"
+          : "image/jpeg";
         
         // @ts-ignore
         formData.append("file", {
@@ -45,9 +43,9 @@ export const useUploadProfileImage = () => {
           name: fileName,
           type: fileType
         });
-        formData.append("is_private", "1");
+        // Set is_private to 0 for profile images to ensure they're publicly accessible
+        formData.append("is_private", "0");
 
-        console.log("Starting file upload...");
         const uploadRes = await axios.post(
           `${BASE_URL}/upload`,
           formData,
@@ -60,17 +58,13 @@ export const useUploadProfileImage = () => {
           }
         );
 
-        console.log("uploadRes", uploadRes.data);
-
         if (!uploadRes.data?.data?.message?.file_url) {
           throw new Error("Invalid file upload response");
         }
 
-        console.log("File uploaded successfully");
         const fileUrl = uploadRes.data.data.message.file_url;
 
         // 2. Update Handyman record with file URL
-        console.log("Updating handyman record...");
         const response = await axios.put(
           `${BASE_URL}/resource/Handyman/${extendedUser.erpId}`,
           { profile_image: fileUrl },
@@ -83,7 +77,6 @@ export const useUploadProfileImage = () => {
           }
         );
         
-        console.log("Handyman record updated successfully");
         return response.data;
       } catch (error) {
         console.error("Profile image upload error:", error);
@@ -92,6 +85,9 @@ export const useUploadProfileImage = () => {
             throw new Error("Upload timed out. Please try again with a smaller file.");
           }         
           if (error.response) {
+            if (error.response.status === 403) {
+              throw new Error("Permission denied. You don't have access to update your profile image.");
+            }
             throw new Error(`Server error: ${error.response.status} - ${error.response.data?.message || "Unknown error"}`);
           }
           if (error.request) {

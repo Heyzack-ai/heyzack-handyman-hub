@@ -40,9 +40,6 @@ export default function ProfileScreen() {
   const { data: user } = useGetUser();
   const BASE_URL = process.env.EXPO_PUBLIC_ASSET_URL;
 
-  console.log("user", user?.is_verified);
-
-
 
   const technician = {
     name: user?.handyman_name,
@@ -51,9 +48,9 @@ export default function ProfileScreen() {
     // location: "San Francisco, CA",
     avatar:
      `${BASE_URL}${user?.profile_image}` ||
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300",
-    completedJobs: 128,
-    rating: 4.8,
+      `https://avatar.iran.liara.run/username?username=${user?.handyman_name}`,
+    completedJobs: user?.jobs_completed || 0,
+    rating: user?.rating || 0,
     isVerified: String(user?.is_verified) === "1" || String(user?.is_verified) === "true",
     skills: JSON.parse(user?.skills || "{\"skills\":[]}") as Skills,
   };

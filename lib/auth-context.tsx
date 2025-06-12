@@ -43,11 +43,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       // Then verify with Better Auth
       const session = await authClient.getSession();
-      console.log('Better Auth session check:', session);
       
       // Check if we have a valid session
       if (session.data) {
-        console.log('Valid session found');
         setIsAuthenticated(true);
         return;
       }
@@ -56,25 +54,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const sessionData = await SecureStore.getItemAsync('myapp_session');
       const userData = await SecureStore.getItemAsync('myapp_user');
       
-      console.log('Stored session data:', {
-        sessionData,
-        userData
-      });
+     
       
       if (sessionData && userData) {
-        console.log('Found stored session data, attempting to restore session');
+   
         // Try to restore the session
         const restoredSession = await authClient.getSession();
-        console.log('Restored session:', restoredSession);
         
         if (restoredSession.data) {
-          console.log('Successfully restored session');
           setIsAuthenticated(true);
           return;
         }
       }
 
-      console.log('No valid session found, clearing data');
       await clearSessionData();
       setIsAuthenticated(false);
     } catch (error) {
@@ -103,7 +95,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string) => {
     try {
       const response = await authClient.signIn.email({ email, password });
-      console.log('Sign in response:', response);
 
       await SecureStore.setItemAsync('auth_token', response.data?.token || '');
       
@@ -117,7 +108,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Verify the session was created
       const session = await authClient.getSession();
-      console.log('Session after sign in:', session);
       
       if (!session.data) {
         throw new Error('Failed to create session');
@@ -134,7 +124,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = async (data: { email: string; phone: string; password: string; name: string; role: string }) => {
     try {
       const response = await authClient.signUp.email(data);
-      console.log('Sign up response:', response);
       
       if (response.error) {
         throw new Error(response.error.message);

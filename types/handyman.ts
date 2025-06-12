@@ -19,6 +19,8 @@ export interface Handyman {
     kyc_document: string
     profile_image: string
     is_verified: number
+    rating: number
+    jobs_completed: number
   }
   
   export interface Availability {

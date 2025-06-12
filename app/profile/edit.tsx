@@ -22,6 +22,8 @@ import { useUpdateUser } from "@/app/api/user/getUser";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUploadKycDocument } from "@/app/api/user/addDocument";
 import { useUploadProfileImage } from "@/app/api/user/addProfileImage";
+import axios from "axios";
+import * as DocumentPicker from 'expo-document-picker';
 
 export default function EditProfileScreen() {
   const router = useRouter();
@@ -38,14 +40,13 @@ export default function EditProfileScreen() {
   const queryClient = useQueryClient();
   const BASE_URL = process.env.EXPO_PUBLIC_ASSET_URL;
 
-  console.log("parsedUser", parsedUser?.profile_image);  
 
   React.useEffect(() => {
     if (parsedUser) {
       setFullName(parsedUser.handyman_name || "");
       setEmail(parsedUser.email || "");
       setPhone(parsedUser.contact_number || "");
-      setAvatar(`${BASE_URL}${parsedUser.profile_image}` || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300");
+      setAvatar(`${BASE_URL}${parsedUser.profile_image}` || `https://avatar.iran.liara.run/username?username=${parsedUser.handyman_name}`);
       if (parsedUser?.kyc_document) {
         setKycDocument(`${BASE_URL}${parsedUser.kyc_document}`);
         setIsVerified( String(parsedUser?.is_verified) === "1" || String(parsedUser?.is_verified) === "true");
@@ -59,73 +60,64 @@ export default function EditProfileScreen() {
   const isUploading = uploadStatus === 'pending';
 
   const uploadKycDocument = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permission Required", "Please grant camera roll permissions to upload documents.");
-      return;
-    }
-    
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.All,
-        allowsEditing: false,
-        quality: 0.8,
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['image/*', 'application/pdf'],
+        copyToCacheDirectory: true,
+        multiple: false,
       });
-      
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        // Check file size - limit to 5MB
-        const fileInfo = await FileSystem.getInfoAsync(result.assets[0].uri);
-        if (fileInfo.exists && fileInfo.size > 5 * 1024 * 1024) {
-          Alert.alert(
-            "File Too Large", 
-            "Please select a file smaller than 5MB."
-          );
-          return;
-        }
-        
-        setKycDocument(result.assets[0].uri);
-        setIsSaving(true);
-        
-        // Add a timeout to prevent infinite loading
-        const uploadTimeout = setTimeout(() => {
-          if (uploadStatus === 'pending') {
-            setIsSaving(false);
-            Alert.alert(
-              "Upload Timeout", 
-              "The upload is taking longer than expected. Please try again with a smaller file or check your connection."
-            );
-          }
-        }, 30000); // 30 second timeout
-        
-        uploadKyc(
-          { fileUri: result.assets[0].uri },
-          {
-            onSuccess: () => {
-              clearTimeout(uploadTimeout);
-              setIsVerified(true);
-              queryClient.invalidateQueries({ queryKey: ["user"] });
-              Alert.alert("Success", "Document uploaded successfully");
-              setIsSaving(false);
-            },
-            onError: (error) => {
-              clearTimeout(uploadTimeout);
-              setIsSaving(false);
-              console.error("Upload error:", error);
-              Alert.alert(
-                "Error", 
-                error instanceof Error 
-                  ? error.message 
-                  : "Failed to upload document. Please try again with a smaller file or check your connection."
-              );
-            },
-          }
-        );
+
+      if (result.canceled) return;
+
+      const file = result.assets[0];
+      // Check file size - limit to 5MB
+      if (file.size && file.size > 5 * 1024 * 1024) {
+        Alert.alert("File Too Large", "Please select a file smaller than 5MB.");
+        return;
       }
+
+      setKycDocument(file.uri);
+      setIsSaving(true);
+
+      // Add a timeout to prevent infinite loading
+      const uploadTimeout = setTimeout(() => {
+        if (uploadStatus === 'pending') {
+          setIsSaving(false);
+          Alert.alert(
+            "Upload Timeout",
+            "The upload is taking longer than expected. Please try again with a smaller file or check your connection."
+          );
+        }
+      }, 30000); // 30 second timeout
+
+      uploadKyc(
+        { fileUri: file.uri },
+        {
+          onSuccess: () => {
+            clearTimeout(uploadTimeout);
+            setIsVerified(true);
+            queryClient.invalidateQueries({ queryKey: ["user"] });
+            Alert.alert("Success", "Document uploaded successfully");
+            setIsSaving(false);
+          },
+          onError: (error) => {
+            clearTimeout(uploadTimeout);
+            setIsSaving(false);
+            console.error("Upload error:", error);
+            Alert.alert(
+              "Error",
+              error instanceof Error
+                ? error.message
+                : "Failed to upload document. Please try again with a smaller file or check your connection."
+            );
+          },
+        }
+      );
     } catch (error) {
       console.error("Document selection error:", error);
       setIsSaving(false);
       Alert.alert(
-        "Error", 
+        "Error",
         "There was a problem selecting the document. Please try again."
       );
     }
@@ -151,7 +143,7 @@ export default function EditProfileScreen() {
         Alert.alert("Success", "Profile updated successfully");
         router.back();
       },
-      onError: () => {
+      onError: (error) => {
         setIsSaving(false);
         Alert.alert("Error", "Failed to update profile");
       },
@@ -170,54 +162,90 @@ export default function EditProfileScreen() {
       return;
     }
     
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-    
-    if (!result.canceled && result.assets && result.assets.length > 0) {
-      setIsSaving(true);
-      uploadProfileImage(
-        { fileUri: result.assets[0].uri },
-        {
-          onSuccess: (response) => {
-            console.log("Profile image upload response:", response);
-            const fileUrl = response?.data?.profile_image;
-            if (!fileUrl) {
-              Alert.alert("Error", "No file URL returned from server.");
-              setIsSaving(false);
-              return;
-            }
-            updateUser(
-              { profile_image: fileUrl } as any,
-              {
-                onSuccess: () => {
-                  setAvatar(`${BASE_URL}${fileUrl}`);
-                  setIsSaving(false);
-                  queryClient.invalidateQueries({ queryKey: ["user"] });
-                  Alert.alert("Success", "Profile image updated successfully");
-                },
-                onError: (error: any) => {
-                  setIsSaving(false);
-                  console.log("updateUser error:", error, error?.response?.data);
-                  Alert.alert("Error", "Failed to update profile image");
-                },
-              }
-            );
-          },
-          onError: (error) => {
-            setIsSaving(false);
-            console.log("Profile image upload error:", error);
-            Alert.alert(
-              "Error",
-              error instanceof Error
-                ? error.message
-                : "Failed to upload image. Please try again."
-            );
-          },
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+      
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        // Check file size - limit to 5MB
+        const fileInfo = await FileSystem.getInfoAsync(result.assets[0].uri);
+        if (fileInfo.exists && fileInfo.size > 5 * 1024 * 1024) {
+          Alert.alert(
+            "File Too Large", 
+            "Please select a file smaller than 5MB."
+          );
+          return;
         }
+        
+        setIsSaving(true);
+        
+        // Add a timeout to prevent infinite loading
+        const uploadTimeout = setTimeout(() => {
+          if (uploadProfileImageStatus === 'pending') {
+            setIsSaving(false);
+            Alert.alert(
+              "Upload Timeout", 
+              "The upload is taking longer than expected. Please try again with a smaller file or check your connection."
+            );
+          }
+        }, 30000); // 30 second timeout
+        
+        uploadProfileImage(
+          { fileUri: result.assets[0].uri },
+          {
+            onSuccess: (response) => {
+              clearTimeout(uploadTimeout);
+              queryClient.invalidateQueries({ queryKey: ["user"] });
+              
+              // Check if response has the expected structure
+              if (!response?.data?.profile_image) {
+                setIsSaving(false);
+                Alert.alert("Error", "Invalid response from server. Profile image path not found.");
+                return;
+              }
+              
+              const fileUrl = response.data.profile_image;
+              
+              // Update the UI immediately with the new image
+              setAvatar(`${BASE_URL}${fileUrl}`);
+              setIsSaving(false);
+              
+              // Refresh user data
+              queryClient.invalidateQueries({ queryKey: ["user"] });
+              Alert.alert("Success", "Profile image updated successfully");
+            },
+            onError: (error) => {
+              clearTimeout(uploadTimeout);
+              setIsSaving(false);
+              
+              // Provide more specific error messages
+              if (axios.isAxiosError(error) && error.response?.status === 403) {
+                Alert.alert(
+                  "Permission Error",
+                  "You don't have permission to update your profile image. Please contact support."
+                );
+              } else {
+                Alert.alert(
+                  "Error",
+                  error instanceof Error
+                    ? error.message
+                    : "Failed to upload image. Please try again."
+                );
+              }
+            },
+          }
+        );
+      }
+    } catch (error) {
+      console.error("Image selection error:", error);
+      setIsSaving(false);
+      Alert.alert(
+        "Error", 
+        "There was a problem selecting the image. Please try again."
       );
     }
   };
@@ -230,53 +258,89 @@ export default function EditProfileScreen() {
       return;
     }
     
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-    
-    if (!result.canceled && result.assets && result.assets.length > 0) {
-      setIsSaving(true);
-      uploadProfileImage(
-        { fileUri: result.assets[0].uri },
-        {
-          onSuccess: (response) => {
-            console.log("Profile image upload response:", response);
-            const fileUrl = response?.data?.profile_image;
-            if (!fileUrl) {
-              Alert.alert("Error", "No file URL returned from server.");
-              setIsSaving(false);
-              return;
-            }
-            updateUser(
-              { profile_image: fileUrl } as any,
-              {
-                onSuccess: () => {
-                  setAvatar(`${BASE_URL}${fileUrl}`);
-                  setIsSaving(false);
-                  queryClient.invalidateQueries({ queryKey: ["user"] });
-                  Alert.alert("Success", "Profile image updated successfully");
-                },
-                onError: (error: any) => {
-                  setIsSaving(false);
-                  console.log("updateUser error:", error, error?.response?.data);
-                  Alert.alert("Error", "Failed to update profile image");
-                },
-              }
-            );
-          },
-          onError: (error) => {
-            setIsSaving(false);
-            console.log("Profile image upload error:", error);
-            Alert.alert(
-              "Error",
-              error instanceof Error
-                ? error.message
-                : "Failed to upload image. Please try again."
-            );
-          },
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+      
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        // Check file size - limit to 5MB
+        const fileInfo = await FileSystem.getInfoAsync(result.assets[0].uri);
+        if (fileInfo.exists && fileInfo.size > 5 * 1024 * 1024) {
+          Alert.alert(
+            "File Too Large", 
+            "Please select a file smaller than 5MB."
+          );
+          return;
         }
+        
+        setIsSaving(true);
+        
+        // Add a timeout to prevent infinite loading
+        const uploadTimeout = setTimeout(() => {
+          if (uploadProfileImageStatus === 'pending') {
+            setIsSaving(false);
+            Alert.alert(
+              "Upload Timeout", 
+              "The upload is taking longer than expected. Please try again with a smaller file or check your connection."
+            );
+          }
+        }, 30000); // 30 second timeout
+        
+        uploadProfileImage(
+          { fileUri: result.assets[0].uri },
+          {
+            onSuccess: (response) => {
+              clearTimeout(uploadTimeout);
+              queryClient.invalidateQueries({ queryKey: ["user"] });
+              
+              // Check if response has the expected structure
+              if (!response?.data?.profile_image) {
+                setIsSaving(false);
+                Alert.alert("Error", "Invalid response from server. Profile image path not found.");
+                return;
+              }
+              
+              const fileUrl = response.data.profile_image;
+              
+              // Update the UI immediately with the new image
+              setAvatar(`${BASE_URL}${fileUrl}`);
+              setIsSaving(false);
+              
+              // Refresh user data
+              queryClient.invalidateQueries({ queryKey: ["user"] });
+              Alert.alert("Success", "Profile image updated successfully");
+            },
+            onError: (error) => {
+              clearTimeout(uploadTimeout);
+              setIsSaving(false);
+              
+              // Provide more specific error messages
+              if (axios.isAxiosError(error) && error.response?.status === 403) {
+                Alert.alert(
+                  "Permission Error",
+                  "You don't have permission to update your profile image. Please contact support."
+                );
+              } else {
+                Alert.alert(
+                  "Error",
+                  error instanceof Error
+                    ? error.message
+                    : "Failed to upload image. Please try again."
+                );
+              }
+            },
+          }
+        );
+      }
+    } catch (error) {
+      console.error("Camera error:", error);
+      setIsSaving(false);
+      Alert.alert(
+        "Error", 
+        "There was a problem taking the photo. Please try again."
       );
     }
   };
