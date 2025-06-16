@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
   Text,
@@ -10,7 +10,7 @@ import {
   Modal,
   SafeAreaView,
 } from "react-native";
-import { Stack, useRouter } from "expo-router";
+import { Stack, useRouter, useLocalSearchParams } from "expo-router";
 import { Plus, X, Building2, Link2 } from "lucide-react-native";
 import Colors from "@/constants/colors";
 import Header from "@/components/Header";
@@ -24,6 +24,8 @@ type Partner = {
 
 export default function PartnersScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ partner_code: string, handyman_name: string }>();
+  
   const [partners, setPartners] = useState<Partner[]>([
     {
       id: "1",
@@ -42,6 +44,14 @@ export default function PartnersScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [partnerCode, setPartnerCode] = useState("");
   const [isJoining, setIsJoining] = useState(false);
+
+  // Handle deep link parameters
+  useEffect(() => {
+    if (params.partner_code) {
+      setPartnerCode(params.partner_code);
+      setModalVisible(true);
+    }
+  }, [params.partner_code]);
 
   const handleAddPartner = () => {
     setPartnerCode("");
@@ -63,7 +73,7 @@ export default function PartnersScreen() {
       // Mock partner data based on code
       const newPartner: Partner = {
         id: Date.now().toString(),
-        name: "New Partner Company",
+        name: params.handyman_name || "New Partner Company",
         code: partnerCode,
         joinedDate: new Date().toISOString().split("T")[0],
       };
