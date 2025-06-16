@@ -11,11 +11,7 @@
     },
     "preview": {
       "distribution": "internal",
-      "channel": "preview",
-      "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.dev.heyzack.ai"
-      },
-      "prebuildCommand": "./prebuild.sh"
+      "channel": "preview"
     },
     "production": {
       "autoIncrement": true,
