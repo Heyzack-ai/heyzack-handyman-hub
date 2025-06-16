@@ -17,7 +17,7 @@ type ExtendedUser = {
 };
 
 
-export default function useUploadProfileImage() {
+export function useUploadProfileImage() {
   return useMutation({
     mutationKey: ["upload-profile-image"],
     mutationFn: async ({ fileUri }: { fileUri: string }) => {

@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "SmartHome Service Hub",
+    "name": "HeyZack",
     "slug": "smarthome-service-hub",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "scheme": "heyzack",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -16,8 +16,14 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.heyzack.handyman",
-      "associatedDomains": ["applinks:heyzack.ai"],
-      "keychainAccessGroup": null
+      "associatedDomains": [
+        "applinks:heyzack.ai",
+        "applinks:heyzack.ai"
+      ],
+      "keychainAccessGroup": {},
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -31,22 +37,26 @@
           "autoVerify": true,
           "data": [
             {
-              "scheme": "myapp",
+              "scheme": "heyzack",
               "host": "*"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
     "web": {
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "output": "server"
     },
     "plugins": [
       [
         "expo-router",
         {
-          "origin": "https://rork.com/"
+          "origin": "https://heyzack.ai/"
         }
       ]
     ],
@@ -55,7 +65,7 @@
     },
     "extra": {
       "router": {
-        "origin": "https://rork.com/"
+        "origin": "https://heyzack.ai/"
       },
       "eas": {
         "projectId": "b5bd80f4-3604-4379-8312-a5aeafce53fb"
@@ -66,6 +76,7 @@
     },
     "updates": {
       "url": "https://u.expo.dev/b5bd80f4-3604-4379-8312-a5aeafce53fb"
-    }
+    },
+    "owner": "raheman08"
   }
 }

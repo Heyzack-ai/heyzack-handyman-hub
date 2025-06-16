@@ -16,7 +16,7 @@ type ExtendedUser = {
   erpId?: string;
 };
 
-export default function useAddArea(current_location: string, service_area: number) {
+export function useAddArea(current_location: string, service_area: number) {
   return useMutation({
     mutationKey: ["add-area"],
     mutationFn: async () => {

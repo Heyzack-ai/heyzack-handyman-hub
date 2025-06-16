@@ -16,7 +16,7 @@ type ExtendedUser = {
   erpId?: string;
 };
 
-export default function useAddBank(bankData: any) {
+export function useAddBank(bankData: any) {
   return useMutation({
     mutationKey: ["add-bank"],
     mutationFn: async () => {

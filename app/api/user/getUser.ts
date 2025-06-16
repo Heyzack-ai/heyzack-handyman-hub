@@ -22,7 +22,7 @@ type User = {
 };
 
 
-export default function useGetUser(options = {}) {
+export function useGetUser(options = {}) {
   return useQuery<Handyman>({
     queryKey: ["user"],
 

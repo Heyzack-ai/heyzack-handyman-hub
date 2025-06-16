@@ -16,7 +16,7 @@ type ExtendedUser = {
   erpId?: string;
 };
 
-export default function useUploadKycDocument() {
+export function useUploadKycDocument() {
   return useMutation({
     mutationKey: ["upload-kyc-document"],
     mutationFn: async ({ fileUri }: { fileUri: string }) => {

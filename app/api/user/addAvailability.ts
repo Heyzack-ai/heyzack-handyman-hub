@@ -16,7 +16,7 @@ type ExtendedUser = {
   erpId?: string;
 };
 
-export default function useAddAvailability(availabilityData: any) {
+export function useAddAvailability(availabilityData: any) {
   return useMutation({
     mutationKey: ["add-availability"],
     mutationFn: async () => {

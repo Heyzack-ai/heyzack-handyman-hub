@@ -16,7 +16,7 @@ type ExtendedUser = {
   erpId?: string;
 };
 
-export default function useAddSkills(skills: string[]) {
+export function useAddSkills(skills: string[]) {
   return useMutation({
     mutationKey: ["add-skills"],
     mutationFn: async () => {
