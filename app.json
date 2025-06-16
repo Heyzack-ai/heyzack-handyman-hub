@@ -20,6 +20,7 @@
         "applinks:smarthome-service-hub.expo.app"
       ],
       "keychainAccessGroup": {},
+      "appleTeamId": "43RXV8F328",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
