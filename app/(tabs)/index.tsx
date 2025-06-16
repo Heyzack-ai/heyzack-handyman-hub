@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { StyleSheet, Text, View, ScrollView, SafeAreaView, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { Calendar as CalendarIcon, Briefcase, Euro } from "lucide-react-native";
@@ -10,6 +10,7 @@ import Colors from "@/constants/colors";
 import Job from "@/components/Job";
 import {Bell} from 'lucide-react-native';
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from "react-native";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -17,10 +18,18 @@ export default function HomeScreen() {
   const [selectedDate, setSelectedDate] = useState<string>(
     new Date().toISOString().split("T")[0]
   );
+  const [token, setToken] = useState<string | null>(null);
   
   const today = new Date().toISOString().split("T")[0];
 
-  const token = SecureStore.getItemAsync('auth_token');
+  // Only try to access SecureStore on native platforms
+  useEffect(() => {
+    if (Platform.OS !== 'web') {
+      SecureStore.getItemAsync('auth_token').then(value => {
+        setToken(value);
+      });
+    }
+  }, []);
   
   // Filter jobs by selected date
   const selectedDateJobs = jobs.filter(job => job.scheduledDate === selectedDate);

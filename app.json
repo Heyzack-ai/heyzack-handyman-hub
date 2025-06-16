@@ -17,7 +17,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.heyzack.handyman",
       "associatedDomains": [
-        "applinks:heyzack.ai"
+        "applinks:smarthome-service-hub.expo.app"
       ],
       "keychainAccessGroup": {},
       "infoPlist": {
@@ -64,7 +64,7 @@
     },
     "extra": {
       "router": {
-        "origin": "https://heyzack.ai/"
+        "origin": false
       },
       "eas": {
         "projectId": "b5bd80f4-3604-4379-8312-a5aeafce53fb"
