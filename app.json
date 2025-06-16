@@ -17,7 +17,6 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.heyzack.handyman",
       "associatedDomains": [
-        "applinks:heyzack.ai",
         "applinks:heyzack.ai"
       ],
       "keychainAccessGroup": {},

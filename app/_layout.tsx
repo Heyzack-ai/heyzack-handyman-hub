@@ -6,33 +6,11 @@ import { useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { DevToolsProvider } from "../dev-tools";
 import { AuthProvider } from "@/lib/auth-context";
-import { Linking } from "react-native";
-import { handleDeepLink } from "@/utils/deepLinking";
 
 export const unstable_settings = {
   // Ensure that reloading on `/modal` keeps a back button present.
   initialRouteName: "(tabs)",
 };
-
-useEffect(() => {
-  // Handle deep links when the app is already open
-  const subscription = Linking.addEventListener("url", ({ url }) => {
-    console.log("App received deep link while running:", url);
-    handleDeepLink(url);
-  });
-
-  // Handle deep links when the app is opened from a link
-  Linking.getInitialURL().then((url) => {
-    if (url) {
-      console.log("App opened from deep link:", url);
-      handleDeepLink(url);
-    }
-  });
-
-  return () => {
-    subscription.remove();
-  };
-}, []);
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
