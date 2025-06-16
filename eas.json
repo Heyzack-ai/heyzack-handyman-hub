@@ -13,10 +13,9 @@
       "distribution": "internal",
       "channel": "preview",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.dev.heyzack.ai",
-        "BUN_VERSION": "1.1.21"
+        "EXPO_PUBLIC_API_URL": "https://api.dev.heyzack.ai"
       },
-      "prebuildCommand": "npm install -g bun@1.1.21 && bun install"
+      "prebuildCommand": "./prebuild.sh"
     },
     "production": {
       "autoIncrement": true,
