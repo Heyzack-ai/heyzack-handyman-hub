@@ -16,9 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.heyzack.handyman",
-      "associatedDomains": [
-        "applinks:smarthome-service-hub.expo.app"
-      ],
+      "associatedDomains": ["applinks:smarthome-service-hub.expo.app"],
       "keychainAccessGroup": {},
       "appleTeamId": "43RXV8F328",
       "infoPlist": {
@@ -41,10 +39,7 @@
               "host": "*"
             }
           ],
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
+          "category": ["BROWSABLE", "DEFAULT"]
         }
       ]
     },
@@ -56,7 +51,7 @@
       [
         "expo-router",
         {
-          "origin": "https://heyzack.ai/"
+          "origin": "https://smarthome-service-hub.expo.app"
         }
       ]
     ],
@@ -65,7 +60,7 @@
     },
     "extra": {
       "router": {
-        "origin": false
+        "origin": "https://smarthome-service-hub.expo.app"
       },
       "eas": {
         "projectId": "b5bd80f4-3604-4379-8312-a5aeafce53fb"
