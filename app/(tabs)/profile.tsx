@@ -7,6 +7,8 @@ import {
   Pressable,
   SafeAreaView,
   Alert,
+  Platform,
+  StatusBar,
 } from "react-native";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
@@ -294,6 +296,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: Colors.light.background,
   },
   container: {

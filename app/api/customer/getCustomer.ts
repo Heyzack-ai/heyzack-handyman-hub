@@ -3,6 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import * as SecureStore from 'expo-secure-store';
 import { Handyman } from "@/types/handyman";
+import { Customer } from "@/types/job";
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -16,9 +17,9 @@ type Partner = {
   address?: string;
 }
 
-export function useGetPartner(partnerCode: string) {
-  return useQuery<Partner>({
-    queryKey: ["partner", partnerCode],
+export function useGetCustomer(customerCode: string) {
+  return useQuery<Customer>({
+    queryKey: ["customer", customerCode],
     queryFn: async () => {
       try {
         const token = await SecureStore.getItemAsync('auth_token');
@@ -26,9 +27,10 @@ export function useGetPartner(partnerCode: string) {
           throw new Error("Authentication token not found");
         }
         const searchParams = new URLSearchParams();
-        searchParams.append('filter', `[["partner_code", "=", "${partnerCode}"]]`);
-        searchParams.append('fields', JSON.stringify(['name', 'partner_name', 'partner_code', 'contact_person', 'email', 'phone', 'address', 'customer']));
-        const response = await axios.get<{ data: Partner[] }>(`${BASE_URL}/resource/Installation Partner?${searchParams.toString()}`, {
+        searchParams.append('filter', `[["name", "=", "${customerCode}"]]`);
+        searchParams.append('fields', JSON.stringify(['name', 'phone', 'email', 'address', 'customer_name']));
+        console.log("Customer Code", customerCode);
+        const response = await axios.get<{ data: Customer[] }>(`${BASE_URL}/resource/Heyzack Customer?${searchParams.toString()}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -38,7 +40,7 @@ export function useGetPartner(partnerCode: string) {
         console.log(response.data);
 
         if (!response.data?.data?.[0]) {
-          throw new Error("Partner not found");
+          throw new Error("Customer not found");
         }
 
         return response.data.data[0];
@@ -49,7 +51,7 @@ export function useGetPartner(partnerCode: string) {
           : new Error("Failed to fetch partner data");
       }
     },
-    enabled: false,
+    enabled: !!customerCode,
     staleTime: 5 * 60 * 1000,
   });
 }

@@ -9,6 +9,8 @@ import {
   ScrollView,
   SafeAreaView,
   Keyboard,
+  Platform,
+  StatusBar,
 } from "react-native";
 import Slider from '@react-native-community/slider';
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
@@ -278,6 +280,7 @@ if (typeof selectedSkills === "string") {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: Colors.light.background,
   },
   container: {

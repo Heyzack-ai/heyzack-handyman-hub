@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, View, FlatList, Pressable, Alert, SafeAreaView } from "react-native";
+import { StyleSheet, Text, View, FlatList, Pressable, Alert, SafeAreaView, StatusBar, Platform } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import { DollarSign, CheckCircle, Clock, AlertCircle } from "lucide-react-native";
 import Colors from "@/constants/colors";
@@ -111,7 +111,7 @@ export default function PaymentsScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 }]}>
       <Header title="Payments" />
       <Stack.Screen 
         options={{

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, View, ScrollView, TextInput, Alert, SafeAreaView } from "react-native";
+import { StyleSheet, Text, View, ScrollView, TextInput, Alert, SafeAreaView, Platform, StatusBar } from "react-native";
 import { Search } from "lucide-react-native";
 import { useJobStore } from "@/store/job-store";
 import JobCard from "@/components/JobCard";
@@ -166,6 +166,7 @@ export default function JobsScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: Colors.light.background,
   },
   container: {

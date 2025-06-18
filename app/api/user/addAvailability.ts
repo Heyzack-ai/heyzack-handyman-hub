@@ -2,6 +2,7 @@ import axios from "axios";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import * as SecureStore from 'expo-secure-store';
 import { authClient } from "@/lib/auth-client";
+import { WeekSchedule } from "@/types/availability";
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -16,10 +17,10 @@ type ExtendedUser = {
   erpId?: string;
 };
 
-export function useAddAvailability(availabilityData: any) {
+export function useAddAvailability() {
   return useMutation({
     mutationKey: ["add-availability"],
-    mutationFn: async () => {
+    mutationFn: async (availabilityData: WeekSchedule) => {
       try {
         const token = await SecureStore.getItemAsync('auth_token');
         if (!token) {

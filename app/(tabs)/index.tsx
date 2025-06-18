@@ -15,20 +15,36 @@ import JobCard from "@/components/JobCard";
 import ActionButton from "@/components/ActionButton";
 import Calendar from "@/components/Calendar";
 import Colors from "@/constants/colors";
-import Job from "@/components/Job";
+import { Job as JobType } from "@/types/job";
 import { Bell } from "lucide-react-native";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
+import { useGetJobs } from "@/app/api/jobs/getJobs";
+import Job from "@/components/Job";
+import { useGetCustomer } from "@/app/api/customer/getCustomer";
 
 export default function HomeScreen() {
   const router = useRouter();
-  const jobs = useJobStore((state) => state.jobs);
+  // const jobs = useJobStore((state) => state.jobs);
   const [selectedDate, setSelectedDate] = useState<string>(
     new Date().toISOString().split("T")[0]
   );
   const [token, setToken] = useState<string | null>(null);
-
+  const { data: jobsData } = useGetJobs();
+  const { data: customerData, error: customerError } = useGetCustomer(jobsData?.data[0].customer);
   const today = new Date().toISOString().split("T")[0];
+
+  const completedJobsCount =
+    jobsData?.data?.filter((job: any) => job.status === "Completed").length ||
+    0;
+  const pendingJobsCount =
+    jobsData?.data?.filter(
+      (job: any) => job.status !== "Completed" && job.status !== "On Hold"
+    ).length || 0;
+  const earnings =
+    jobsData?.data
+      ?.filter((job: any) => job.status === "Completed")
+      .reduce((acc: number, job: any) => acc + job.installation_fare, 0) || 0;
 
   // Only try to access SecureStore on native platforms
   useEffect(() => {
@@ -39,23 +55,32 @@ export default function HomeScreen() {
     }
   }, []);
 
-  // Filter jobs by selected date
-  const selectedDateJobs = jobs.filter(
-    (job) => job.scheduledDate === selectedDate
+  console.log("Jobs", jobsData?.data);
+  console.log("Customer", customerData);
+
+  if (customerError) {
+    console.log("Customer Error", customerError);
+  }
+
+  console.log('selectedDate:', selectedDate);
+  console.log('jobs scheduled_date:', jobsData?.data?.map((job: any) => job.scheduled_date));
+
+  const selectedDateJobs = jobsData?.data?.filter(
+    (job: any) => job.scheduled_date?.slice(0, 10) === selectedDate
+  ) || [];
+
+  const todayJobs = jobsData?.data?.filter(
+    (job: any) => job.scheduled_date === today
   );
 
-  const todayJobs = jobs.filter((job) => job.scheduledDate === today);
-
-  const upcomingJobs = jobs
-    .filter((job) => {
-      return job.scheduledDate > today;
-    })
+  const upcomingJobs = (jobsData?.data || [])
+    .filter((job: any) => job.scheduled_date > today)
     .slice(0, 3);
 
   // Calculate stats
-  const completedJobs = jobs.filter((j) => j.status === "completed").length;
-  const pendingJobs = jobs.filter((j) => j.status !== "completed").length;
-  const earnings = "€1,240"; // Mock earnings data
+  // const completedJobs = jobs.filter((j) => j.status === "completed").length;
+  // const pendingJobs = jobs.filter((j) => j.status !== "completed").length;
+  // const earnings = "€1,240"; // Mock earnings data
 
   const handleDateSelect = (date: string) => {
     setSelectedDate(date);
@@ -97,12 +122,12 @@ export default function HomeScreen() {
       >
         <View style={{ width: "100%", marginBottom: 16 }}>
           <View style={{ flexDirection: "row", gap: 12 }}>
-            <Job title="Completed Jobs" number="10" />
-            <Job title="Pending Jobs" number="3" />
+            <Job title="Completed Jobs" number={completedJobsCount} />
+            <Job title="Pending Jobs" number={pendingJobsCount} />
           </View>
 
           <View style={{ marginTop: 16, height: 100 }}>
-            <Job title="Earnings" number="$300" style={{ width: "100%" }} />
+            <Job title="Earnings" number={earnings} style={{ width: "100%" }} />
           </View>
         </View>
 
@@ -112,10 +137,16 @@ export default function HomeScreen() {
             <Text style={styles.sectionTitle}>Schedule</Text>
           </View>
 
-          <Calendar
+          {/* <Calendar
             selectedDate={selectedDate}
             onDateSelect={handleDateSelect}
             jobs={jobs}
+          /> */}
+
+          <Calendar
+            selectedDate={selectedDate}
+            onDateSelect={handleDateSelect}
+            jobs={jobsData?.data || []}
           />
         </View>
 
@@ -131,7 +162,21 @@ export default function HomeScreen() {
           </View>
 
           {selectedDateJobs.length > 0 ? (
-            selectedDateJobs.map((job) => <JobCard key={job.id} job={job} />)
+            selectedDateJobs.map((job: JobType) => (
+              <JobCard
+                key={job.id}
+                job={{
+                  ...job,
+                  customer:
+                    customerData && (
+                      (typeof job.customer === 'string' && job.customer === customerData.name) ||
+                      (typeof job.customer === 'object' && job.customer.name === customerData.name)
+                    )
+                      ? customerData
+                      : job.customer
+                }}
+              />
+            ))
           ) : (
             <View style={styles.emptyState}>
               <CalendarIcon size={40} color={Colors.light.gray[400]} />
@@ -150,8 +195,20 @@ export default function HomeScreen() {
               <Text style={styles.sectionTitle}>Upcoming Jobs</Text>
             </View>
 
-            {upcomingJobs.map((job) => (
-              <JobCard key={job.id} job={job} />
+            {upcomingJobs.map((job: JobType) => (
+             <JobCard
+             key={job.id}
+             job={{
+               ...job,
+               customer:
+                 customerData && (
+                   (typeof job.customer === 'string' && job.customer === customerData.name) ||
+                   (typeof job.customer === 'object' && job.customer.name === customerData.name)
+                 )
+                   ? customerData
+                   : job.customer
+             }}
+           />
             ))}
 
             <ActionButton
@@ -170,7 +227,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
     backgroundColor: Colors.light.background,
   },
   container: {

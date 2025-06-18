@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, View, ScrollView, Pressable, SafeAreaView } from "react-native";
+import { StyleSheet, Text, View, ScrollView, Pressable, SafeAreaView, StatusBar, Platform } from "react-native";
 import { useRouter, Stack } from "expo-router";
 import { ArrowLeft, Bell, CheckCircle, AlertCircle, Calendar, Briefcase, Clock } from "lucide-react-native";
 import Colors from "@/constants/colors";
@@ -106,7 +106,7 @@ export default function NotificationsScreen() {
   const unreadCount = notificationsList.filter(n => !n.read).length;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 }]}>
       <Header title="Notifications" onBack={() => router.back()} />
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>

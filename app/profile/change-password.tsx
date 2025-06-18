@@ -8,6 +8,8 @@ import {
   Alert,
   ScrollView,
   SafeAreaView,
+  Platform,
+  StatusBar,
 } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import { Eye, EyeOff } from "lucide-react-native";
@@ -144,6 +146,7 @@ export default function ChangePasswordScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: Colors.light.background,
   },
   container: {

@@ -7,6 +7,8 @@ import {
   Pressable,
   Alert,
   SafeAreaView,
+  Platform,
+  StatusBar,
 } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import { Check } from "lucide-react-native";
@@ -46,7 +48,7 @@ export default function LanguageScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 }]}>
       <Header title="Language Settings" onBack={() => router.back()} />
       
       <View style={styles.container}>

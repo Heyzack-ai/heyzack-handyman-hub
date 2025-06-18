@@ -9,8 +9,9 @@ type StatusBadgeProps = {
 };
 
 export default function StatusBadge({ status, size = "medium" }: StatusBadgeProps) {
+  const normalizedStatus = status.toLowerCase();
   const getStatusColor = () => {
-    switch (status) {
+    switch (normalizedStatus) {
       case "scheduled":
         return Colors.light.info;
       case "stock_collected":
@@ -31,7 +32,7 @@ export default function StatusBadge({ status, size = "medium" }: StatusBadgeProp
   };
 
   const getStatusText = () => {
-    switch (status) {
+    switch (normalizedStatus) {
       case "scheduled":
         return "Scheduled";
       case "stock_collected":

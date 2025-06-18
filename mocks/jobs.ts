@@ -231,7 +231,7 @@ export const jobs: Job[] = [
     id: "job-006",
     title: "Smart Doorbell Installation",
     description: "Installation of video doorbell with motion detection",
-    scheduledDate: "2025-06-08",
+    scheduled_date: "2025-06-08",
     scheduledTime: "9:00 AM",
     status: "completed",
     type: "job_request",

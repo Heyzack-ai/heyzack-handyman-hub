@@ -9,6 +9,7 @@ import {
   Platform,
   SafeAreaView,
   Linking,
+  StatusBar,
 } from "react-native";
 import { Image } from "expo-image";
 import { Stack, useRouter, useLocalSearchParams } from "expo-router";
@@ -310,7 +311,7 @@ export default function JobDetailScreen() {
 
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Date:</Text>
-            <Text style={styles.detailValue}>{job.scheduledDate}</Text>
+            <Text style={styles.detailValue}>{job.scheduled_date}</Text>
           </View>
 
           <View style={styles.detailRow}>
@@ -510,6 +511,7 @@ export default function JobDetailScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: Colors.light.background,
   },
   container: {

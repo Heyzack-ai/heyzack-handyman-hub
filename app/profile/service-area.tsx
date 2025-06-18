@@ -9,6 +9,8 @@ import {
   ScrollView,
   SafeAreaView,
   Keyboard,
+  Platform,
+  StatusBar,
 } from "react-native";
 import Slider from '@react-native-community/slider';
 import { Stack, useRouter } from "expo-router";
@@ -243,6 +245,7 @@ export default function ServiceAreaScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: Colors.light.background,
   },
   container: {

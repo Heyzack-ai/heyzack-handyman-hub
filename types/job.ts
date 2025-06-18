@@ -29,6 +29,7 @@ export type Customer = {
   phone: string;
   email: string;
   address: string;
+  customer_name: string;
   coordinates?: {
     latitude: number;
     longitude: number;
@@ -40,7 +41,7 @@ export interface Job {
   title: string;
   description: string;
   status: JobStatus;
-  scheduledDate: string;
+  scheduled_date: string;
   scheduledTime: string;
   duration: string;
   customer: Customer;

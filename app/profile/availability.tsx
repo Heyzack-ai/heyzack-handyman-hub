@@ -11,6 +11,7 @@ import {
   Platform,
   Modal,
   TouchableOpacity,
+  StatusBar,
 } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import { Clock } from "lucide-react-native";
@@ -19,16 +20,7 @@ import Header from "@/components/Header";
 import { useAddAvailability, useGetAvailability } from "../api/user/addAvailability";
 import { useQueryClient } from "@tanstack/react-query";
 import DateTimePicker from '@react-native-community/datetimepicker';
-
-type DaySchedule = {
-  enabled: boolean;
-  startTime: string;
-  endTime: string;
-};
-
-type WeekSchedule = {
-  [key: string]: DaySchedule;
-};
+import { WeekSchedule } from "@/types/availability";
 
 export default function AvailabilityScreen() {
   const router = useRouter();
@@ -122,12 +114,12 @@ export default function AvailabilityScreen() {
     });
   };
 
-  const { mutate, error, isPending } = useAddAvailability(schedule);
+  const { mutate, error, isPending } = useAddAvailability();
 
   const handleSave = () => {
     setIsSaving(true);
     
-    mutate(undefined, {
+    mutate(schedule, {
       onSuccess: () => {
         setIsSaving(false);
         queryClient.invalidateQueries({ queryKey: ["get-availability"] });
@@ -482,6 +474,7 @@ export default function AvailabilityScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: Colors.light.background,
   },
   container: {

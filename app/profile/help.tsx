@@ -9,6 +9,7 @@ import {
   Alert,
   Platform,
   SafeAreaView,
+  StatusBar,
 } from "react-native";
 import { router, Stack } from "expo-router";
 import { 
@@ -181,6 +182,7 @@ export default function HelpSupportScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: Colors.light.background,
   },
   container: {

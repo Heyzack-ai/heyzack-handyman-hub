@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, View, TextInput, Pressable, ScrollView, Alert, SafeAreaView } from "react-native";
+import { StyleSheet, Text, View, TextInput, Pressable, ScrollView, Alert, SafeAreaView, StatusBar, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { CreditCard, Building, User, Globe } from "lucide-react-native";
 import Colors from "@/constants/colors";
@@ -135,7 +135,7 @@ export default function AddBank() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 }]}>
       <Header title="Add Bank Account" />
       
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>

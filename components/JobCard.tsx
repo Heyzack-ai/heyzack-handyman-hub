@@ -66,6 +66,17 @@ export default function JobCard({ job, disableNavigation = false }: JobCardProps
     );
   };
 
+  // Format date and time
+  let formattedDate = '';
+  let formattedTime = '';
+  if (job.scheduled_date) {
+    const dateObj = new Date(job.scheduled_date.replace(' ', 'T'));
+    formattedDate = dateObj.toLocaleDateString();
+    formattedTime = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  console.log("JobCard customer:", job.customer);
+
   return (
     <Pressable
       style={({ pressed }) => [
@@ -87,9 +98,13 @@ export default function JobCard({ job, disableNavigation = false }: JobCardProps
       </Text>
       
       <View style={styles.customerInfo}>
-        <Text style={styles.customerName}>{job.customer.name}</Text>
+        <Text style={styles.customerName}>
+          {typeof job.customer === 'object'
+            ? job.customer.customer_name || job.customer.name
+            : job.customer}
+        </Text>
         <Text style={styles.address} numberOfLines={1}>
-          {job.customer.address}
+          {typeof job.customer === 'object' ? job.customer.address : ''}
         </Text>
       </View>
       
@@ -97,11 +112,11 @@ export default function JobCard({ job, disableNavigation = false }: JobCardProps
         <View style={styles.scheduleRow}>
           <View style={styles.footerItem}>
             <Calendar size={16} color={Colors.light.gray[500]} />
-            <Text style={styles.footerText}>{job.scheduledDate}</Text>
+            <Text style={styles.footerText}>{formattedDate}</Text>
           </View>
           <View style={styles.footerItem}>
             <Clock size={16} color={Colors.light.gray[500]} />
-            <Text style={styles.footerText}>{job.scheduledTime}</Text>
+            <Text style={styles.footerText}>{formattedTime}</Text>
           </View>
         </View>
         

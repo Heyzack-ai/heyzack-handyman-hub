@@ -8,6 +8,7 @@ import {
   Alert,
   SafeAreaView,
   Platform,
+  StatusBar,
 } from "react-native";
 import { Stack, useRouter, useLocalSearchParams } from "expo-router";
 import { ArrowLeft, CheckCircle, AlertCircle, Package, Camera, Book } from "lucide-react-native";
@@ -203,6 +204,7 @@ export default function CollectStockScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: Colors.light.background,
   },
   container: {

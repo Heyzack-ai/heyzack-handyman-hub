@@ -9,6 +9,8 @@ import {
   Alert,
   Modal,
   SafeAreaView,
+  Platform,
+  StatusBar,
 } from "react-native";
 import { Stack, useRouter, useLocalSearchParams } from "expo-router";
 import { Plus, X, Building2, Link2 } from "lucide-react-native";
@@ -137,7 +139,7 @@ export default function PartnersScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 }]}>
       <Header title="Partners" onBack={() => router.back()} />
       
       <View style={styles.container}>

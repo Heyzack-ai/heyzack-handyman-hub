@@ -8,7 +8,9 @@ import {
   Pressable, 
   Modal,
   TouchableOpacity,
-  Alert
+  Alert,
+  Platform,
+  StatusBar,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useChatStore } from "@/store/chat-store";
@@ -17,7 +19,6 @@ import Colors from "@/constants/colors";
 import { Plus, Camera, Image as ImageIcon, X } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
-import { Platform } from "react-native";
 
 export default function ChatScreen() {
   const router = useRouter();
@@ -188,6 +189,7 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: Colors.light.background,
   },
   container: {

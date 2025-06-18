@@ -70,11 +70,11 @@ export default function Calendar({ selectedDate, onDateSelect, jobs = [] }: Cale
     );
   };
 
-  const getJobTypesForDate = (day: number): JobType[] => {
-    const dateString = formatDate(day);
-    const dayJobs = jobs.filter(job => job.scheduledDate === dateString);
-    const jobTypes = dayJobs.map(job => job.type);
-    return Array.from(new Set(jobTypes)); // Remove duplicates
+  const getJobTypesForDate = (day: number): string[] => {
+    const dateString = formatDate(day); // e.g., "2025-06-21"
+    const dayJobs = (jobs ?? []).filter(job => job.scheduled_date?.startsWith(dateString));
+    const jobTypes = dayJobs.map(job => job.status);
+    return Array.from(new Set(jobTypes));
   };
 
   const isSelected = (day: number) => {
@@ -115,8 +115,8 @@ export default function Calendar({ selectedDate, onDateSelect, jobs = [] }: Cale
           }
           
           const jobTypes = getJobTypesForDate(day);
-          const hasBookedInstallation = jobTypes.includes("booked_installation");
-          const hasJobRequest = jobTypes.includes("job_request");
+          const hasBookedInstallation = jobTypes.includes("Scheduled");
+          const hasJobRequest = jobTypes.includes("Pending");
           
           return (
             <Pressable

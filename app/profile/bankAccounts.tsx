@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { StyleSheet, Text, View, Pressable, ScrollView, Alert, SafeAreaView, ActivityIndicator } from "react-native";
+import { StyleSheet, Text, View, Pressable, ScrollView, Alert, SafeAreaView, ActivityIndicator, Platform, StatusBar } from "react-native";
 import { useRouter } from "expo-router";
 import { CreditCard, Plus, Trash2 } from "lucide-react-native";
 import Colors from "@/constants/colors";
@@ -83,7 +83,7 @@ export default function BankAccountsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 }]}>
       <Header title="Bank Accounts" />
       
       {isLoading ? (
