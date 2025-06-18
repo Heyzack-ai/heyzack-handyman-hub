@@ -41,14 +41,17 @@ export default function ProfileScreen() {
   const BASE_URL = process.env.EXPO_PUBLIC_ASSET_URL;
 
 
+
+
   const technician = {
     name: user?.handyman_name,
     email: user?.email,
     phone: user?.contact_number,
     // location: "San Francisco, CA",
     avatar:
-     `${BASE_URL}${user?.profile_image}` ||
-      `https://avatar.iran.liara.run/username?username=${user?.handyman_name}`,
+      user?.profile_image
+        ? `${BASE_URL}${user.profile_image}`
+        : `https://avatar.iran.liara.run/username?username=${user?.handyman_name}`,
     completedJobs: user?.jobs_completed || 0,
     rating: user?.rating || 0,
     isVerified: String(user?.is_verified) === "1" || String(user?.is_verified) === "true",
@@ -205,7 +208,12 @@ export default function ProfileScreen() {
             <Link size={20} color={Colors.light.gray[600]} />,
             "Partners",
             "Manage your partner connections",
-            () => router.push("/profile/partners")
+            () => router.push({
+              pathname: "/profile/partners",
+              params: {
+                user: JSON.stringify(user),
+              },
+            })
           )}
         </View>
 

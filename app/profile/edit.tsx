@@ -23,7 +23,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useUploadKycDocument } from "@/app/api/user/addDocument";
 import { useUploadProfileImage } from "@/app/api/user/addProfileImage";
 import axios from "axios";
-import * as DocumentPicker from 'expo-document-picker';
+import * as DocumentPicker from "expo-document-picker";
 
 export default function EditProfileScreen() {
   const router = useRouter();
@@ -36,33 +36,38 @@ export default function EditProfileScreen() {
   const [isVerified, setIsVerified] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { user } = useLocalSearchParams<{ user: string }>();
-  const parsedUser = user ? JSON.parse(user) as Handyman : null;
+  const parsedUser = user ? (JSON.parse(user) as Handyman) : null;
   const queryClient = useQueryClient();
   const BASE_URL = process.env.EXPO_PUBLIC_ASSET_URL;
-
 
   React.useEffect(() => {
     if (parsedUser) {
       setFullName(parsedUser.handyman_name || "");
       setEmail(parsedUser.email || "");
       setPhone(parsedUser.contact_number || "");
-      setAvatar(`${BASE_URL}${parsedUser.profile_image}` || `https://avatar.iran.liara.run/username?username=${parsedUser.handyman_name}`);
+      setAvatar(
+        parsedUser?.profile_image
+          ? `${BASE_URL}${parsedUser.profile_image}`
+          : `https://avatar.iran.liara.run/username?username=${parsedUser?.handyman_name}`
+      );
       if (parsedUser?.kyc_document) {
         setKycDocument(`${BASE_URL}${parsedUser.kyc_document}`);
-        setIsVerified( String(parsedUser?.is_verified) === "1" || String(parsedUser?.is_verified) === "true");
+        setIsVerified(
+          String(parsedUser?.is_verified) === "1" ||
+            String(parsedUser?.is_verified) === "true"
+        );
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-
   const { mutate: uploadKyc, status: uploadStatus } = useUploadKycDocument();
-  const isUploading = uploadStatus === 'pending';
+  const isUploading = uploadStatus === "pending";
 
   const uploadKycDocument = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: ['image/*', 'application/pdf'],
+        type: ["image/*", "application/pdf"],
         copyToCacheDirectory: true,
         multiple: false,
       });
@@ -81,7 +86,7 @@ export default function EditProfileScreen() {
 
       // Add a timeout to prevent infinite loading
       const uploadTimeout = setTimeout(() => {
-        if (uploadStatus === 'pending') {
+        if (uploadStatus === "pending") {
           setIsSaving(false);
           Alert.alert(
             "Upload Timeout",
@@ -127,41 +132,50 @@ export default function EditProfileScreen() {
 
   const handleSave = () => {
     setIsSaving(true);
-    updateUser({
-      ...parsedUser,
-      handyman_name: fullName,
-      email: email,
-      contact_number: phone,
-    } as Handyman & {
-      handyman_name: string;
-      email: string;
-      contact_number: string;
-    }, {
-      onSuccess: () => {
-        setIsSaving(false);
-        queryClient.invalidateQueries({ queryKey: ["user"] });
-        Alert.alert("Success", "Profile updated successfully");
-        router.back();
+    updateUser(
+      {
+        ...parsedUser,
+        handyman_name: fullName,
+        email: email,
+        contact_number: phone,
+      } as Handyman & {
+        handyman_name: string;
+        email: string;
+        contact_number: string;
       },
-      onError: (error) => {
-        setIsSaving(false);
-        Alert.alert("Error", "Failed to update profile");
-      },
-    }); 
+      {
+        onSuccess: () => {
+          setIsSaving(false);
+          queryClient.invalidateQueries({ queryKey: ["user"] });
+          Alert.alert("Success", "Profile updated successfully");
+          router.back();
+        },
+        onError: (error) => {
+          setIsSaving(false);
+          Alert.alert("Error", "Failed to update profile");
+        },
+      }
+    );
   };
 
-  const { mutate: uploadProfileImage, status: uploadProfileImageStatus, error: uploadProfileImageError } = useUploadProfileImage();
-  const isUploadingProfileImage = uploadProfileImageStatus === 'pending';
-
+  const {
+    mutate: uploadProfileImage,
+    status: uploadProfileImageStatus,
+    error: uploadProfileImageError,
+  } = useUploadProfileImage();
+  const isUploadingProfileImage = uploadProfileImageStatus === "pending";
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
+
     if (status !== "granted") {
-      Alert.alert("Permission Required", "Please grant camera roll permissions to change your profile photo.");
+      Alert.alert(
+        "Permission Required",
+        "Please grant camera roll permissions to change your profile photo."
+      );
       return;
     }
-    
+
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -169,51 +183,54 @@ export default function EditProfileScreen() {
         aspect: [1, 1],
         quality: 0.8,
       });
-      
+
       if (!result.canceled && result.assets && result.assets.length > 0) {
         // Check file size - limit to 5MB
         const fileInfo = await FileSystem.getInfoAsync(result.assets[0].uri);
         if (fileInfo.exists && fileInfo.size > 5 * 1024 * 1024) {
           Alert.alert(
-            "File Too Large", 
+            "File Too Large",
             "Please select a file smaller than 5MB."
           );
           return;
         }
-        
+
         setIsSaving(true);
-        
+
         // Add a timeout to prevent infinite loading
         const uploadTimeout = setTimeout(() => {
-          if (uploadProfileImageStatus === 'pending') {
+          if (uploadProfileImageStatus === "pending") {
             setIsSaving(false);
             Alert.alert(
-              "Upload Timeout", 
+              "Upload Timeout",
               "The upload is taking longer than expected. Please try again with a smaller file or check your connection."
             );
           }
         }, 30000); // 30 second timeout
-        
+
         uploadProfileImage(
           { fileUri: result.assets[0].uri },
           {
             onSuccess: (response) => {
               clearTimeout(uploadTimeout);
               queryClient.invalidateQueries({ queryKey: ["user"] });
-              
+
               // Check if response has the expected structure
               if (!response?.data?.profile_image) {
                 setIsSaving(false);
-                Alert.alert("Error", "Invalid response from server. Profile image path not found.");
+                Alert.alert(
+                  "Error",
+                  "Invalid response from server. Profile image path not found."
+                );
                 return;
               }
-              
+
               const fileUrl = response.data.profile_image;
-              
+
               // Update the UI immediately with the new image
               setAvatar(`${BASE_URL}${fileUrl}`);
               setIsSaving(false);
-              
+
               // Refresh user data
               queryClient.invalidateQueries({ queryKey: ["user"] });
               Alert.alert("Success", "Profile image updated successfully");
@@ -221,7 +238,7 @@ export default function EditProfileScreen() {
             onError: (error) => {
               clearTimeout(uploadTimeout);
               setIsSaving(false);
-              
+
               // Provide more specific error messages
               if (axios.isAxiosError(error) && error.response?.status === 403) {
                 Alert.alert(
@@ -244,7 +261,7 @@ export default function EditProfileScreen() {
       console.error("Image selection error:", error);
       setIsSaving(false);
       Alert.alert(
-        "Error", 
+        "Error",
         "There was a problem selecting the image. Please try again."
       );
     }
@@ -252,63 +269,69 @@ export default function EditProfileScreen() {
 
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    
+
     if (status !== "granted") {
-      Alert.alert("Permission Required", "Please grant camera permissions to take a profile photo.");
+      Alert.alert(
+        "Permission Required",
+        "Please grant camera permissions to take a profile photo."
+      );
       return;
     }
-    
+
     try {
       const result = await ImagePicker.launchCameraAsync({
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
       });
-      
+
       if (!result.canceled && result.assets && result.assets.length > 0) {
         // Check file size - limit to 5MB
         const fileInfo = await FileSystem.getInfoAsync(result.assets[0].uri);
         if (fileInfo.exists && fileInfo.size > 5 * 1024 * 1024) {
           Alert.alert(
-            "File Too Large", 
+            "File Too Large",
             "Please select a file smaller than 5MB."
           );
           return;
         }
-        
+
         setIsSaving(true);
-        
+
         // Add a timeout to prevent infinite loading
         const uploadTimeout = setTimeout(() => {
-          if (uploadProfileImageStatus === 'pending') {
+          if (uploadProfileImageStatus === "pending") {
             setIsSaving(false);
             Alert.alert(
-              "Upload Timeout", 
+              "Upload Timeout",
               "The upload is taking longer than expected. Please try again with a smaller file or check your connection."
             );
           }
         }, 30000); // 30 second timeout
-        
+
         uploadProfileImage(
           { fileUri: result.assets[0].uri },
           {
             onSuccess: (response) => {
               clearTimeout(uploadTimeout);
               queryClient.invalidateQueries({ queryKey: ["user"] });
-              
+
               // Check if response has the expected structure
               if (!response?.data?.profile_image) {
                 setIsSaving(false);
-                Alert.alert("Error", "Invalid response from server. Profile image path not found.");
+                Alert.alert(
+                  "Error",
+                  "Invalid response from server. Profile image path not found."
+                );
                 return;
               }
-              
+
               const fileUrl = response.data.profile_image;
-              
+
               // Update the UI immediately with the new image
               setAvatar(`${BASE_URL}${fileUrl}`);
               setIsSaving(false);
-              
+
               // Refresh user data
               queryClient.invalidateQueries({ queryKey: ["user"] });
               Alert.alert("Success", "Profile image updated successfully");
@@ -316,7 +339,7 @@ export default function EditProfileScreen() {
             onError: (error) => {
               clearTimeout(uploadTimeout);
               setIsSaving(false);
-              
+
               // Provide more specific error messages
               if (axios.isAxiosError(error) && error.response?.status === 403) {
                 Alert.alert(
@@ -339,7 +362,7 @@ export default function EditProfileScreen() {
       console.error("Camera error:", error);
       setIsSaving(false);
       Alert.alert(
-        "Error", 
+        "Error",
         "There was a problem taking the photo. Please try again."
       );
     }
@@ -352,7 +375,11 @@ export default function EditProfileScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <Header title="Edit Profile" onBack={() => router.back()} />
-      <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.avatarSection}>
           <View style={styles.avatarContainer}>
             <Image
@@ -366,20 +393,20 @@ export default function EditProfileScreen() {
               </View>
             )}
           </View>
-          
+
           <View style={styles.photoButtons}>
             <Pressable style={styles.photoButton} onPress={takePhoto}>
               <Camera size={20} color={Colors.light.primary} />
               <Text style={styles.photoButtonText}>Camera</Text>
             </Pressable>
-            
+
             <Pressable style={styles.photoButton} onPress={pickImage}>
               <Upload size={20} color={Colors.light.primary} />
               <Text style={styles.photoButtonText}>Gallery</Text>
             </Pressable>
           </View>
         </View>
-        
+
         <View style={styles.formSection}>
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Full Name</Text>
@@ -390,7 +417,7 @@ export default function EditProfileScreen() {
               placeholder="Enter your full name"
             />
           </View>
-          
+
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Email</Text>
             <TextInput
@@ -402,7 +429,7 @@ export default function EditProfileScreen() {
               autoCapitalize="none"
             />
           </View>
-          
+
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Phone Number</Text>
             <TextInput
@@ -413,26 +440,26 @@ export default function EditProfileScreen() {
               keyboardType="phone-pad"
             />
           </View>
-          
-     
         </View>
-        
+
         <View style={styles.kycSection}>
           <Text style={styles.sectionTitle}>Identity Verification</Text>
           <Text style={styles.kycDescription}>
-            Upload a government-issued ID to verify your identity and get a verified badge.
-            Maximum file size: 5MB.
+            Upload a government-issued ID to verify your identity and get a
+            verified badge. Maximum file size: 5MB.
           </Text>
-          
-          <Pressable 
-            style={[styles.kycButton, isUploading && styles.kycButtonDisabled]} 
+
+          <Pressable
+            style={[styles.kycButton, isUploading && styles.kycButtonDisabled]}
             onPress={uploadKycDocument}
             disabled={isUploading}
           >
             {isUploading ? (
               <View style={styles.uploadingContainer}>
                 <ActivityIndicator size="small" color={Colors.light.primary} />
-                <Text style={styles.kycButtonText}>Uploading... Please wait</Text>
+                <Text style={styles.kycButtonText}>
+                  Uploading... Please wait
+                </Text>
               </View>
             ) : (
               <>
@@ -443,7 +470,7 @@ export default function EditProfileScreen() {
               </>
             )}
           </Pressable>
-          
+
           {kycDocument && (
             <View style={styles.documentPreview}>
               <Image
@@ -453,15 +480,19 @@ export default function EditProfileScreen() {
               />
               <View style={styles.documentStatus}>
                 <Text style={styles.documentStatusText}>
-                  {isVerified ? "Verified" : isUploading ? "Uploading..." : "Pending Verification"}
+                  {isVerified
+                    ? "Verified"
+                    : isUploading
+                    ? "Uploading..."
+                    : "Pending Verification"}
                 </Text>
               </View>
             </View>
           )}
         </View>
-        
-        <Pressable 
-          style={[styles.saveButton, isSaving && styles.saveButtonDisabled]} 
+
+        <Pressable
+          style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
           onPress={handleSave}
           disabled={isSaving}
         >

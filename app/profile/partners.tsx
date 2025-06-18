@@ -14,6 +14,10 @@ import { Stack, useRouter, useLocalSearchParams } from "expo-router";
 import { Plus, X, Building2, Link2 } from "lucide-react-native";
 import Colors from "@/constants/colors";
 import Header from "@/components/Header";
+import { useGetPartner } from "@/app/api/user/getPartner";
+import { Handyman } from "@/types/handyman";
+import { useLinkPartner } from "../api/user/linkPartner";
+import { useQueryClient } from "@tanstack/react-query";
 
 type Partner = {
   id: string;
@@ -25,26 +29,18 @@ type Partner = {
 export default function PartnersScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ partner_code: string, handyman_name: string }>();
+  const { user } = useLocalSearchParams<{ user: string }>();
+  const parsedUser = user ? JSON.parse(user) as Handyman : null;
   
-  const [partners, setPartners] = useState<Partner[]>([
-    {
-      id: "1",
-      name: "Home Solutions Inc.",
-      code: "HS1234",
-      joinedDate: "2025-01-15",
-    },
-    {
-      id: "2",
-      name: "Smart Living Technologies",
-      code: "SLT567",
-      joinedDate: "2025-03-22",
-    },
-  ]);
+  const [partners, setPartners] = useState<Partner[]>([]);
   
   const [modalVisible, setModalVisible] = useState(false);
   const [partnerCode, setPartnerCode] = useState("");
   const [isJoining, setIsJoining] = useState(false);
-
+  const { data: initialPartner, refetch: refetchInitialPartner } = useGetPartner(parsedUser?.partner || "");
+  const { data: joinPartner, refetch: fetchJoinPartner } = useGetPartner(partnerCode);
+  const { mutate: linkPartner } = useLinkPartner(partnerCode);
+  const queryClient = useQueryClient();
   // Handle deep link parameters
   useEffect(() => {
     if (params.partner_code) {
@@ -53,35 +49,65 @@ export default function PartnersScreen() {
     }
   }, [params.partner_code]);
 
+  // Fetch current partner on mount if exists
+  useEffect(() => {
+    if (parsedUser?.partner) {
+      refetchInitialPartner();
+    }
+  }, [parsedUser?.partner]);
+
   const handleAddPartner = () => {
     setPartnerCode("");
     setModalVisible(true);
   };
 
-  const handleJoinPartner = () => {
+  const handleJoinPartner = async () => {
     if (!partnerCode.trim()) {
       Alert.alert("Error", "Please enter a partner code");
       return;
     }
 
     setIsJoining(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsJoining(false);
+    try {
+      const { data: partner } = await fetchJoinPartner();
+      if (!partner) {
+        Alert.alert("Error", "Invalid partner code");
+        setIsJoining(false);
+        return;
+      }
+
+      if (!parsedUser) {
+        Alert.alert("Error", "Failed to get user data");
+        setIsJoining(false);
+        return;
+      }
+
+      linkPartner(undefined, {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: ["user"] });
+          Alert.alert("Success", `You've successfully joined ${partner.name}`);
+        },
+        onError: () => {
+          Alert.alert("Error", "Failed to join partner");
+        }
+      });
       
       // Mock partner data based on code
       const newPartner: Partner = {
         id: Date.now().toString(),
-        name: params.handyman_name || "New Partner Company",
+        name: partner.partner_name || partner.name || "",
         code: partnerCode,
         joinedDate: new Date().toISOString().split("T")[0],
       };
       
       setPartners([...partners, newPartner]);
       setModalVisible(false);
-      Alert.alert("Success", `You've successfully joined ${newPartner.name}`);
-    }, 1000);
+      Alert.alert("Success", `You've successfully joined ${partner.name}`);
+    } catch (error) {
+      Alert.alert("Error", "Failed to join partner");
+    } finally {
+      setIsJoining(false);
+    }
   };
 
   const handleRemovePartner = (partnerId: string) => {
@@ -125,43 +151,42 @@ export default function PartnersScreen() {
             <Text style={styles.addButtonText}>Add Partner</Text>
           </Pressable>
           
-          {partners.length > 0 ? (
-            <View style={styles.partnersContainer}>
-              {partners.map((partner) => (
-                <View key={partner.id} style={styles.partnerCard}>
-                  <View style={styles.partnerHeader}>
-                    <View style={styles.partnerIcon}>
-                      <Building2 size={24} color={Colors.light.primary} />
-                    </View>
-                    <View style={styles.partnerInfo}>
-                      <Text style={styles.partnerName}>{partner.name}</Text>
-                      <Text style={styles.partnerCode}>Code: {partner.code}</Text>
-                    </View>
-                    <Pressable
-                      style={styles.removeButton}
-                      onPress={() => handleRemovePartner(partner.id)}
-                    >
-                      <X size={20} color={Colors.light.gray[500]} />
-                    </Pressable>
+          <View style={styles.partnersContainer}>
+            {initialPartner ? (
+              <View style={styles.partnerCard}>
+                <View style={styles.partnerHeader}>
+                  <View style={styles.partnerIcon}>
+                    <Building2 size={24} color={Colors.light.primary} />
                   </View>
-                  
-                  <View style={styles.partnerFooter}>
-                    <Text style={styles.joinedDate}>
-                      Joined on {formatDate(partner.joinedDate)}
-                    </Text>
+                  <View style={styles.partnerInfo}>
+                    <Text style={styles.partnerName}>{initialPartner.partner_name || initialPartner.name}</Text>
+                    <Text style={styles.partnerCode}>Code: {initialPartner.partner_code || initialPartner.name}</Text>
+                    {initialPartner.email && <Text style={styles.partnerCode}>Email: {initialPartner.email}</Text>}
+                    {initialPartner.contact_person && <Text style={styles.partnerCode}>Contact Person: {initialPartner.contact_person}</Text>}
+                    {initialPartner.phone && <Text style={styles.partnerCode}>Phone: {initialPartner.phone}</Text>}
+                    {initialPartner.address && <Text style={styles.partnerCode}>Address: {initialPartner.address}</Text>}
                   </View>
+                  <Pressable
+                    style={styles.removeButton}
+                    onPress={() => {
+                      setPartners([]); // Remove from UI
+                      // TODO: Add backend unlink logic here if needed
+                    }}
+                  >
+                    <X size={20} color={Colors.light.gray[500]} />
+                  </Pressable>
                 </View>
-              ))}
-            </View>
-          ) : (
-            <View style={styles.emptyState}>
-              <Link2 size={48} color={Colors.light.gray[400]} />
-              <Text style={styles.emptyTitle}>No Partners Yet</Text>
-              <Text style={styles.emptyText}>
-                Add a partner by entering their partner code to start receiving job assignments.
-              </Text>
-            </View>
-          )}
+              </View>
+            ) : (
+              <View style={styles.emptyState}>
+                <Link2 size={48} color={Colors.light.gray[400]} />
+                <Text style={styles.emptyTitle}>No Partners Yet</Text>
+                <Text style={styles.emptyText}>
+                  Add a partner by entering their partner code to start receiving job assignments.
+                </Text>
+              </View>
+            )}
+          </View>
           
           <View style={styles.infoBox}>
             <Text style={styles.infoTitle}>About Partnerships</Text>
@@ -270,7 +295,7 @@ const styles = StyleSheet.create({
   },
   partnerHeader: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     marginBottom: 12,
   },
   partnerIcon: {

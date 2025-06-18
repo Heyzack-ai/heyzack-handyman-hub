@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { StyleSheet, Text, View, ScrollView, SafeAreaView, TouchableOpacity } from "react-native";
+import {
+  StyleSheet,
+  Text,
+  View,
+  ScrollView,
+  SafeAreaView,
+  TouchableOpacity,
+  StatusBar,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { Calendar as CalendarIcon, Briefcase, Euro } from "lucide-react-native";
 import { useJobStore } from "@/store/job-store";
@@ -8,8 +16,8 @@ import ActionButton from "@/components/ActionButton";
 import Calendar from "@/components/Calendar";
 import Colors from "@/constants/colors";
 import Job from "@/components/Job";
-import {Bell} from 'lucide-react-native';
-import * as SecureStore from 'expo-secure-store';
+import { Bell } from "lucide-react-native";
+import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
 export default function HomeScreen() {
@@ -19,30 +27,34 @@ export default function HomeScreen() {
     new Date().toISOString().split("T")[0]
   );
   const [token, setToken] = useState<string | null>(null);
-  
+
   const today = new Date().toISOString().split("T")[0];
 
   // Only try to access SecureStore on native platforms
   useEffect(() => {
-    if (Platform.OS !== 'web') {
-      SecureStore.getItemAsync('auth_token').then(value => {
+    if (Platform.OS !== "web") {
+      SecureStore.getItemAsync("auth_token").then((value) => {
         setToken(value);
       });
     }
   }, []);
-  
+
   // Filter jobs by selected date
-  const selectedDateJobs = jobs.filter(job => job.scheduledDate === selectedDate);
-  
-  const todayJobs = jobs.filter(job => job.scheduledDate === today);
-  
-  const upcomingJobs = jobs.filter(job => {
-    return job.scheduledDate > today;
-  }).slice(0, 3);
+  const selectedDateJobs = jobs.filter(
+    (job) => job.scheduledDate === selectedDate
+  );
+
+  const todayJobs = jobs.filter((job) => job.scheduledDate === today);
+
+  const upcomingJobs = jobs
+    .filter((job) => {
+      return job.scheduledDate > today;
+    })
+    .slice(0, 3);
 
   // Calculate stats
-  const completedJobs = jobs.filter(j => j.status === "completed").length;
-  const pendingJobs = jobs.filter(j => j.status !== "completed").length;
+  const completedJobs = jobs.filter((j) => j.status === "completed").length;
+  const pendingJobs = jobs.filter((j) => j.status !== "completed").length;
   const earnings = "€1,240"; // Mock earnings data
 
   const handleDateSelect = (date: string) => {
@@ -53,34 +65,45 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-       <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, marginHorizontal: 16}}> 
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 16,
+          marginHorizontal: 16,
+        }}
+      >
         <View style={styles.header}>
           <Text style={styles.greeting}>Hello, Technician</Text>
           <Text style={styles.subtitle}>
-            {isToday ? "Here's your schedule for today" : `Schedule for ${selectedDate}`}
+            {isToday
+              ? "Here's your schedule for today"
+              : `Schedule for ${selectedDate}`}
           </Text>
         </View>
-        <TouchableOpacity style={styles.notificationButton} onPress={() => router.push("/notifications")}>  
+        <TouchableOpacity
+          style={styles.notificationButton}
+          onPress={() => router.push("/notifications")}
+        >
           <Bell size={24} color={Colors.light.primary} />
         </TouchableOpacity>
-        </View>
+      </View>
 
-      <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-
-       
-
-       
-
-        <View style={{ width: '100%', marginBottom: 16}}>
-          <View style={{flexDirection: 'row', gap: 12}}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={{ width: "100%", marginBottom: 16 }}>
+          <View style={{ flexDirection: "row", gap: 12 }}>
             <Job title="Completed Jobs" number="10" />
             <Job title="Pending Jobs" number="3" />
           </View>
 
-          <View style={{marginTop: 16, height: 100}}>
-            <Job title="Earnings" number="$300" style={{width: '100%'}} />
+          <View style={{ marginTop: 16, height: 100 }}>
+            <Job title="Earnings" number="$300" style={{ width: "100%" }} />
           </View>
-
         </View>
 
         <View style={styles.section}>
@@ -88,7 +111,7 @@ export default function HomeScreen() {
             <CalendarIcon size={20} color={Colors.light.primary} />
             <Text style={styles.sectionTitle}>Schedule</Text>
           </View>
-        
+
           <Calendar
             selectedDate={selectedDate}
             onDateSelect={handleDateSelect}
@@ -106,14 +129,16 @@ export default function HomeScreen() {
               <Text style={styles.count}>{selectedDateJobs.length}</Text>
             )}
           </View>
-        
+
           {selectedDateJobs.length > 0 ? (
             selectedDateJobs.map((job) => <JobCard key={job.id} job={job} />)
           ) : (
             <View style={styles.emptyState}>
               <CalendarIcon size={40} color={Colors.light.gray[400]} />
               <Text style={styles.emptyText}>
-                {isToday ? "No jobs scheduled for today" : "No jobs scheduled for this date"}
+                {isToday
+                  ? "No jobs scheduled for today"
+                  : "No jobs scheduled for this date"}
               </Text>
             </View>
           )}
@@ -124,14 +149,11 @@ export default function HomeScreen() {
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Upcoming Jobs</Text>
             </View>
-          
+
             {upcomingJobs.map((job) => (
-              <JobCard 
-                key={job.id} 
-                job={job} 
-              />
+              <JobCard key={job.id} job={job} />
             ))}
-          
+
             <ActionButton
               title="View All Jobs"
               variant="outline"
@@ -148,6 +170,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     backgroundColor: Colors.light.background,
   },
   container: {
@@ -245,5 +268,5 @@ const styles = StyleSheet.create({
     borderColor: Colors.light.border,
     padding: 8,
     borderRadius: 16,
-  }
+  },
 });

@@ -1,0 +1,11 @@
+{
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+        "namespace": "android_app",
+        "package_name": "com.handyman.app",
+        "sha256_cert_fingerprints": [
+            "C3:47:1E:0B:05:3E:75:66:B2:EE:A8:23:0B:EE:FB:A5:85:CC:21:14:E4:C3:87:4B:E6:9F:DE:76:5A:E5:30:4E",
+            "3F:25:1E:45:8C:21:A4:10:D3:B9:8D:57:76:F5:CE:61:D2:AF:52:F8:41:9E:EA:56:21:CB:E9:C0:88:3B:CA:E9"
+        ]
+    }
+}

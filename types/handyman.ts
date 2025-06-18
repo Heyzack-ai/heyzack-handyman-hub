@@ -21,6 +21,7 @@ export interface Handyman {
     is_verified: number
     rating: number
     jobs_completed: number
+    partner: string
   }
   
   export interface Availability {
