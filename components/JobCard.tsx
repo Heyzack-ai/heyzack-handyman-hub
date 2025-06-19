@@ -15,7 +15,6 @@ type JobCardProps = {
 
 export default function JobCard({ job, disableNavigation = false }: JobCardProps) {
   const router = useRouter();
-  const { jobs } = useJobStore();
 
   // Add a hardcoded rating for completed jobs if not present
   if (job.status === "completed" && job.rating === undefined) {
@@ -30,13 +29,14 @@ export default function JobCard({ job, disableNavigation = false }: JobCardProps
     // Only navigate to job details if the job is not pending
     if (job.status !== "pending") {
       // Verify the job exists in the store before navigating
-      const jobExists = jobs.some(j => j.id === job.id);
       
-      if (jobExists) {
-        router.push(`/jobs/${job.id}`);
-      } else {
-        Alert.alert("Error", "Job not found");
-      }
+        router.push({
+          pathname: `/jobs/job-details`,
+          params: {
+            job: JSON.stringify(job),
+          },
+        });
+      
     }
   };
 
@@ -75,7 +75,6 @@ export default function JobCard({ job, disableNavigation = false }: JobCardProps
     formattedTime = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
 
-  console.log("JobCard customer:", job.customer);
 
   return (
     <Pressable

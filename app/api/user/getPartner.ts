@@ -27,7 +27,7 @@ export function useGetPartner(partnerCode: string) {
         }
         const searchParams = new URLSearchParams();
         searchParams.append('filter', `[["partner_code", "=", "${partnerCode}"]]`);
-        searchParams.append('fields', JSON.stringify(['name', 'partner_name', 'partner_code', 'contact_person', 'email', 'phone', 'address', 'customer']));
+        searchParams.append('fields', JSON.stringify(['name', 'partner_name', 'partner_code', 'contact_person', 'email', 'phone', 'address']));
         const response = await axios.get<{ data: Partner[] }>(`${BASE_URL}/resource/Installation Partner?${searchParams.toString()}`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -49,7 +49,45 @@ export function useGetPartner(partnerCode: string) {
           : new Error("Failed to fetch partner data");
       }
     },
-    enabled: false,
+    enabled: !!partnerCode,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useGetPartnerById(name: string) {
+  return useQuery<Partner>({
+    queryKey: ["partner", name],
+    queryFn: async () => {
+      try {
+        const token = await SecureStore.getItemAsync('auth_token');
+        if (!token) {
+          throw new Error("Authentication token not found");
+        }
+        const searchParams = new URLSearchParams();
+        searchParams.append('filter', `[["name", "=", "${name}"]]`);
+        searchParams.append('fields', JSON.stringify(['name', 'partner_name', 'partner_code', 'contact_person', 'email', 'phone', 'address']));
+        const response = await axios.get<{ data: Partner[] }>(`${BASE_URL}/resource/Installation Partner?${searchParams.toString()}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        console.log(response.data);
+
+        if (!response.data?.data?.[0]) {
+          throw new Error("Partner not found");
+        }
+
+        return response.data.data[0];
+      } catch (error) {
+        console.error("Failed to fetch partner:", error);
+        throw error instanceof Error
+          ? error
+          : new Error("Failed to fetch partner data");
+      }
+    },
+    enabled: !!name,
     staleTime: 5 * 60 * 1000,
   });
 }

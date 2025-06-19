@@ -38,6 +38,7 @@ export type Customer = {
 
 export interface Job {
   id: string;
+  name: string;
   title: string;
   description: string;
   status: JobStatus;
@@ -47,8 +48,8 @@ export interface Job {
   customer: Customer;
   products: Product[];
   notes?: string[];
-  installationPhotos?: string[];
-  contractSent?: boolean;
+  completion_photos?: CompletionPhoto[];
+  contractsent?: boolean;
   rating?: number;
   type: JobType;
   paymentRequested?: boolean;
@@ -56,4 +57,12 @@ export interface Job {
   paymentDate?: string;
   amount?: string;
   completedDate?: string;
+  partner?: string;
+}
+
+export interface CompletionPhoto {
+  id: string;
+  name: string;
+  image: string;
+  installation: string;
 }

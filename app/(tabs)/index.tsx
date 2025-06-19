@@ -20,6 +20,7 @@ import { Bell } from "lucide-react-native";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import { useGetJobs } from "@/app/api/jobs/getJobs";
+
 import Job from "@/components/Job";
 import { useGetCustomer } from "@/app/api/customer/getCustomer";
 
@@ -55,15 +56,14 @@ export default function HomeScreen() {
     }
   }, []);
 
-  console.log("Jobs", jobsData?.data);
-  console.log("Customer", customerData);
+
 
   if (customerError) {
     console.log("Customer Error", customerError);
   }
 
-  console.log('selectedDate:', selectedDate);
-  console.log('jobs scheduled_date:', jobsData?.data?.map((job: any) => job.scheduled_date));
+ 
+
 
   const selectedDateJobs = jobsData?.data?.filter(
     (job: any) => job.scheduled_date?.slice(0, 10) === selectedDate
@@ -164,7 +164,7 @@ export default function HomeScreen() {
           {selectedDateJobs.length > 0 ? (
             selectedDateJobs.map((job: JobType) => (
               <JobCard
-                key={job.id}
+                key={job.name}
                 job={{
                   ...job,
                   customer:
@@ -197,7 +197,7 @@ export default function HomeScreen() {
 
             {upcomingJobs.map((job: JobType) => (
              <JobCard
-             key={job.id}
+             key={job.name}
              job={{
                ...job,
                customer:

@@ -1,14 +1,30 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, View, ScrollView, TextInput, Alert, SafeAreaView, Platform, StatusBar } from "react-native";
+import {
+  StyleSheet,
+  Text,
+  View,
+  ScrollView,
+  TextInput,
+  Alert,
+  SafeAreaView,
+  Platform,
+  StatusBar,
+} from "react-native";
 import { Search } from "lucide-react-native";
 import { useJobStore } from "@/store/job-store";
 import JobCard from "@/components/JobCard";
 import ActionButton from "@/components/ActionButton";
 import Colors from "@/constants/colors";
+import { useGetJobs } from "@/app/api/jobs/getJobs";
+import { useGetCustomer } from "@/app/api/customer/getCustomer";
 
 export default function JobsScreen() {
   const jobs = useJobStore((state) => state.jobs);
   const [searchQuery, setSearchQuery] = useState("");
+  const { data: jobsData } = useGetJobs();
+  const { data: customerData, error: customerError } = useGetCustomer(
+    jobsData?.data[0].customer
+  );
 
   const filteredJobs = jobs.filter(
     (job) =>
@@ -17,63 +33,64 @@ export default function JobsScreen() {
       job.customer.address.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const scheduledJobs = filteredJobs.filter((job) => job.status === "scheduled");
-  const inProgressJobs = filteredJobs.filter(
-    (job) =>
-      job.status === "stock_collected" ||
-      job.status === "en_route" ||
-      job.status === "started"
+  const scheduledJobs = jobsData?.data?.filter(
+    (job: any) => job.status === "Scheduled"
   );
-  const completedJobs = filteredJobs.filter((job) => job.status === "completed");
-  
+  const inProgressJobs = jobsData?.data?.filter(
+    (job: any) =>
+      job.status !== "Completed" && job.status !== "On Hold"
+  );
+  const completedJobs = jobsData?.data?.filter(
+    (job: any) => job.status === "Completed"
+  );
+
   // Filter job requests (jobs with type "job_request" that haven't been accepted yet)
-  const jobRequests = filteredJobs.filter(
-    (job) => job.status === "pending"
+  const jobRequests = jobsData?.data?.filter(
+    (job: any) => job.status === "Pending"
   );
 
   const handleAcceptJob = (jobId: string) => {
-    Alert.alert(
-      "Accept Job",
-      "Are you sure you want to accept this job?",
-      [
-        { text: "Cancel", style: "cancel" },
-        { 
-          text: "Accept", 
-          onPress: () => {
-            useJobStore.getState().updateJobStatus(jobId, "scheduled");
-            Alert.alert("Success", "Job has been accepted");
-          }
-        }
-      ]
-    );
+    Alert.alert("Accept Job", "Are you sure you want to accept this job?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Accept",
+        onPress: () => {
+          useJobStore.getState().updateJobStatus(jobId, "scheduled");
+          Alert.alert("Success", "Job has been accepted");
+        },
+      },
+    ]);
   };
 
   const handleDeclineJob = (jobId: string) => {
-    Alert.alert(
-      "Decline Job",
-      "Are you sure you want to decline this job?",
-      [
-        { text: "Cancel", style: "cancel" },
-        { 
-          text: "Decline", 
-          onPress: () => {
-            useJobStore.getState().updateJobStatus(jobId, "declined");
-            Alert.alert("Success", "Job has been declined");
-          }
-        }
-      ]
-    );
+    Alert.alert("Decline Job", "Are you sure you want to decline this job?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Decline",
+        onPress: () => {
+          useJobStore.getState().updateJobStatus(jobId, "declined");
+          Alert.alert("Success", "Job has been declined");
+        },
+      },
+    ]);
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <Text style={styles.title}>Jobs</Text>
-        </View>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        
+      </View>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.searchContainer}>
-          <Search size={20} color={Colors.light.gray[500]} style={styles.searchIcon} />
+          <Search
+            size={20}
+            color={Colors.light.gray[500]}
+            style={styles.searchIcon}
+          />
           <TextInput
             style={styles.searchInput}
             placeholder="Search jobs, customers, or addresses"
@@ -96,12 +113,27 @@ export default function JobsScreen() {
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>Job Requests</Text>
-                  <Text style={[styles.count, styles.requestCount]}>{jobRequests.length}</Text>
+                  <Text style={[styles.count, styles.requestCount]}>
+                    {jobRequests.length}
+                  </Text>
                 </View>
-                
-                {jobRequests.map((job) => (
-                  <View key={job.id} style={styles.jobRequestCard}>
-                    <JobCard job={job} disableNavigation={true} />
+
+                {jobRequests.map((job: any) => (
+                  <View key={job.name} style={styles.jobRequestCard}>
+                    <JobCard
+                      job={{
+                        ...job,
+                        customer:
+                          customerData &&
+                          ((typeof job.customer === "string" &&
+                            job.customer === customerData.name) ||
+                            (typeof job.customer === "object" &&
+                              job.customer.name === customerData.name))
+                            ? customerData
+                            : job.customer,
+                      }}
+                      disableNavigation={true}
+                    />
                     <View style={styles.jobRequestActions}>
                       <ActionButton
                         title="Decline"
@@ -127,8 +159,21 @@ export default function JobsScreen() {
                   <Text style={styles.sectionTitle}>Scheduled</Text>
                   <Text style={styles.count}>{scheduledJobs.length}</Text>
                 </View>
-                {scheduledJobs.map((job) => (
-                  <JobCard key={job.id} job={job} />
+                {scheduledJobs.map((job: any) => (
+                  <JobCard
+                    key={job.name}
+                    job={{
+                      ...job,
+                      customer:
+                        customerData &&
+                        ((typeof job.customer === "string" &&
+                          job.customer === customerData.name) ||
+                          (typeof job.customer === "object" &&
+                            job.customer.name === customerData.name))
+                          ? customerData
+                          : job.customer,
+                    }}
+                  />
                 ))}
               </View>
             )}
@@ -139,8 +184,21 @@ export default function JobsScreen() {
                   <Text style={styles.sectionTitle}>In Progress</Text>
                   <Text style={styles.count}>{inProgressJobs.length}</Text>
                 </View>
-                {inProgressJobs.map((job) => (
-                  <JobCard key={job.id} job={job} />
+                {inProgressJobs.map((job: any) => (
+                  <JobCard
+                    key={job.name}
+                    job={{
+                      ...job,
+                      customer:
+                        customerData &&
+                        ((typeof job.customer === "string" &&
+                          job.customer === customerData.name) ||
+                          (typeof job.customer === "object" &&
+                            job.customer.name === customerData.name))
+                          ? customerData
+                          : job.customer,
+                    }}
+                  />
                 ))}
               </View>
             )}
@@ -151,8 +209,21 @@ export default function JobsScreen() {
                   <Text style={styles.sectionTitle}>Completed</Text>
                   <Text style={styles.count}>{completedJobs.length}</Text>
                 </View>
-                {completedJobs.map((job) => (
-                  <JobCard key={job.id} job={job} />
+                {completedJobs.map((job: any) => (
+                  <JobCard
+                    key={job.name}
+                    job={{
+                      ...job,
+                      customer:
+                        customerData &&
+                        ((typeof job.customer === "string" &&
+                          job.customer === customerData.name) ||
+                          (typeof job.customer === "object" &&
+                            job.customer.name === customerData.name))
+                          ? customerData
+                          : job.customer,
+                    }}
+                  />
                 ))}
               </View>
             )}
@@ -166,7 +237,7 @@ export default function JobsScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
     backgroundColor: Colors.light.background,
   },
   container: {

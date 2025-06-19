@@ -18,7 +18,7 @@ import Colors from "@/constants/colors";
 import Header from "@/components/Header";
 import { useGetPartner } from "@/app/api/user/getPartner";
 import { Handyman } from "@/types/handyman";
-import { useLinkPartner } from "../api/user/linkPartner";
+import { useLinkPartner } from "@/app/api/user/linkPartner";
 import { useQueryClient } from "@tanstack/react-query";
 
 type Partner = {
@@ -40,9 +40,9 @@ export default function PartnersScreen() {
   const [partnerCode, setPartnerCode] = useState("");
   const [isJoining, setIsJoining] = useState(false);
   const { data: initialPartner, refetch: refetchInitialPartner } = useGetPartner(parsedUser?.partner || "");
-  const { data: joinPartner, refetch: fetchJoinPartner } = useGetPartner(partnerCode);
   const { mutate: linkPartner } = useLinkPartner(partnerCode);
   const queryClient = useQueryClient();
+  
   // Handle deep link parameters
   useEffect(() => {
     if (params.partner_code) {
@@ -71,13 +71,6 @@ export default function PartnersScreen() {
 
     setIsJoining(true);
     try {
-      const { data: partner } = await fetchJoinPartner();
-      if (!partner) {
-        Alert.alert("Error", "Invalid partner code");
-        setIsJoining(false);
-        return;
-      }
-
       if (!parsedUser) {
         Alert.alert("Error", "Failed to get user data");
         setIsJoining(false);
@@ -87,24 +80,13 @@ export default function PartnersScreen() {
       linkPartner(undefined, {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ["user"] });
-          Alert.alert("Success", `You've successfully joined ${partner.name}`);
+          Alert.alert("Success", "You've successfully joined the partner");
+          setModalVisible(false);
         },
         onError: () => {
           Alert.alert("Error", "Failed to join partner");
         }
       });
-      
-      // Mock partner data based on code
-      const newPartner: Partner = {
-        id: Date.now().toString(),
-        name: partner.partner_name || partner.name || "",
-        code: partnerCode,
-        joinedDate: new Date().toISOString().split("T")[0],
-      };
-      
-      setPartners([...partners, newPartner]);
-      setModalVisible(false);
-      Alert.alert("Success", `You've successfully joined ${partner.name}`);
     } catch (error) {
       Alert.alert("Error", "Failed to join partner");
     } finally {
