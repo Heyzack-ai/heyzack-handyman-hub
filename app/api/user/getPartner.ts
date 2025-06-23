@@ -28,7 +28,7 @@ export function useGetPartner(partnerCode: string) {
         const searchParams = new URLSearchParams();
         searchParams.append('filter', `[["partner_code", "=", "${partnerCode}"]]`);
         searchParams.append('fields', JSON.stringify(['name', 'partner_name', 'partner_code', 'contact_person', 'email', 'phone', 'address']));
-        const response = await axios.get<{ data: Partner[] }>(`${BASE_URL}/resource/Installation Partner?${searchParams.toString()}`, {
+        const response = await axios.get<{ data: Partner[] }>(`${BASE_URL}/erp/resource/Installation Partner?${searchParams.toString()}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -66,7 +66,7 @@ export function useGetPartnerById(name: string) {
         const searchParams = new URLSearchParams();
         searchParams.append('filter', `[["name", "=", "${name}"]]`);
         searchParams.append('fields', JSON.stringify(['name', 'partner_name', 'partner_code', 'contact_person', 'email', 'phone', 'address']));
-        const response = await axios.get<{ data: Partner[] }>(`${BASE_URL}/resource/Installation Partner?${searchParams.toString()}`, {
+        const response = await axios.get<{ data: Partner[] }>(`${BASE_URL}/erp/resource/Installation Partner?${searchParams.toString()}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',

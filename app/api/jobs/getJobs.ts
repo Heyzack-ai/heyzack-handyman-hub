@@ -4,6 +4,7 @@ import * as SecureStore from 'expo-secure-store';
 import { authClient } from "@/lib/auth-client";
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+const PENDING_URL = process.env.EXPO_PUBLIC_PENDING_URL;
 
 type ExtendedUser = {
     id: string;
@@ -38,7 +39,7 @@ export function useGetJobs() {
                 searchParams.append('filter', `[["handyman", "=", "${extendedUser.erpId}"]]`);
                 searchParams.append('fields', JSON.stringify(['title', 'description', 'rating', 'customer', 'scheduled_date', 'handyman', 'status', 'completion_photos', 'customer_signature', 'notes', 'installation_fare', 'name', 'duration', 'products', 'partner', 'contractsent']));
 
-                const response = await axios.get(`${BASE_URL}/resource/Installation?${searchParams.toString()}`, {
+                const response = await axios.get(`${BASE_URL}/erp/resource/Installation?${searchParams.toString()}`, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                         'Content-Type': 'application/json',
@@ -51,7 +52,7 @@ export function useGetJobs() {
 
                 return response.data;
             } catch (error) {
-                console.error("Failed to get jobs:", error);
+                console.error("Failed to get jobs by user:", error);
                 throw error instanceof Error ? error : new Error("Failed to get jobs");
             }
         },
@@ -63,6 +64,11 @@ export function useGetJobById(id: string) {
         queryKey: ["get-jobs", id],
         queryFn: async () => {
             try {
+                // Don't make the API call if id is undefined or empty
+                if (!id) {
+                    throw new Error("Job ID is required");
+                }
+
                 const token = await SecureStore.getItemAsync('auth_token');
                 if (!token) {
                     throw new Error("Authentication token not found");
@@ -80,7 +86,7 @@ export function useGetJobById(id: string) {
                 searchParams.append('filter', `[["name", "=", "${id}"]]`);
                 searchParams.append('fields', JSON.stringify(['title', 'description', 'rating', 'customer', 'scheduled_date', 'handyman', 'status', 'completion_photos', 'customer_signature', 'notes', 'installation_fare', 'name', 'duration', 'products', 'partner', 'contractsent']));
 
-                const response = await axios.get(`${BASE_URL}/resource/Installation/${id}`, {
+                const response = await axios.get(`${BASE_URL}/erp/resource/Installation/${id}`, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                         'Content-Type': 'application/json',
@@ -93,9 +99,49 @@ export function useGetJobById(id: string) {
 
                 return response.data;
             } catch (error) {
-                console.error("Failed to get jobs:", error);
+                console.error("Failed to get jobs by id:", error);
                 throw error instanceof Error ? error : new Error("Failed to get jobs");
             }
         },
+        enabled: !!id, // Only run the query when id is truthy
+    });
+};
+
+export function useGetPendingJobs() {
+    return useQuery({
+        queryKey: ["get-pending-jobs"],
+        queryFn: async () => {
+            try {
+                // Don't make the API call if id is undefined or empty
+
+
+                const token = await SecureStore.getItemAsync('auth_token');
+                console.log("Token:", token);
+                if (!token) {
+                    throw new Error("Authentication token not found");
+                }
+
+
+
+              
+                const response = await axios.get(`${BASE_URL}/handyman/jobs`, {
+                    timeout: 20000,
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                console.log("Jobs pending", response.data);
+
+                
+
+                return response.data;
+            } catch (error) {
+                console.error("Failed to get pending jobs:", error);
+                throw error instanceof Error ? error : new Error("Failed to get pending jobs");
+            }
+        },
+        enabled: true, // Only run the query when id is truthy
     });
 };

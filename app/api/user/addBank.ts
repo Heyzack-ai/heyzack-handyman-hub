@@ -34,7 +34,7 @@ export function useAddBank(bankData: any) {
         const extendedUser = user.data.user as ExtendedUser;
         
         // Fetch current bank details
-        const current = await axios.get(`${BASE_URL}/resource/Handyman/${extendedUser.erpId}`, {
+        const current = await axios.get(`${BASE_URL}/erp/resource/Handyman/${extendedUser.erpId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',

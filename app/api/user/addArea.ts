@@ -38,7 +38,7 @@ export function useAddArea(current_location: string, service_area: number) {
          service_area: service_area
         };
 
-        const response = await axios.put(`${BASE_URL}/resource/Handyman/${extendedUser.erpId}`, areaData, {
+        const response = await axios.put(`${BASE_URL}/erp/resource/Handyman/${extendedUser.erpId}`, areaData, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',

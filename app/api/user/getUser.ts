@@ -40,7 +40,7 @@ export function useGetUser(options = {}) {
 
         const extendedUser = user.data.user as User;
 
-        const response = await axios.get<{data: Handyman}>(`${BASE_URL}/resource/Handyman/${extendedUser.erpId}`, {
+        const response = await axios.get<{data: Handyman}>(`${BASE_URL}/erp/resource/Handyman/${extendedUser.erpId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',

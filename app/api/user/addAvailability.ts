@@ -42,7 +42,7 @@ export function useAddAvailability() {
           is_active: data.enabled
         }));
 
-        const response = await axios.put(`${BASE_URL}/resource/Handyman/${extendedUser.erpId}`, {
+        const response = await axios.put(`${BASE_URL}/erp/resource/Handyman/${extendedUser.erpId}`, {
           availability: availabilityArray
         }, {
           headers: {

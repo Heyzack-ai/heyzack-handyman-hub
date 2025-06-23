@@ -47,7 +47,7 @@ export function useUploadProfileImage() {
         formData.append("is_private", "0");
 
         const uploadRes = await axios.post(
-          `${BASE_URL}/upload`,
+          `${BASE_URL}/erp/upload`,
           formData,
           {
             headers: {
@@ -66,7 +66,7 @@ export function useUploadProfileImage() {
 
         // 2. Update Handyman record with file URL
         const response = await axios.put(
-          `${BASE_URL}/resource/Handyman/${extendedUser.erpId}`,
+          `${BASE_URL}/erp/resource/Handyman/${extendedUser.erpId}`,
           { profile_image: fileUrl },
           {
             headers: {

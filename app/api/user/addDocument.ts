@@ -48,7 +48,7 @@ export function useUploadKycDocument() {
 
 
         const uploadRes = await axios.post(
-          `${BASE_URL}/upload`,
+          `${BASE_URL}/erp/upload`,
           formData,
           {
             headers: {
@@ -67,7 +67,7 @@ export function useUploadKycDocument() {
 
         // 2. Update Handyman record with file URL
         const response = await axios.put(
-          `${BASE_URL}/resource/Handyman/${extendedUser.erpId}`,
+          `${BASE_URL}/erp/resource/Handyman/${extendedUser.erpId}`,
           { kyc_document: fileUrl },
           {
             headers: {

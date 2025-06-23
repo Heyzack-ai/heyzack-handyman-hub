@@ -3,7 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import * as SecureStore from 'expo-secure-store';
 import { authClient } from "@/lib/auth-client";
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL_LINK;
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
 type ExtendedUser = {
     id: string;
@@ -26,7 +26,7 @@ export function useLinkPartner(partner_code: string) {
                     throw new Error("Authentication token not found");
                 }
 
-                const response = await axios.post(`${BASE_URL}/link-handyman-to-partner`, {
+                const response = await axios.post(`${BASE_URL}/user/link-handyman-to-partner`, {
                     partner_code,
                 }, {
                     headers: {

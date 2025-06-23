@@ -10,6 +10,7 @@ import {
   SafeAreaView,
   Linking,
   StatusBar,
+  FlatList,
 } from "react-native";
 import { Image } from "expo-image";
 import { Stack, useRouter, useLocalSearchParams } from "expo-router";
@@ -39,7 +40,7 @@ import Header from "@/components/Header";
 import StatusBadge from "@/components/StatusBadge";
 import { useGetPartnerById } from "@/app/api/user/getPartner";
 import { useGetJobById } from "@/app/api/jobs/getJobs";
-
+import { useGetPendingJobs } from "@/app/api/jobs/getJobs";
 export default function JobDetailScreen() {
   const params = useLocalSearchParams<{ job: string }>();
   const router = useRouter();
@@ -48,8 +49,13 @@ export default function JobDetailScreen() {
   const [completionExpanded, setCompletionExpanded] = useState(false);
   const [jobData, setJobData] = useState<Job | undefined>(undefined);
   const { data: partnerData } = useGetPartnerById(jobData?.partner as string);
-  const { data: jobDetails } = useGetJobById(jobData?.name as string);
+  const { data: jobDetails } = useGetJobById(jobData?.name || '');
+  const { data: pendingJobs } = useGetPendingJobs();
+  const IMAGE_URL = process.env.EXPO_PUBLIC_ASSET_URL;
 
+  // Debug completion photos data
+  console.log("Completion photos:", jobDetails?.data?.completion_photos);
+  console.log("Pending jobs:", pendingJobs);
   // console.log("Job data from job-details:", jobData?.partner);
   // console.log("Partner data from job-details:", jobData);
 
@@ -190,7 +196,12 @@ export default function JobDetailScreen() {
   };
 
   const handleCollectStock = () => {
-    router.push(`/jobs/collect-stock/${job.id}`);
+    router.push({
+      pathname: "/jobs/collect-stock/collect",
+      params: {
+        products: JSON.stringify(job.products),
+      },
+    });
   };
 
   const handleTakePhoto = async () => {
@@ -503,7 +514,27 @@ export default function JobDetailScreen() {
             <View style={styles.photosList}>
               <Text style={styles.photosTitle}>
                 {jobDetails?.data?.completion_photos?.length} photo(s) uploaded
+                
               </Text>
+              <View style={styles.photosContainer}>
+                <FlatList
+                  data={jobDetails?.data?.completion_photos}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  keyExtractor={(item, index) => index.toString()}
+                 
+                  renderItem={({ item }: { item: any }) => (
+                   
+                    <Image 
+                      source={{ uri: `${IMAGE_URL}${item.image}` || 'https://placehold.co/600x400' }} 
+                      style={styles.photo}
+                      contentFit="cover"
+                      onError={() => console.warn("Failed to load image:", `${IMAGE_URL}${item.image}`)}
+                    />
+                   
+                  )}
+                />
+              </View>
             </View>
           ) : (
             <Text style={styles.noPhotosText}>No photos uploaded yet</Text>
@@ -821,5 +852,16 @@ const styles = StyleSheet.create({
   backButton: {
     padding: 8,
     marginLeft: -4,
+  },
+  photo: {
+    marginTop: 10,
+    width: '100%',
+    height: '100%',
+    marginRight: 8,
+    borderRadius: 8,
+  },
+  photosContainer: {
+    flexDirection: "row",
+    alignItems: "center",
   },
 });

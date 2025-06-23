@@ -17,6 +17,9 @@ import ActionButton from "@/components/ActionButton";
 import Colors from "@/constants/colors";
 import { useGetJobs } from "@/app/api/jobs/getJobs";
 import { useGetCustomer } from "@/app/api/customer/getCustomer";
+import { useGetPendingJobs } from "@/app/api/jobs/getJobs";
+import { useAcceptJob } from "@/app/api/jobs/acceptJob";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function JobsScreen() {
   const jobs = useJobStore((state) => state.jobs);
@@ -25,6 +28,9 @@ export default function JobsScreen() {
   const { data: customerData, error: customerError } = useGetCustomer(
     jobsData?.data[0].customer
   );
+  const { data: requestedJobs } = useGetPendingJobs()
+  const queryClient = useQueryClient();
+  const { mutate: acceptJob } = useAcceptJob();
 
   const filteredJobs = jobs.filter(
     (job) =>
@@ -55,7 +61,9 @@ export default function JobsScreen() {
       {
         text: "Accept",
         onPress: () => {
-          useJobStore.getState().updateJobStatus(jobId, "scheduled");
+          acceptJob({ jobId, status: "accepted" });
+          queryClient.invalidateQueries({ queryKey: ["get-jobs"] });
+          queryClient.invalidateQueries({ queryKey: ["get-pending-jobs"] });
           Alert.alert("Success", "Job has been accepted");
         },
       },
@@ -68,7 +76,9 @@ export default function JobsScreen() {
       {
         text: "Decline",
         onPress: () => {
-          useJobStore.getState().updateJobStatus(jobId, "declined");
+          acceptJob({ jobId, status: "rejected" });
+          queryClient.invalidateQueries({ queryKey: ["get-jobs"] });
+          queryClient.invalidateQueries({ queryKey: ["get-pending-jobs"] });
           Alert.alert("Success", "Job has been declined");
         },
       },
@@ -109,28 +119,42 @@ export default function JobsScreen() {
           </View>
         ) : (
           <>
-            {jobRequests.length > 0 && (
+            {requestedJobs?.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>Job Requests</Text>
                   <Text style={[styles.count, styles.requestCount]}>
-                    {jobRequests.length}
+                    {requestedJobs.length}
                   </Text>
                 </View>
 
-                {jobRequests.map((job: any) => (
-                  <View key={job.name} style={styles.jobRequestCard}>
+                {requestedJobs.map((job: any) => (
+                  <View key={job.jobId} style={styles.jobRequestCard}>
                     <JobCard
                       job={{
-                        ...job,
-                        customer:
-                          customerData &&
-                          ((typeof job.customer === "string" &&
-                            job.customer === customerData.name) ||
-                            (typeof job.customer === "object" &&
-                              job.customer.name === customerData.name))
-                            ? customerData
-                            : job.customer,
+                        id: job.jobId,
+                        name: job.jobId,
+                        title: job.installation?.title || "Untitled Job",
+                        description: job.installation?.description || "No description available",
+                        scheduled_date: job.installation?.scheduled_date || "",
+                        status: "pending",
+                        customer: {
+                          id: job.jobId,
+                          name: job.installation?.customer_name || "Unknown Customer",
+                          customer_name: job.installation?.customer_name || "Unknown Customer",
+                          phone: "",
+                          email: "",
+                          address: job.installation?.customer_address || "No address provided"
+                        },
+                        products: [],
+                        partner: job.partner?.name || "Unknown Partner",
+                        duration: "",
+                        rating: 0,
+                        completion_photos: [],
+                        notes: [],
+                        contractsent: false,
+                        type: "job_request",
+                        scheduledTime: ""
                       }}
                       disableNavigation={true}
                     />
@@ -138,13 +162,13 @@ export default function JobsScreen() {
                       <ActionButton
                         title="Decline"
                         variant="outline"
-                        onPress={() => handleDeclineJob(job.id)}
+                        onPress={() => handleDeclineJob(job.jobId)}
                         style={styles.declineButton}
                       />
                       <ActionButton
                         title="Accept"
                         variant="primary"
-                        onPress={() => handleAcceptJob(job.id)}
+                        onPress={() => handleAcceptJob(job.jobId)}
                         style={styles.acceptButton}
                       />
                     </View>
@@ -153,7 +177,7 @@ export default function JobsScreen() {
               </View>
             )}
 
-            {scheduledJobs.length > 0 && (
+            {scheduledJobs?.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>Scheduled</Text>
@@ -178,7 +202,7 @@ export default function JobsScreen() {
               </View>
             )}
 
-            {inProgressJobs.length > 0 && (
+            {inProgressJobs?.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>In Progress</Text>
@@ -203,7 +227,7 @@ export default function JobsScreen() {
               </View>
             )}
 
-            {completedJobs.length > 0 && (
+            {completedJobs?.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>Completed</Text>

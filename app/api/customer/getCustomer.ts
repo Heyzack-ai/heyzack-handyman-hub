@@ -30,7 +30,7 @@ export function useGetCustomer(customerCode: string) {
         searchParams.append('filter', `[["name", "=", "${customerCode}"]]`);
         searchParams.append('fields', JSON.stringify(['name', 'phone', 'email', 'address', 'customer_name']));
         console.log("Customer Code", customerCode);
-        const response = await axios.get<{ data: Customer[] }>(`${BASE_URL}/resource/Heyzack Customer?${searchParams.toString()}`, {
+        const response = await axios.get<{ data: Customer[] }>(`${BASE_URL}/erp/resource/Heyzack Customer?${searchParams.toString()}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',

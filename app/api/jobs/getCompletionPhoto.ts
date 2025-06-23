@@ -38,7 +38,7 @@ export function useGetCompletionPhoto(name: string) {
                 searchParams.append('filters', `[["installation", "=", "${name}"]]`);
                 searchParams.append('fields', JSON.stringify(['installation', 'image']));
 
-                const response = await axios.get(`${BASE_URL}/resource/Completion Images?${searchParams.toString()}`, {
+                const response = await axios.get(`${BASE_URL}/erp/resource/Completion Images?${searchParams.toString()}`, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                         'Content-Type': 'application/json',

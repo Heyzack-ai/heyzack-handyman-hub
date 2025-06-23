@@ -43,7 +43,7 @@ export function useAddSkills(skills: string[]) {
 
         
 
-        const response = await axios.put(`${BASE_URL}/resource/Handyman/${extendedUser.erpId}`, skillsData, {
+        const response = await axios.put(`${BASE_URL}/erp/resource/Handyman/${extendedUser.erpId}`, skillsData, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
