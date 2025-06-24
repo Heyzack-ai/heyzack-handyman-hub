@@ -7,11 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Fixed job status update API endpoint returning 404 errors
+- Changed from using query parameters to direct resource ID in URL path
+- Updated endpoint from `/erp/resource/Installation?filter=...` to `/erp/resource/Installation/${jobId}`
+- Fixed 403 Forbidden error by changing to handyman-specific endpoint `/handyman/jobs/${jobId}/status`
+- Fixed collect stock screen showing "Loading Job Details..." by adding missing jobId parameter in navigation
+- Fixed completion photos not loading due to incorrect URL construction
+- Fixed completion photo upload functionality with proper API integration
+- Fixed ImagePicker deprecation warnings by removing deprecated MediaTypeOptions
+- Fixed ImagePicker not opening by adding proper plugin configuration in app.json
+- Fixed multi-image upload replacing previous images by progressively updating completion_photos array
+- Fixed error messages to be more specific about job operations instead of partner operations
+- Improved error handling and response data structure validation
+- Fixed "Loading Job Details..." message showing indefinitely in collect stock screen by:
+  - Adding missing `item_name` parameter to navigation from job details
+  - Removing strict `item_name` requirement from loading condition
+  - Added debugging logs to track parameter flow
+
+### Changed
+- Enhanced collect stock screen to handle cases where item_name is not available
+- Improved parameter passing from job details to collect stock screen
+
 ### Added
 - Initial project setup.
 - README.md file.
 - CHANGELOG.md file.
 - Modified bank data handling to process single bank entry instead of multiple entries
+- Dynamic product rendering in collect stock screen using actual product data from API
+- Product specifications and tools required display in collect stock interface
+- JSON parsing of products parameter to display real product information
+- Enhanced product cards with description, specifications, and tools required sections
+- Enhanced photo upload functionality with both camera and gallery options
+- Selection dialog for choosing between camera capture and gallery pick
+- Separate permission handling for camera and media library access
+- Multi-image selection from gallery with sequential upload processing
+- Individual image upload with proper Installation resource updates
+- Progress tracking for multiple image uploads with success/error counts
 
 ## [Latest] - 2025-01-20
 

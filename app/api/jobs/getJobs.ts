@@ -46,7 +46,6 @@ export function useGetJobs() {
                     },
                 });
 
-                console.log("Jobs", response.data.data);
 
                 
 
@@ -93,7 +92,6 @@ export function useGetJobById(id: string) {
                     },
                 });
 
-                console.log("Jobs completion photo", response.data.data);
 
                 
 
@@ -132,7 +130,7 @@ export function useGetPendingJobs() {
                     },
                 });
 
-                console.log("Jobs pending", response.data);
+
 
                 
 

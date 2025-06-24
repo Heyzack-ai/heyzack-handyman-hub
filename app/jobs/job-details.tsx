@@ -41,6 +41,9 @@ import StatusBadge from "@/components/StatusBadge";
 import { useGetPartnerById } from "@/app/api/user/getPartner";
 import { useGetJobById } from "@/app/api/jobs/getJobs";
 import { useGetPendingJobs } from "@/app/api/jobs/getJobs";
+import { useUpdateJobStatus } from "@/app/api/jobs/updateStatus";
+import { useUpdateCompletionPhoto } from "@/app/api/jobs/getCompletionPhoto";
+import { useGetProduct } from "@/app/api/products/getProduct";
 export default function JobDetailScreen() {
   const params = useLocalSearchParams<{ job: string }>();
   const router = useRouter();
@@ -51,11 +54,16 @@ export default function JobDetailScreen() {
   const { data: partnerData } = useGetPartnerById(jobData?.partner as string);
   const { data: jobDetails } = useGetJobById(jobData?.name || '');
   const { data: pendingJobs } = useGetPendingJobs();
+  const { mutate: updateJobStatusMutation } = useUpdateJobStatus();
   const IMAGE_URL = process.env.EXPO_PUBLIC_ASSET_URL;
+  const { mutate: updateCompletionPhotoMutation } = useUpdateCompletionPhoto();
+  const { data: productData } = useGetProduct(jobDetails?.data?.products[0].item);
+
+  console.log("Product data", productData);
 
   // Debug completion photos data
-  console.log("Completion photos:", jobDetails?.data?.completion_photos);
-  console.log("Pending jobs:", pendingJobs);
+  console.log("Completion photos:", jobData?.products);
+  console.log("Pending jobs:", jobDetails?.data?.products[0].item);
   // console.log("Job data from job-details:", jobData?.partner);
   // console.log("Partner data from job-details:", jobData);
 
@@ -132,7 +140,7 @@ export default function JobDetailScreen() {
   const getProgressPercentage = () => {
     const statusOrder = [
       "scheduled",
-      "stock_collected",
+      "stock collected",
       "en_route",
       "started",
       "completed",
@@ -145,7 +153,7 @@ export default function JobDetailScreen() {
     switch (job.status) {
       case "scheduled":
         return "Accepted";
-      case "stock_collected":
+      case "stock collected":
         return "Stock Collected";
       case "en_route":
         return "En Route";
@@ -190,6 +198,7 @@ export default function JobDetailScreen() {
       if (Platform.OS !== "web") {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
+      updateJobStatusMutation({ jobId: jobData?.name, status: "Contract Sent" });
       Alert.alert("Success", "Contract sent to customer");
       setIsLoading(false);
     }, 1000);
@@ -199,33 +208,166 @@ export default function JobDetailScreen() {
     router.push({
       pathname: "/jobs/collect-stock/collect",
       params: {
+        jobId: job.id,
         products: JSON.stringify(job.products),
+        item_name: productData?.item_name || job.title || "Product Collection",
       },
     });
   };
 
   const handleTakePhoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-
-    if (status !== "granted") {
-      Alert.alert(
-        "Permission Required",
-        "Camera permission is needed to take photos"
-      );
+    console.log("handleTakePhoto called");
+    console.log("Platform:", Platform.OS);
+    
+    // Check if we're on web platform
+    if (Platform.OS === 'web') {
+      Alert.alert("Not Supported", "Camera functionality is not available on web platform");
       return;
     }
+    
+    // Show options dialog
+    Alert.alert(
+      "Select Photo",
+      "Choose how you want to add photos",
+      [
+        {
+          text: "Camera",
+          onPress: () => handleCameraCapture(),
+        },
+        {
+          text: "Gallery (Multiple)",
+          onPress: () => handleGalleryPick(),
+        },
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+      ]
+    );
+  };
 
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.8,
-      allowsEditing: true,
-    });
+  const handleCameraCapture = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      console.log("Camera permission status:", status);
 
-    if (!result.canceled && result.assets && result.assets.length > 0) {
-      addInstallationPhoto(job.id, result.assets[0].uri);
-      if (Platform.OS !== "web") {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission Required",
+          "Camera permission is needed to take photos"
+        );
+        return;
       }
+
+      console.log("Launching camera...");
+      const result = await ImagePicker.launchCameraAsync({
+        quality: 0.8,
+        allowsEditing: true,
+      });
+      
+      console.log("Camera result:", result);
+      handleImageResult(result);
+    } catch (error) {
+      console.error("Error in handleCameraCapture:", error);
+      Alert.alert("Error", "Failed to open camera");
+    }
+  };
+
+  const handleGalleryPick = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      console.log("Gallery permission status:", status);
+
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission Required",
+          "Gallery permission is needed to select photos"
+        );
+        return;
+      }
+
+      console.log("Launching gallery...");
+      const result = await ImagePicker.launchImageLibraryAsync({
+        quality: 0.8,
+        allowsEditing: false,
+        allowsMultipleSelection: true,
+        selectionLimit: 10, // Allow up to 10 images
+      });
+      
+      console.log("Gallery result:", result);
+      handleImageResult(result);
+    } catch (error) {
+      console.error("Error in handleGalleryPick:", error);
+      Alert.alert("Error", "Failed to open gallery");
+    }
+  };
+
+  const handleImageResult = async (result: any) => {
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      console.log(`Processing ${result.assets.length} images`);
+      
+      try {
+        // Get current completion photos from job data
+        let currentCompletionPhotos = jobData?.completion_photos || [];
+        
+        // Process each image individually
+        let successCount = 0;
+        let errorCount = 0;
+        
+        for (let i = 0; i < result.assets.length; i++) {
+          const asset = result.assets[i];
+          const imageUri = asset.uri;
+          console.log(`Processing image ${i + 1}/${result.assets.length}:`, imageUri);
+          
+          try {
+            await new Promise((resolve, reject) => {
+              updateCompletionPhotoMutation({
+                jobId: jobData?.name || '',
+                completion_photos: currentCompletionPhotos as any,
+                fileUri: imageUri
+              }, {
+                onSuccess: (updatedJob: any) => {
+                  console.log(`Successfully uploaded image ${i + 1}`);
+                  successCount++;
+                  // Update the current completion photos with the new data from the response
+                  if (updatedJob?.completion_photos) {
+                    currentCompletionPhotos = updatedJob.completion_photos;
+                    console.log(`Updated completion_photos array now has ${currentCompletionPhotos.length} items`);
+                  }
+                  resolve(true);
+                },
+                onError: (error) => {
+                  console.error(`Failed to upload image ${i + 1}:`, error);
+                  errorCount++;
+                  reject(error);
+                }
+              });
+            });
+          } catch (error) {
+            console.error(`Error uploading image ${i + 1}:`, error);
+            errorCount++;
+          }
+        }
+        
+        // Show final result
+        if (Platform.OS !== "web") {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+        
+        if (errorCount === 0) {
+          Alert.alert("Success", `${successCount} photo(s) uploaded successfully`);
+        } else if (successCount > 0) {
+          Alert.alert("Partial Success", `${successCount} photo(s) uploaded, ${errorCount} failed`);
+        } else {
+          Alert.alert("Error", "All photos failed to upload");
+        }
+        
+      } catch (error) {
+        console.error("Error processing multiple images:", error);
+        Alert.alert("Error", "Failed to process images");
+      }
+    } else {
+      console.log("Image selection was canceled or no assets");
     }
   };
 
@@ -412,11 +554,11 @@ export default function JobDetailScreen() {
 
           {productsExpanded && (
             <>
-              {Array.isArray(job.products) && job.products.map((product: any) => (
+              {Array.isArray(jobDetails?.data?.products) && productData && jobDetails?.data?.products.map((product: any) => (
                 <View key={product.id} style={styles.productItem}>
                   <View>
-                    <Text style={styles.productName}>{product.name}</Text>
-                    <Text style={styles.productRequired}>Required: 1</Text>
+                    <Text style={styles.productName}>{productData?.item_name}</Text>
+                    <Text style={styles.productRequired}>Required: {product.quantity}</Text>
                   </View>
                   <View
                     style={[
@@ -433,7 +575,7 @@ export default function JobDetailScreen() {
                           : styles.shortText
                       }
                     >
-                      {product.isCollected === true ? "Collected" : "To Collect"}
+                      {product.status === "pending" ? "To Collect" : "Collected"}
                     </Text>
                   </View>
                 </View>
@@ -523,16 +665,21 @@ export default function JobDetailScreen() {
                   showsHorizontalScrollIndicator={false}
                   keyExtractor={(item, index) => index.toString()}
                  
-                  renderItem={({ item }: { item: any }) => (
-                   
-                    <Image 
-                      source={{ uri: `${IMAGE_URL}${item.image}` || 'https://placehold.co/600x400' }} 
-                      style={styles.photo}
-                      contentFit="cover"
-                      onError={() => console.warn("Failed to load image:", `${IMAGE_URL}${item.image}`)}
-                    />
-                   
-                  )}
+                  renderItem={({ item }: { item: any }) => {
+                    // Check if item.image already contains a full URL
+                    const imageUrl = item.image?.startsWith('http') 
+                      ? item.image 
+                      : `${IMAGE_URL}${item.image}`;
+                    
+                    return (
+                      <Image 
+                        source={{ uri: imageUrl || 'https://placehold.co/600x400' }} 
+                        style={styles.photo}
+                        contentFit="cover"
+                        onError={() => console.warn("Failed to load image:", imageUrl)}
+                      />
+                    );
+                  }}
                 />
               </View>
             </View>
@@ -540,9 +687,15 @@ export default function JobDetailScreen() {
             <Text style={styles.noPhotosText}>No photos uploaded yet</Text>
           )}
 
-          <Pressable style={styles.uploadButton} onPress={handleTakePhoto}>
+          <Pressable 
+            style={styles.uploadButton} 
+            onPress={() => {
+              console.log("Upload button pressed");
+              handleTakePhoto();
+            }}
+          >
             <Camera size={20} color={Colors.light.primary} />
-            <Text style={styles.uploadButtonText}>Upload Photos</Text>
+            <Text style={styles.uploadButtonText}>Add Photo</Text>
           </Pressable>
         </View>
 
@@ -855,8 +1008,8 @@ const styles = StyleSheet.create({
   },
   photo: {
     marginTop: 10,
-    width: '100%',
-    height: '100%',
+    width: 100,
+    height: 100,
     marginRight: 8,
     borderRadius: 8,
   },

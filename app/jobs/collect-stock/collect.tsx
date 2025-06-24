@@ -15,35 +15,61 @@ import { Stack, useRouter, useLocalSearchParams } from "expo-router";
 import { ArrowLeft, CheckCircle, AlertCircle, Package, Camera, Book } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
-import { useJobStore } from "@/store/job-store";
 import Colors from "@/constants/colors";
 import Header from "@/components/Header";
 import { Product } from "@/types/job";
+import { useUpdateJobStatus } from "@/app/api/jobs/updateStatus";
 
 export default function CollectStockScreen() {
   const { jobId } = useLocalSearchParams<{ jobId: string }>();
+  const { products, item_name } = useLocalSearchParams<{ products: string, item_name: string }>();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [parsedProducts, setParsedProducts] = useState<Product[]>([]);
+  const { mutate: updateJobStatus, isPending: isUpdatingJobStatus } = useUpdateJobStatus();
   
-  const { 
-    getCurrentJob, 
-    setCurrentJobId, 
-    updateJobStatus,
-    updateProductCollectionStatus
-  } = useJobStore();
+  console.log("CollectStockScreen params:", { jobId, products, item_name });
   
-  // Set current job ID when screen loads
+  // Parse products from params
   useEffect(() => {
-    if (jobId) {
-      setCurrentJobId(jobId);
+    if (products) {
+      try {
+        const productsData = JSON.parse(products);
+        console.log("Parsed products:", productsData);
+        setParsedProducts(productsData);
+      } catch (error) {
+        console.error('Failed to parse products:', error);
+      }
     }
-    return () => setCurrentJobId(null);
-  }, [jobId, setCurrentJobId]);
+  }, [products]);
   
-  const job = getCurrentJob();
+  
 
   const handleCollectProduct = async (productId: string) => {
-    if (!job) return;
+    if (!jobId) return;
+    
+    // Show options dialog
+    Alert.alert(
+      "Select Photo",
+      "Choose how you want to add a photo",
+      [
+        {
+          text: "Camera",
+          onPress: () => handleCameraCapture(productId),
+        },
+        {
+          text: "Gallery",
+          onPress: () => handleGalleryPick(productId),
+        },
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+      ]
+    );
+  };
+
+  const handleCameraCapture = async (productId: string) => {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       
@@ -53,30 +79,69 @@ export default function CollectStockScreen() {
       }
       
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         quality: 0.8,
         allowsEditing: true,
       });
       
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        updateProductCollectionStatus(job.id, productId, true);
-        if (Platform.OS !== "web") {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        }
-        Alert.alert("Success", "Product marked as collected");
-      }
+      handleImageResult(result, productId);
     } catch (error) {
       console.error("Error collecting product:", error);
       Alert.alert("Error", "Failed to collect product");
     }
   };
 
+  const handleGalleryPick = async (productId: string) => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (status !== "granted") {
+        Alert.alert("Permission Required", "Gallery permission is needed to select photos");
+        return;
+      }
+      
+      const result = await ImagePicker.launchImageLibraryAsync({
+        quality: 0.8,
+        allowsEditing: false,
+        allowsMultipleSelection: true,
+        selectionLimit: 5, // Allow up to 5 images for product collection
+      });
+      
+      handleImageResult(result, productId);
+    } catch (error) {
+      console.error("Error collecting product:", error);
+      Alert.alert("Error", "Failed to collect product");
+    }
+  };
+
+  const handleImageResult = (result: any, productId: string) => {
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      console.log(`Processing ${result.assets.length} images for product ${productId}`);
+      
+      // Process each selected image
+      result.assets.forEach((asset: any, index: number) => {
+        console.log(`Processing image ${index + 1} for product ${productId}`);
+        
+        // Update job status for each image (you might want to modify this based on your requirements)
+        updateJobStatus({ jobId: jobId, status: "Stock Collected" });
+        
+        if (Platform.OS !== "web") {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+        
+        if (index === result.assets.length - 1) {
+          // Show success message only after the last image is processed
+          Alert.alert("Success", `${result.assets.length} photo(s) uploaded for product collection`);
+        }
+      });
+    }
+  };
+
   const handleConfirmCollection = () => {
-    if (!job) return;
+    if (!jobId) return;
     setIsLoading(true);
     
     // Check if all required products are collected
-    const allCollected = job.products.every((product: Product) => product.isCollected);
+    const allCollected = parsedProducts.every((product: Product) => product.isCollected);
     
     if (!allCollected) {
       Alert.alert(
@@ -87,8 +152,8 @@ export default function CollectStockScreen() {
           { 
             text: "Continue", 
             onPress: () => {
-              if (job) {
-                updateJobStatus(job.id, "stock_collected");
+              if (jobId) {
+                updateJobStatus({ jobId: jobId, status: "Stock Collected" });
                 if (Platform.OS !== "web") {
                   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                 }
@@ -100,7 +165,7 @@ export default function CollectStockScreen() {
         ]
       );
     } else {
-      updateJobStatus(job.id, "stock_collected");
+      updateJobStatus({ jobId: jobId, status: "Stock Collected" });
       if (Platform.OS !== "web") {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
@@ -109,28 +174,7 @@ export default function CollectStockScreen() {
     }
   };
 
-  // Mock data for stock availability
-  const stockAvailability = {
-    "prod-001": { available: 1, required: 1 },
-    "prod-002": { available: 4, required: 5 },
-    "prod-003": { available: 2, required: 2 },
-    "prod-004": { available: 4, required: 4 },
-    "prod-005": { available: 2, required: 2 },
-    "prod-006": { available: 1, required: 1 },
-    "prod-007": { available: 1, required: 1 },
-    "prod-008": { available: 1, required: 1 },
-    "prod-009": { available: 1, required: 1 },
-    "prod-010": { available: 1, required: 1 },
-    "prod-011": { available: 1, required: 1 },
-    "prod-012": { available: 1, required: 1 },
-    "prod-013": { available: 1, required: 1 },
-    "prod-014": { available: 1, required: 1 },
-    "prod-015": { available: 1, required: 1 },
-    "prod-016": { available: 1, required: 1 },
-    "prod-017": { available: 3, required: 4 },
-  };
-
-  if (!job) {
+  if (parsedProducts.length === 0) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <Header title="Collect Stock" onBack={() => router.back()} />
@@ -147,21 +191,24 @@ export default function CollectStockScreen() {
       
       <View style={styles.container}>
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-          {job.products.map((product: Product) => {
-            const stockInfo = stockAvailability[product.id as keyof typeof stockAvailability] || { available: 1, required: 1 };
-            const isInsufficient = stockInfo && stockInfo.available < stockInfo.required;
+          {parsedProducts.map((product: Product) => {
+            // Default to 1 required if not specified
+            const requiredQuantity = 1;
+            const isInsufficient = false; // We'll handle this based on actual stock data if needed
             
             return (
               <View key={product.id} style={styles.productItem}>
                 <View style={styles.productInfo}>
-                  <Text style={styles.productName}>{product.name}</Text>
-                  <Text style={styles.productRequired}>Required: {stockInfo?.required || 1}</Text>
+                  <Text style={styles.productName}>{product.item_name}</Text>
+                  <Text style={styles.productRequired}>Required: {requiredQuantity}</Text>
+                  {/* <Text style={styles.productDescription}>{product.description}</Text> */}
                   
                   {isInsufficient && (
                     <Text style={styles.insufficientText}>
-                      Insufficient Stock: {stockInfo.available} Available, {stockInfo.required} Required
+                      Insufficient Stock
                     </Text>
                   )}
+                  
                 </View>
                 
                 {product.isCollected ? (
@@ -169,11 +216,9 @@ export default function CollectStockScreen() {
                     <Text style={styles.collectedText}>Collected</Text>
                   </View>
                 ) : (
-                  isInsufficient ? (
-                    <View style={styles.toCollectBadge}>
-                      <Text style={styles.toCollectText}>To Collect</Text>
-                    </View>
-                  ) : null
+                  <View style={styles.toCollectBadge}>
+                    <Text style={styles.toCollectText}>To Collect</Text>
+                  </View>
                 )}
                 
                 <Pressable 
@@ -184,12 +229,14 @@ export default function CollectStockScreen() {
                   <Text style={styles.collectButtonText}>Upload Photo & Collect</Text>
                 </Pressable>
 
-                <Pressable style={[styles.collectButton, { marginTop: 8 }]} onPress={() => product.manualUrl && Linking.openURL(product.manualUrl)}>
-                  <Book size={16} color={Colors.light.text} />
-                  <Text style={styles.collectButtonText}>
-                    Installation Guides
-                  </Text>
-                </Pressable>
+                {product.manualUrl && (
+                  <Pressable style={[styles.collectButton, { marginTop: 8 }]} onPress={() => product.manualUrl && Linking.openURL(product.manualUrl)}>
+                    <Book size={16} color={Colors.light.text} />
+                    <Text style={styles.collectButtonText}>
+                      Installation Guides
+                    </Text>
+                  </Pressable>
+                )}
               </View>
             );
           })}
@@ -253,10 +300,43 @@ const styles = StyleSheet.create({
     color: Colors.light.gray[600],
     marginBottom: 4,
   },
+  productDescription: {
+    fontSize: 14,
+    color: Colors.light.gray[600],
+    marginBottom: 4,
+  },
   insufficientText: {
     fontSize: 14,
     color: Colors.light.error,
-    marginTop: 4,
+    marginBottom: 4,
+  },
+  specificationsContainer: {
+    marginBottom: 12,
+  },
+  specificationsTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: Colors.light.text,
+    marginBottom: 4,
+  },
+  specificationItem: {
+    fontSize: 14,
+    color: Colors.light.gray[600],
+    marginBottom: 4,
+  },
+  toolsContainer: {
+    marginBottom: 12,
+  },
+  toolsTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: Colors.light.text,
+    marginBottom: 4,
+  },
+  toolItem: {
+    fontSize: 14,
+    color: Colors.light.gray[600],
+    marginBottom: 4,
   },
   collectedBadge: {
     alignSelf: "flex-start",

@@ -14,7 +14,7 @@ export default function StatusBadge({ status, size = "medium" }: StatusBadgeProp
     switch (normalizedStatus) {
       case "scheduled":
         return Colors.light.info;
-      case "stock_collected":
+      case "stock collected":
         return Colors.light.warning;
       case "en_route":
         return Colors.light.secondary;
@@ -26,6 +26,8 @@ export default function StatusBadge({ status, size = "medium" }: StatusBadgeProp
         return Colors.light.success;
       case "not_sent":
         return Colors.light.error;
+      case "contract sent":
+        return Colors.light.success;
       default:
         return Colors.light.gray[500];
     }
@@ -35,7 +37,7 @@ export default function StatusBadge({ status, size = "medium" }: StatusBadgeProp
     switch (normalizedStatus) {
       case "scheduled":
         return "Scheduled";
-      case "stock_collected":
+      case "stock collected":
         return "Stock Collected";
       case "en_route":
         return "En Route";
@@ -47,6 +49,8 @@ export default function StatusBadge({ status, size = "medium" }: StatusBadgeProp
         return "Sent";
       case "not_sent":
         return "Not Sent";
+      case "contract sent":
+        return "Contract Sent";
       default:
         return "Unknown";
     }
