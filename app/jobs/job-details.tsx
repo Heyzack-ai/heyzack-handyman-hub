@@ -38,12 +38,46 @@ import Colors from "@/constants/colors";
 import { Job } from "@/types/job";
 import Header from "@/components/Header";
 import StatusBadge from "@/components/StatusBadge";
+import ShimmerSkeleton from "@/components/ShimmerSkeleton";
 import { useGetPartnerById } from "@/app/api/user/getPartner";
 import { useGetJobById } from "@/app/api/jobs/getJobs";
 import { useGetPendingJobs } from "@/app/api/jobs/getJobs";
 import { useUpdateJobStatus } from "@/app/api/jobs/updateStatus";
 import { useUpdateCompletionPhoto } from "@/app/api/jobs/getCompletionPhoto";
 import { useGetProduct } from "@/app/api/products/getProduct";
+
+// Product Item Component that fetches its own data
+const ProductItem = ({ product }: { product: any }) => {
+  const { data: productData } = useGetProduct(product.item);
+  
+  return (
+    <View key={product.name} style={styles.productItem}>
+      <View>
+        <Text style={styles.productName}>{productData?.item_name || `Item ${product.item}`}</Text>
+        <Text style={styles.productRequired}>Required: {product.quantity}</Text>
+      </View>
+      <View
+        style={[
+          styles.statusBadge,
+          product.status === "collected"
+            ? styles.availableBadge
+            : styles.shortBadge,
+        ]}
+      >
+        <Text
+          style={
+            product.status === "collected"
+              ? styles.availableText
+              : styles.shortText
+          }
+        >
+          {product.status === "pending" ? "To Collect" : "Collected"}
+        </Text>
+      </View>
+    </View>
+  );
+};
+
 export default function JobDetailScreen() {
   const params = useLocalSearchParams<{ job: string }>();
   const router = useRouter();
@@ -51,21 +85,19 @@ export default function JobDetailScreen() {
   const [productsExpanded, setProductsExpanded] = useState(true);
   const [completionExpanded, setCompletionExpanded] = useState(false);
   const [jobData, setJobData] = useState<Job | undefined>(undefined);
-  const { data: partnerData } = useGetPartnerById(jobData?.partner as string);
-  const { data: jobDetails } = useGetJobById(jobData?.name || '');
+  const { data: partnerData, isLoading: isPartnerLoading } = useGetPartnerById(jobData?.partner as string);
+  const { data: jobDetails, isLoading: isJobDetailsLoading } = useGetJobById(jobData?.name || '');
   const { data: pendingJobs } = useGetPendingJobs();
   const { mutate: updateJobStatusMutation } = useUpdateJobStatus();
   const IMAGE_URL = process.env.EXPO_PUBLIC_ASSET_URL;
   const { mutate: updateCompletionPhotoMutation } = useUpdateCompletionPhoto();
-  const { data: productData } = useGetProduct(jobDetails?.data?.products[0].item);
 
-  console.log("Product data", productData);
+  // console.log("Job details:", jobDetails?.data);
+  // console.log("Products:", jobDetails?.data?.products);
 
-  // Debug completion photos data
-  console.log("Completion photos:", jobData?.products);
-  console.log("Pending jobs:", jobDetails?.data?.products[0].item);
-  // console.log("Job data from job-details:", jobData?.partner);
-  // console.log("Partner data from job-details:", jobData);
+  // // Debug completion photos data
+  // console.log("Completion photos:", jobData?.products);
+  // console.log("Pending jobs:", jobDetails?.data?.products);
 
   let formattedDate = '';
   let formattedTime = '';
@@ -107,7 +139,6 @@ export default function JobDetailScreen() {
   // Use the parsed job data
   const job = jobData;
 
-
   // Redirect if job is not found or is pending
   useEffect(() => {
     if (!job) {
@@ -126,9 +157,18 @@ export default function JobDetailScreen() {
   if (!job) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.container}>
-          <Text style={styles.loadingText}>Loading job details...</Text>
-        </View>
+        <Header title="Job Details" onBack={() => router.back()} />
+        <ShimmerSkeleton />
+      </SafeAreaView>
+    );
+  }
+
+  // Show shimmer while job details are loading
+  if (isJobDetailsLoading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <Header title={job.title} onBack={() => router.back()} />
+        <ShimmerSkeleton />
       </SafeAreaView>
     );
   }
@@ -150,7 +190,7 @@ export default function JobDetailScreen() {
   };
 
   const getStatusText = () => {
-    switch (job.status) {
+    switch (job.status.toLowerCase()) {
       case "scheduled":
         return "Accepted";
       case "stock collected":
@@ -205,12 +245,18 @@ export default function JobDetailScreen() {
   };
 
   const handleCollectStock = () => {
+    console.log("handleCollectStock called");
+    console.log("job.id:", job.id);
+    console.log("job.name:", job.name);
+    console.log("jobData?.name:", jobData?.name);
+    console.log("jobDetails?.data?.name:", jobDetails?.data?.name);
+    
     router.push({
       pathname: "/jobs/collect-stock/collect",
       params: {
-        jobId: job.id,
-        products: JSON.stringify(job.products),
-        item_name: productData?.item_name || job.title || "Product Collection",
+        jobId: job.name || jobData?.name || job.id,
+        products: JSON.stringify(jobDetails?.data?.products || []),
+        item_name: job.title || "Product Collection",
       },
     });
   };
@@ -380,7 +426,7 @@ export default function JobDetailScreen() {
         {
           text: "Complete",
           onPress: () => {
-            updateJobStatus(job.id, "completed");
+            updateJobStatusMutation({ jobId: job.id, status: "Job Marked as Done" });
             if (Platform.OS !== "web") {
               Haptics.notificationAsync(
                 Haptics.NotificationFeedbackType.Success
@@ -554,31 +600,8 @@ export default function JobDetailScreen() {
 
           {productsExpanded && (
             <>
-              {Array.isArray(jobDetails?.data?.products) && productData && jobDetails?.data?.products.map((product: any) => (
-                <View key={product.id} style={styles.productItem}>
-                  <View>
-                    <Text style={styles.productName}>{productData?.item_name}</Text>
-                    <Text style={styles.productRequired}>Required: {product.quantity}</Text>
-                  </View>
-                  <View
-                    style={[
-                      styles.statusBadge,
-                      product.isCollected
-                        ? styles.availableBadge
-                        : styles.shortBadge,
-                    ]}
-                  >
-                    <Text
-                      style={
-                        product.isCollected
-                          ? styles.availableText
-                          : styles.shortText
-                      }
-                    >
-                      {product.status === "pending" ? "To Collect" : "Collected"}
-                    </Text>
-                  </View>
-                </View>
+              {Array.isArray(jobDetails?.data?.products) && jobDetails?.data?.products.map((product: any) => (
+                <ProductItem key={product.name} product={product} />
               ))}
 
               <View style={styles.productActions}>
@@ -664,6 +687,7 @@ export default function JobDetailScreen() {
                   horizontal
                   showsHorizontalScrollIndicator={false}
                   keyExtractor={(item, index) => index.toString()}
+                  key={job.title}
                  
                   renderItem={({ item }: { item: any }) => {
                     // Check if item.image already contains a full URL

@@ -15,14 +15,23 @@ export type JobType = "booked_installation" | "job_request";
 export type Product = {
   id: string;
   name: string;
+  item: string;
   item_name: string;
   image: string;
   description: string;
   isCollected: boolean;
   isInstalled: boolean;
   manualUrl?: string;
+  installation_guide?: string;
   specifications?: string[];
   toolsRequired?: string[];
+  quantity?: number;
+  status?: string;
+};
+
+export type Stock = {
+  item: string;
+  quantity: number;
 };
 
 export type Customer = {

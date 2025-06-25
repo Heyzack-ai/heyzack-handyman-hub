@@ -14,6 +14,8 @@ export default function BankAccountsScreen() {
   const queryClient = useQueryClient();
   const [bankAccounts, setBankAccounts] = useState<any[]>([]);
 
+  console.log("bankData from bankAccounts", bankData);
+
   useEffect(() => {
     if (bankData && bankData.data && Array.isArray(bankData.data.bank_details)) {
       setBankAccounts([]);

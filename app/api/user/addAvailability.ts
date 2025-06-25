@@ -77,7 +77,7 @@ export const useGetAvailability = () => {
 
         const extendedUser = user.data.user as ExtendedUser;
 
-        const response = await axios.get(`${BASE_URL}/resource/Handyman/${extendedUser.erpId}`, {
+        const response = await axios.get(`${BASE_URL}/erp/resource/Handyman/${extendedUser.erpId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',

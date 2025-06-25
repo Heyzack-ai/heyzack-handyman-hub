@@ -12,6 +12,18 @@ type CalendarProps = {
 
 export default function Calendar({ selectedDate, onDateSelect, jobs = [] }: CalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
+  
+  const statuses = [
+    "Scheduled",
+    "En Route",
+    "Stock Collected",
+    "Started",
+    "On Hold",
+    "Completed",
+    "Issues Reported",
+    "Contract Sent",
+    "Customer Approved",
+  ];
 
   const monthNames = [
     "January", "February", "March", "April", "May", "June",
@@ -115,7 +127,7 @@ export default function Calendar({ selectedDate, onDateSelect, jobs = [] }: Cale
           }
           
           const jobTypes = getJobTypesForDate(day);
-          const hasBookedInstallation = jobTypes.includes("Scheduled");
+          const hasBookedInstallation = jobTypes.some(status => statuses.includes(status));
           const hasJobRequest = jobTypes.includes("Pending");
           
           return (

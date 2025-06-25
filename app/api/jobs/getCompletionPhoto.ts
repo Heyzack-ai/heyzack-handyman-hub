@@ -20,7 +20,7 @@ type ExtendedUser = {
 
 export function useUpdateCompletionPhoto() {
     return useMutation({
-        mutationKey: ["upload-kyc-document"],
+        mutationKey: ["update-completion-photo"],
         mutationFn: async ({ fileUri, jobId, completion_photos }: { fileUri: string, jobId: string, completion_photos: any[] }) => {
           try {
             const token = await SecureStore.getItemAsync('auth_token');

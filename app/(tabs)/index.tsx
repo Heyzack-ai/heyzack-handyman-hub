@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   StyleSheet,
   Text,
@@ -7,6 +7,7 @@ import {
   SafeAreaView,
   TouchableOpacity,
   StatusBar,
+  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Calendar as CalendarIcon, Briefcase, Euro } from "lucide-react-native";
@@ -18,22 +19,102 @@ import Colors from "@/constants/colors";
 import { Job as JobType } from "@/types/job";
 import { Bell } from "lucide-react-native";
 import * as SecureStore from "expo-secure-store";
-import { Platform } from "react-native";
+import { useQuery, useQueries } from "@tanstack/react-query";
 import { useGetJobs } from "@/app/api/jobs/getJobs";
+import { useGetCustomer } from "@/app/api/customer/getCustomer";
+import ShimmerSkeleton from "@/components/ShimmerSkeleton";
 
 import Job from "@/components/Job";
-import { useGetCustomer } from "@/app/api/customer/getCustomer";
 
 export default function HomeScreen() {
   const router = useRouter();
-  // const jobs = useJobStore((state) => state.jobs);
   const [selectedDate, setSelectedDate] = useState<string>(
     new Date().toISOString().split("T")[0]
   );
   const [token, setToken] = useState<string | null>(null);
-  const { data: jobsData } = useGetJobs();
-  const { data: customerData, error: customerError } = useGetCustomer(jobsData?.data[0].customer);
+  const { data: jobsData, isLoading } = useGetJobs();
   const today = new Date().toISOString().split("T")[0];
+
+  // Get unique customer codes that need to be fetched
+  const customerCodes = useMemo(() => {
+    if (!jobsData?.data) return [];
+    return jobsData.data
+      .map((job: any) => job.customer)
+      .filter((customer: any, index: number, arr: any[]) => 
+        customer && typeof customer === 'string' && arr.indexOf(customer) === index
+      );
+  }, [jobsData?.data]);
+
+  // Fetch customer data for all unique customers
+  const customerQueries = useQueries({
+    queries: customerCodes.map((customerCode: string) => ({
+      queryKey: ['customer', customerCode],
+      queryFn: async () => {
+        const token = await SecureStore.getItemAsync('auth_token');
+        if (!token) throw new Error("Authentication token not found");
+        
+        const axios = require('axios');
+        const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+        const searchParams = new URLSearchParams();
+        searchParams.append('filter', `[["name", "=", "${customerCode}"]]`);
+        searchParams.append('fields', JSON.stringify(['name', 'phone', 'email', 'address', 'customer_name']));
+        
+        const response = await axios.get(`${BASE_URL}/erp/resource/Heyzack Customer?${searchParams.toString()}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        return response.data?.data?.[0] || null;
+      },
+      enabled: !!customerCode,
+    })),
+  });
+
+  // Create a map of customer codes to customer data
+  const customersMap = useMemo(() => {
+    const map = new Map();
+    customerQueries.forEach((query, index) => {
+      if (query.data) {
+        map.set(customerCodes[index], query.data);
+      }
+    });
+    return map;
+  }, [customerQueries, customerCodes]);
+
+  // Helper function to get customer data for a specific job
+  const getCustomerForJob = (job: any) => {
+    // If job.customer is already an object with customer data, return it
+    if (job.customer && typeof job.customer === 'object' && job.customer.customer_name) {
+      return job.customer;
+    }
+    
+    // If job has customer_name directly, use it
+    if (job.customer_name) {
+      return {
+        name: job.customer,
+        customer_name: job.customer_name,
+        phone: job.customer_phone || '',
+        email: job.customer_email || '',
+        address: job.customer_address || ''
+      };
+    }
+    
+    // If we have fetched customer data for this customer code, use it
+    if (job.customer && typeof job.customer === 'string' && customersMap.has(job.customer)) {
+      return customersMap.get(job.customer);
+    }
+    
+    // Fallback to basic customer object
+    return {
+      name: job.customer,
+      customer_name: `Customer ${job.customer}`,
+      phone: '',
+      email: '',
+      address: ''
+    };
+  };
 
   const completedJobsCount =
     jobsData?.data?.filter((job: any) => job.status === "Completed").length ||
@@ -55,15 +136,6 @@ export default function HomeScreen() {
       });
     }
   }, []);
-
-
-
-  if (customerError) {
-    console.log("Customer Error", customerError);
-  }
-
- 
-
 
   const selectedDateJobs = jobsData?.data?.filter(
     (job: any) => job.scheduled_date?.slice(0, 10) === selectedDate
@@ -87,6 +159,39 @@ export default function HomeScreen() {
   };
 
   const isToday = selectedDate === today;
+
+  // Show shimmer loading state while data is loading
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 16,
+            marginHorizontal: 16,
+          }}
+        >
+          <View style={styles.header}>
+            <Text style={styles.greeting}>Hello, Technician</Text>
+            <Text style={styles.subtitle}>
+              {isToday
+                ? "Here's your schedule for today"
+                : `Schedule for ${selectedDate}`}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.notificationButton}
+            onPress={() => router.push("/notifications")}
+          >
+            <Bell size={24} color={Colors.light.primary} />
+          </TouchableOpacity>
+        </View>
+        <ShimmerSkeleton />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -167,13 +272,7 @@ export default function HomeScreen() {
                 key={job.name}
                 job={{
                   ...job,
-                  customer:
-                    customerData && (
-                      (typeof job.customer === 'string' && job.customer === customerData.name) ||
-                      (typeof job.customer === 'object' && job.customer.name === customerData.name)
-                    )
-                      ? customerData
-                      : job.customer
+                  customer: getCustomerForJob(job)
                 }}
               />
             ))
@@ -200,13 +299,7 @@ export default function HomeScreen() {
              key={job.name}
              job={{
                ...job,
-               customer:
-                 customerData && (
-                   (typeof job.customer === 'string' && job.customer === customerData.name) ||
-                   (typeof job.customer === 'object' && job.customer.name === customerData.name)
-                 )
-                   ? customerData
-                   : job.customer
+               customer: getCustomerForJob(job)
              }}
            />
             ))}

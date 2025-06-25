@@ -31,6 +31,8 @@ import {
   Banknote,
 } from "lucide-react-native";
 import Colors from "@/constants/colors";
+import ShimmerCard from "@/components/ShimmerCard";
+import ProfileSkeleton from "@/components/ProfileSkeleton";
 
 import { useGetUser } from "@/app/api/user/getUser";
 import { authClient } from "@/lib/auth-client";
@@ -39,11 +41,18 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { signOut, deleteAccount } = useAuth();
 
-  const { data: user } = useGetUser();
+  const { data: user, isLoading } = useGetUser();
   const BASE_URL = process.env.EXPO_PUBLIC_ASSET_URL;
+  
 
-
-
+  // Show skeleton while loading
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <ProfileSkeleton />
+      </SafeAreaView>
+    );
+  }
 
   const technician = {
     name: user?.handyman_name,

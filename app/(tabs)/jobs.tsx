@@ -14,6 +14,7 @@ import { Search } from "lucide-react-native";
 import { useJobStore } from "@/store/job-store";
 import JobCard from "@/components/JobCard";
 import ActionButton from "@/components/ActionButton";
+import ShimmerCard from "@/components/ShimmerCard";
 import Colors from "@/constants/colors";
 import { useGetJobs } from "@/app/api/jobs/getJobs";
 import { useGetCustomer } from "@/app/api/customer/getCustomer";
@@ -24,7 +25,7 @@ import { useQueryClient } from "@tanstack/react-query";
 export default function JobsScreen() {
   const jobs = useJobStore((state) => state.jobs);
   const [searchQuery, setSearchQuery] = useState("");
-  const { data: jobsData } = useGetJobs();
+  const { data: jobsData, isLoading } = useGetJobs();
   const { data: customerData, error: customerError } = useGetCustomer(
     jobsData?.data[0].customer
   );
@@ -110,7 +111,18 @@ export default function JobsScreen() {
           />
         </View>
 
-        {filteredJobs.length === 0 ? (
+        {isLoading ? (
+          // Show shimmer loading state
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Loading Jobs...</Text>
+            </View>
+            <ShimmerCard height={120} />
+            <ShimmerCard height={120} />
+            <ShimmerCard height={120} />
+            <ShimmerCard height={120} />
+          </View>
+        ) : filteredJobs.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyTitle}>No jobs found</Text>
             <Text style={styles.emptyText}>
