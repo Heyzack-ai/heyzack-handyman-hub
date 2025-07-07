@@ -51,7 +51,7 @@ export function useGetJobs() {
 
                 return response.data;
             } catch (error) {
-                console.error("Failed to get jobs by user:", error);
+                
                 throw error instanceof Error ? error : new Error("Failed to get jobs");
             }
         },

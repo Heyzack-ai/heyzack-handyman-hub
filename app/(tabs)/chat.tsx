@@ -55,7 +55,7 @@ export default function ChatScreen() {
         Alert.alert("Success", "Photo captured! In a real app, you would select a contact to send this to.");
       }
     } catch (error) {
-      console.error("Error taking photo:", error);
+      // console.error("Error taking photo:", error);
       Alert.alert("Error", "Failed to take photo");
     } finally {
       setShowMediaOptions(false);
@@ -87,7 +87,7 @@ export default function ChatScreen() {
         Alert.alert("Success", "Photo selected! In a real app, you would select a contact to send this to.");
       }
     } catch (error) {
-      console.error("Error picking image:", error);
+      // console.error("Error picking image:", error); 
       Alert.alert("Error", "Failed to select image");
     } finally {
       setShowMediaOptions(false);
