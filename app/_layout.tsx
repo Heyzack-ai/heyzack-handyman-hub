@@ -4,8 +4,10 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { DevToolsProvider } from "../dev-tools";
-import { AuthProvider } from "@/lib/auth-context";
+// import { DevToolsProvider } from "../dev-tools";
+import { AuthProvider, useAuth } from "@/lib/auth-context";
+import { View, ActivityIndicator } from "react-native";
+import Splash from "@/components/Splash";
 
 export const unstable_settings = {
   // Ensure that reloading on `/modal` keeps a back button present.
@@ -53,9 +55,9 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <DevToolsProvider>
+      {/* <DevToolsProvider> */}
         <RootLayoutNav queryClient={queryClient} />
-      </DevToolsProvider>
+      {/* </DevToolsProvider> */}
     </AuthProvider>
   );
 }
@@ -64,9 +66,15 @@ export default function RootLayout() {
 
 
 function RootLayoutNav({ queryClient }: { queryClient: QueryClient }) {
+  const { isLoading } = useAuth();
 
+  // Show loading screen while auth is being checked
+  if (isLoading) {
+    return (
+      <Splash />
+    );
+  }
 
-  
   return (
     <QueryClientProvider client={queryClient}>
       <Stack

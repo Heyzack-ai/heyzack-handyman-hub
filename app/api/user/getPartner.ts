@@ -3,6 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import * as SecureStore from 'expo-secure-store';
 import { Handyman } from "@/types/handyman";
+import { getUnassignedPartners } from "@/lib/partner-client";
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -88,6 +89,14 @@ export function useGetPartnerById(name: string) {
       }
     },
     enabled: !!name,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useGetUnassignedPartners() {
+  return useQuery({
+    queryKey: ["unassigned-partners"],
+    queryFn: getUnassignedPartners,
     staleTime: 5 * 60 * 1000,
   });
 }

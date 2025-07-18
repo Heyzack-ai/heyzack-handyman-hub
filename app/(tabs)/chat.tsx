@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   StyleSheet, 
   Text, 
@@ -11,24 +11,84 @@ import {
   Alert,
   Platform,
   StatusBar,
+  ActivityIndicator,
 } from "react-native";
+import ChatListShimmer from "@/components/ChatListShimmer";
 import { useRouter } from "expo-router";
 import { useChatStore } from "@/store/chat-store";
 import ConversationItem from "@/components/ConversationItem";
 import Colors from "@/constants/colors";
-import { Plus, Camera, Image as ImageIcon, X } from "lucide-react-native";
+import { Plus, Camera, Image as ImageIcon, X, Users } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
+import { useGetPartner } from "@/app/api/user/getPartner";
+import { getAssignedPartners } from "@/lib/partner-client";
+import { useChat } from "@/hooks/use-chat";
+import { getChatRooms, getUnreadCount } from "@/lib/chat-client";
+import { authClient } from "@/lib/auth-client";
+import { useQuery } from "@tanstack/react-query";
 
 export default function ChatScreen() {
   const router = useRouter();
-  const conversations = useChatStore((state) => state.conversations);
-  const totalUnreadCount = useChatStore((state) => state.getTotalUnreadCount());
+  const { data: session } = authClient.useSession();
+  const [showPartnerList, setShowPartnerList] = useState(false);
   const [showMediaOptions, setShowMediaOptions] = useState(false);
+  
+  // Get current user's partner data - this IS the assigned partner
+  const { data: currentPartner, isLoading: currentPartnerLoading } = useGetPartner("None");
+  
+  console.log("Current Partner:", currentPartner);
+  console.log("Session:", session);
+
+  // Get chat data for the current partner
+  const { messages: partnerMessages, loadChatHistory } = useChat({
+    otherUserId: currentPartner?.name,
+    userType: "partner",
+  });
+
+  // Get chat rooms to get unread counts
+  const { data: chatRooms, isLoading: chatRoomsLoading } = useQuery({
+    queryKey: ["chat-rooms"],
+    queryFn: getChatRooms,
+    enabled: !!session?.user.id,
+  });
+
+  // Get total unread count
+  const { data: totalUnreadCount, isLoading: unreadCountLoading } = useQuery({
+    queryKey: ["unread-count"],
+    queryFn: getUnreadCount,
+    enabled: !!session?.user.id,
+  });
+
+  // Load chat history when current partner is available
+  useEffect(() => {
+    if (currentPartner?.name) {
+      loadChatHistory();
+    }
+  }, [currentPartner?.name, loadChatHistory]);
+
+  // Get unassigned partners for new chat creation
+  const { data: unassignedPartners, isLoading: unassignedLoading } = useQuery({
+    queryKey: ["unassigned-partners"],
+    queryFn: () => getAssignedPartners("None"),
+    enabled: !!session?.user.id,
+  });
 
   const handleNewChat = () => {
-    // In a real app, this would open a contact picker or new chat screen
-    Alert.alert("New Chat", "This would open a new chat screen in a real app.");
+    setShowPartnerList(true);
+  };
+
+  const handlePartnerSelect = (partner: any) => {
+    // Generate chat room ID and navigate to chat
+    const roomId = `chat_${session?.user.id}_${partner.name}`;
+    router.push(`/chat/${roomId}?partnerId=${partner.name}&partnerName=${partner.partner_name}`);
+    setShowPartnerList(false);
+  };
+
+  const handlePartnerClick = (partner: any) => {
+    // Navigate directly to chat with this partner
+    const roomId = `chat_${session?.user.id}_${partner.name}`;
+    router.push(`/chat/${roomId}?partnerId=${partner.name}&partnerName=${partner.partner_name}`);
   };
 
   const handleTakePhoto = async () => {
@@ -47,15 +107,12 @@ export default function ChatScreen() {
       });
       
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        // In a real app, you would upload this image to your server
-        // For now, we'll just show an alert
         if (Platform.OS !== "web") {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
-        Alert.alert("Success", "Photo captured! In a real app, you would select a contact to send this to.");
+        Alert.alert("Success", "Photo captured! Select a partner to start a chat.");
       }
     } catch (error) {
-      // console.error("Error taking photo:", error);
       Alert.alert("Error", "Failed to take photo");
     } finally {
       setShowMediaOptions(false);
@@ -79,20 +136,91 @@ export default function ChatScreen() {
       });
       
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        // In a real app, you would upload this image to your server
-        // For now, we'll just show an alert
         if (Platform.OS !== "web") {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
-        Alert.alert("Success", "Photo selected! In a real app, you would select a contact to send this to.");
+        Alert.alert("Success", "Photo selected! Select a partner to start a chat.");
       }
     } catch (error) {
-      // console.error("Error picking image:", error); 
       Alert.alert("Error", "Failed to select image");
     } finally {
       setShowMediaOptions(false);
     }
   };
+
+  const renderPartnerItem = (partner: any) => (
+    <TouchableOpacity
+      key={partner.name}
+      style={styles.partnerItem}
+      onPress={() => handlePartnerSelect(partner)}
+    >
+      <View style={styles.partnerAvatar}>
+        <Text style={styles.partnerInitial}>
+          {partner.partner_name?.charAt(0) || "P"}
+        </Text>
+      </View>
+      <View style={styles.partnerInfo}>
+        <Text style={styles.partnerName}>{partner.partner_name || "Unknown Partner"}</Text>
+        <Text style={styles.latestMessage}>Start a new conversation</Text>
+      </View>
+    </TouchableOpacity>
+  );
+
+  const renderAssignedPartnerItem = (partner: any) => {
+    // Get the latest message from the chat
+    const latestMessage = partnerMessages.length > 0 
+      ? partnerMessages[partnerMessages.length - 1] 
+      : null;
+
+    // Find the chat room for this partner to get unread count
+    const partnerChatRoom = chatRooms?.find(room => 
+      room.otherUser.id === partner.name || 
+      room.roomId.includes(partner.name)
+    );
+
+    const unreadCount = partnerChatRoom?.unreadCount || 0;
+
+    return (
+      <TouchableOpacity
+        key={partner.name}
+        style={styles.partnerItem}
+        onPress={() => handlePartnerClick(partner)}
+      >
+        <View style={styles.partnerAvatar}>
+          <Text style={styles.partnerInitial}>
+            {partner.partner_name?.charAt(0) || "P"}
+          </Text>
+        </View>
+        <View style={styles.partnerInfo}>
+          <Text style={styles.partnerName}>{partner.partner_name || "Unknown Partner"}</Text>
+          <Text style={styles.latestMessage} numberOfLines={1} ellipsizeMode="tail">
+            {latestMessage ? latestMessage.message : "No messages yet"}
+          </Text>
+        </View>
+        {unreadCount > 0 && (
+          <View style={styles.unreadBadge}>
+            <Text style={styles.unreadCount}>
+              {totalUnreadCount && totalUnreadCount > 99 ? "99+" : unreadCount.toString()}
+            </Text>
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  };
+
+  // Show loading while fetching current partner data
+  if (currentPartnerLoading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Messages</Text>
+          </View>
+          <ChatListShimmer />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -100,30 +228,69 @@ export default function ChatScreen() {
         <View style={styles.header}>
           <Text style={styles.title}>Messages</Text>
           <View style={styles.headerRight}>
-            {totalUnreadCount > 0 && (
-              <View style={styles.unreadBadge}>
-                <Text style={styles.unreadText}>
+            {totalUnreadCount && totalUnreadCount > 0 && (
+              <View style={styles.headerUnreadBadge}>
+                <Text style={styles.headerUnreadText}>
                   {totalUnreadCount > 99 ? "99+" : totalUnreadCount}
                 </Text>
               </View>
             )}
-            <Pressable 
-              style={styles.newChatButton} 
-              onPress={() => setShowMediaOptions(true)}
-            >
-              <Plus size={24} color={Colors.light.primary} />
-            </Pressable>
+           
           </View>
         </View>
         
         <ScrollView style={styles.conversationsList} showsVerticalScrollIndicator={false}>
-          {conversations.map((conversation) => (
-            <ConversationItem
-              key={conversation.id}
-              conversation={conversation}
-            />
-          ))}
+          {!currentPartner ? (
+            <View style={styles.emptyContainer}>
+              <Users size={48} color={Colors.light.gray[400]} />
+              <Text style={styles.emptyTitle}>No assigned partner</Text>
+              <Text style={styles.emptySubtitle}>You don't have a partner assigned yet</Text>
+            </View>
+          ) : (
+            renderAssignedPartnerItem(currentPartner)
+          )}
         </ScrollView>
+
+        {/* Partner List Modal */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={showPartnerList}
+          onRequestClose={() => setShowPartnerList(false)}
+        >
+          <Pressable 
+            style={styles.modalOverlay} 
+            onPress={() => setShowPartnerList(false)}
+          >
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Select Partner</Text>
+                <TouchableOpacity 
+                  style={styles.closeButton} 
+                  onPress={() => setShowPartnerList(false)}
+                >
+                  <X size={20} color={Colors.light.gray[600]} />
+                </TouchableOpacity>
+              </View>
+              
+              <ScrollView style={styles.partnerList}>
+                {unassignedLoading ? (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={Colors.light.primary} />
+                    <Text style={styles.loadingText}>Loading partners...</Text>
+                  </View>
+                ) : !unassignedPartners || unassignedPartners.length === 0 ? (
+                  <View style={styles.emptyContainer}>
+                    <Text style={styles.emptyTitle}>No available partners</Text>
+                    <Text style={styles.emptySubtitle}>All partners are already assigned</Text>
+                  </View>
+                ) : (
+                  unassignedPartners.map(renderPartnerItem)
+                )}
+              </ScrollView>
+            </View>
+          </Pressable>
+        </Modal>
 
         {/* Media Options Modal */}
         <Modal
@@ -210,12 +377,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
-  title: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: Colors.light.text,
-  },
-  unreadBadge: {
+  headerUnreadBadge: {
     backgroundColor: Colors.light.primary,
     borderRadius: 12,
     minWidth: 24,
@@ -225,16 +387,77 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     marginRight: 12,
   },
-  unreadText: {
+  headerUnreadText: {
     fontSize: 12,
     fontWeight: "600",
     color: "white",
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: Colors.light.text,
   },
   newChatButton: {
     padding: 4,
   },
   conversationsList: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: Colors.light.gray[600],
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 40,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: Colors.light.text,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: Colors.light.gray[600],
+    textAlign: "center",
+    marginBottom: 24,
+  },
+  debugText: {
+    fontSize: 12,
+    color: Colors.light.gray[500],
+    textAlign: "center",
+    marginTop: 8,
+  },
+  mockDataContainer: {
+    padding: 16,
+  },
+  mockDataTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: Colors.light.text,
+    marginBottom: 16,
+  },
+  startChatButton: {
+    backgroundColor: Colors.light.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  startChatButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "600",
   },
   modalOverlay: {
     flex: 1,
@@ -247,6 +470,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     padding: 20,
     paddingBottom: Platform.OS === "ios" ? 40 : 20,
+    maxHeight: "80%",
   },
   modalHeader: {
     flexDirection: "row",
@@ -261,6 +485,64 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     padding: 4,
+  },
+  partnerList: {
+    flex: 1,
+  },
+  partnerItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.border,
+  },
+  partnerAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.light.primary,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  partnerInitial: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "white",
+  },
+  partnerInfo: {
+    flex: 1,
+  },
+  partnerName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: Colors.light.text,
+    marginBottom: 4,
+  },
+  partnerEmail: {
+    fontSize: 14,
+    color: Colors.light.gray[600],
+  },
+  latestMessage: {
+    fontSize: 14,
+    color: Colors.light.gray[600],
+    marginTop: 4,
+  },
+
+  unreadBadge: {
+    backgroundColor: Colors.light.primary,
+    borderRadius: 12,
+    minWidth: 20,
+    height: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 6,
+  },
+  unreadCount: {
+    color: "white",
+    fontSize: 12,
+    fontWeight: "bold",
   },
   mediaOptions: {
     flexDirection: "row",

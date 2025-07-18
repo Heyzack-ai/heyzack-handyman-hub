@@ -13,74 +13,89 @@ import {
   TouchableOpacity,
   Alert,
   StatusBar,
+  ActivityIndicator,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Send, ArrowLeft, Paperclip, Camera, Image as ImageIcon, X } from "lucide-react-native";
-import { useChatStore } from "@/store/chat-store";
-import MessageBubble from "@/components/MessageBubble";
 import Colors from "@/constants/colors";
 import Header from "@/components/Header";
+import MessageBubble from "@/components/MessageBubble";
+import ChatShimmer from "@/components/ChatShimmer";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
+import { useChat } from "@/hooks/use-chat";
+import { authClient } from "@/lib/auth-client";
+import { useGetPartnerById } from "@/app/api/user/getPartner";
 
 export default function ChatConversationScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, partnerId, partnerName } = useLocalSearchParams<{ 
+    id: string; 
+    partnerId?: string; 
+    partnerName?: string; 
+  }>();
   const router = useRouter();
   const scrollViewRef = useRef<ScrollView>(null);
   const [messageText, setMessageText] = useState("");
   const [showMediaOptions, setShowMediaOptions] = useState(false);
   
+  const { data: session } = authClient.useSession();
+  
+  // Get partner details if partnerId is provided
+  const { data: partner } = useGetPartnerById(partnerId || "");
+  
+  // Use the chat hook with partner information
   const {
-    getCurrentConversation,
-    getConversationMessages,
-    setCurrentConversationId,
-    sendMessage,
-    markConversationAsRead,
-  } = useChatStore();
-  
-  // Set current conversation ID when screen loads
-  useEffect(() => {
-    if (id) {
-      setCurrentConversationId(id);
-      markConversationAsRead(id);
-    }
-    return () => setCurrentConversationId(null);
-  }, [id, setCurrentConversationId, markConversationAsRead]);
-  
-  const conversation = getCurrentConversation();
-  const messages = conversation ? getConversationMessages(conversation.id) : [];
-  
-  if (!conversation) {
-    return (
-      <SafeAreaView style={styles.safeArea}>
-        <Header title="Chat" onBack={() => router.back()} />
-        <View style={styles.container}>
-          <Text>Conversation not found</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+    messages,
+    isLoading,
+    isSending,
+    sendChatMessage,
+    loadChatHistory,
+  } = useChat({
+    otherUserId: partnerId,
+    userType: "partner", // Assuming current user is a handyman chatting with partners
+  });
 
-  const handleSendMessage = () => {
-    if (messageText.trim() && conversation) {
-      sendMessage(conversation.id, messageText.trim(), "text");
-      setMessageText("");
-      
-      // Scroll to bottom after sending message
-      setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: true });
-      }, 100);
+  // Load chat history when component mounts
+  useEffect(() => {
+    if (partnerId) {
+      loadChatHistory();
+    }
+  }, [partnerId, loadChatHistory]);
+
+  // Scroll to bottom when new messages arrive
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const scrollToBottom = () => {
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+  };
+
+  const handleSendMessage = async () => {
+    if (messageText.trim() && partnerId) {
+      try {
+        await sendChatMessage(messageText.trim());
+        setMessageText("");
+      } catch (error) {
+        console.error("Failed to send message:", error);
+        // Only show error alert, not success alert
+        Alert.alert("Error", "Failed to send message. Please try again.");
+      }
     }
   };
 
-  const handleSendImage = (imageUri: string, type: "image") => {
-    if (conversation) {
-      sendMessage(conversation.id, imageUri, type);
-      
-      // Scroll to bottom after sending message
-      setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: true });
-      }, 100);
+  const handleSendImage = async (imageUri: string) => {
+    if (partnerId) {
+      try {
+        // For now, we'll send the image URI as text
+        // In a real app, you'd upload the image first and send the URL
+        await sendChatMessage(`[Image: ${imageUri}]`);
+      } catch (error) {
+        console.error("Failed to send image:", error);
+        Alert.alert("Error", "Failed to send image. Please try again.");
+      }
     }
   };
 
@@ -100,7 +115,7 @@ export default function ChatConversationScreen() {
       });
       
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        handleSendImage(result.assets[0].uri, "image");
+        handleSendImage(result.assets[0].uri);
         if (Platform.OS !== "web") {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
@@ -130,7 +145,7 @@ export default function ChatConversationScreen() {
       });
       
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        handleSendImage(result.assets[0].uri, "image");
+        handleSendImage(result.assets[0].uri);
         if (Platform.OS !== "web") {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
@@ -143,11 +158,18 @@ export default function ChatConversationScreen() {
     }
   };
 
-  const scrollToBottom = () => {
-    setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, 100);
-  };
+  const displayName = partnerName || partner?.partner_name || "Partner";
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <Header title="Chat" onBack={() => router.back()} />
+        <View style={styles.messagesContainer}>
+          <ChatShimmer count={8} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -156,16 +178,36 @@ export default function ChatConversationScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
       >
-        <Header title={conversation.title} onBack={() => router.back()} />
+        <Header title={displayName} onBack={() => router.back()} />
+        
         <ScrollView
           ref={scrollViewRef}
           style={styles.messagesContainer}
           contentContainerStyle={styles.messagesContent}
-          onContentSizeChange={scrollToBottom}
+          showsVerticalScrollIndicator={false}
         >
-          {messages.map((message) => (
-            <MessageBubble key={message.id} message={message} />
-          ))}
+          {messages.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No messages yet</Text>
+              <Text style={styles.emptySubtext}>Start the conversation with {displayName}</Text>
+            </View>
+          ) : (
+            messages.map((message) => (
+              <MessageBubble 
+                key={message.id} 
+                message={{
+                  id: message.id,
+                  content: message.message,
+                  type: "text",
+                  timestamp: message.createdAt,
+                  isFromMe: message.senderId === session?.user.id,
+                  status: "read",
+                  senderName: message.senderId === session?.user.id ? "You" : displayName,
+                  senderId: message.senderId,
+                }} 
+              />
+            ))
+          )}
         </ScrollView> 
         
         <View style={styles.inputContainer}>
@@ -189,15 +231,19 @@ export default function ChatConversationScreen() {
           <Pressable
             style={[
               styles.sendButton,
-              messageText.trim() ? styles.sendButtonActive : styles.sendButtonInactive,
+              messageText.trim() && !isSending ? styles.sendButtonActive : styles.sendButtonInactive,
             ]}
             onPress={handleSendMessage}
-            disabled={!messageText.trim()}
+            disabled={!messageText.trim() || isSending}
           >
-            <Send
-              size={20}
-              color={messageText.trim() ? "white" : Colors.light.gray[400]}
-            />
+            {isSending ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <Send
+                size={20}
+                color={messageText.trim() ? "white" : Colors.light.gray[400]}
+              />
+            )}
           </Pressable>
         </View>
       </KeyboardAvoidingView>
@@ -262,11 +308,38 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.light.background,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: Colors.light.gray[600],
+  },
   messagesContainer: {
     flex: 1,
   },
   messagesContent: {
     paddingVertical: 16,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 40,
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: Colors.light.text,
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: Colors.light.gray[600],
+    textAlign: "center",
   },
   inputContainer: {
     flexDirection: "row",

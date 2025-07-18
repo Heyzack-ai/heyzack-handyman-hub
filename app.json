@@ -17,7 +17,6 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.heyzack.handyman",
       "associatedDomains": [
-        "applinks:smarthome-service-hub.expo.app",
         "applinks:smarthome-service-hub.expo.app"
       ],
       "infoPlist": {
@@ -62,7 +61,9 @@
           "photosPermission": "The app accesses your photos to let you share them with your friends.",
           "cameraPermission": "The app accesses your camera to let you take photos."
         }
-      ]
+      ],
+      "expo-font",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true

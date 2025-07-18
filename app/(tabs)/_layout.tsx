@@ -1,11 +1,21 @@
 import React from "react";
 import { Tabs } from "expo-router";
 import { Home, Briefcase, User, MessageCircle } from "lucide-react-native";
-import { useChatStore } from "@/store/chat-store";
 import Colors from "@/constants/colors";
+import { getUnreadCount } from "@/lib/chat-client";
+import { useQuery } from "@tanstack/react-query";
+import { authClient } from "@/lib/auth-client";
 
 export default function TabLayout() {
-  const totalUnreadCount = useChatStore((state) => state.getTotalUnreadCount());
+  const { data: session } = authClient.useSession();
+  
+  // Get real unread count from API
+  const { data: totalUnreadCount } = useQuery({
+    queryKey: ["unread-count"],
+    queryFn: getUnreadCount,
+    enabled: !!session?.user.id,
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
 
   return (
     <Tabs
@@ -37,7 +47,7 @@ export default function TabLayout() {
         options={{
           title: "Chat",
           tabBarIcon: ({ color, size }) => <MessageCircle size={size} color={color} />,
-          tabBarBadge: totalUnreadCount > 0 ? totalUnreadCount : undefined,
+          tabBarBadge: totalUnreadCount && totalUnreadCount > 0 ? totalUnreadCount : undefined,
         }}
       />
       <Tabs.Screen

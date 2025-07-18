@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Auth Flow Flash**: Fixed signin screen briefly showing when user is already logged in
+  - Added loading screen during auth check to eliminate navigation flash
+  - Prevented navigation logic from running until auth check is complete
+  - Added proper loading state management in auth context
 - Fixed job status update API endpoint returning 404 errors
 - Changed from using query parameters to direct resource ID in URL path
 - Updated endpoint from `/erp/resource/Installation?filter=...` to `/erp/resource/Installation/${jobId}`
@@ -78,6 +82,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Implemented shimmer loading on home screen during data fetch
   - Added shimmer loading on jobs screen during data fetch
   - Improved user experience with smooth loading transitions
+- **Partner Chat Integration**: Added comprehensive chat functionality with partner management
+  - Integrated `useChat` hook with real-time Firebase messaging
+  - Added assigned partner list functionality using `getAssignedPartners` API
+  - Created partner selection modal for starting new conversations with unassigned partners
+  - Updated chat screen to display real chat rooms for assigned partners
+  - Enhanced chat room screen with real-time message sending and receiving
+  - Added loading states and empty states for better UX
+  - Integrated partner data fetching with `useGetPartnerById` hook
+  - Added proper flow: first get assigned partners, then fetch their chat data
+  - Implemented proper navigation between chat list and individual chat rooms
+  - Added real-time message synchronization with Firebase database
+  - Enhanced chat UI with proper message bubbles and typing indicators
+  - **Chat Shimmer Loading**: Created realistic chat loading experience
+    - Added `ChatShimmer` component with animated chat bubble placeholders
+    - Replaced spinner loader with realistic chat message shimmer effects
+    - Shows avatar, name, and message bubble placeholders during loading
+    - Provides better UX by showing what the actual content will look like
+  - **Chat List Shimmer**: Added shimmer loading for chat list screen
+    - Created `ChatListShimmer` component with animated placeholders for chat items
+    - Replaced ActivityIndicator with realistic chat list shimmer effects
+    - Shows avatar, name, message, and badge placeholders during loading
+    - Matches the actual chat list layout for seamless loading experience
 
 ## [Latest] - 2025-01-20
 

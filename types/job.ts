@@ -48,6 +48,7 @@ export type Customer = {
 };
 
 export interface Job {
+  installationPhotos: string[];
   id: string;
   name: string;
   title: string;

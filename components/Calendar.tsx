@@ -82,11 +82,14 @@ export default function Calendar({ selectedDate, onDateSelect, jobs = [] }: Cale
     );
   };
 
-  const getJobTypesForDate = (day: number): string[] => {
-    const dateString = formatDate(day); // e.g., "2025-06-21"
+  const getJobTypesForDate = (day: number) => {
+    const dateString = formatDate(day);
     const dayJobs = (jobs ?? []).filter(job => job.scheduled_date?.startsWith(dateString));
-    const jobTypes = dayJobs.map(job => job.status);
-    return Array.from(new Set(jobTypes));
+    
+    return {
+      hasBookedInstallation: dayJobs.some(job => job.status && job.status !== "pending"),
+      hasJobRequest: dayJobs.some(job => job.status === "pending")
+    };
   };
 
   const isSelected = (day: number) => {
@@ -126,9 +129,7 @@ export default function Calendar({ selectedDate, onDateSelect, jobs = [] }: Cale
             return <View key={`empty-${index}`} style={styles.dayCell} />;
           }
           
-          const jobTypes = getJobTypesForDate(day);
-          const hasBookedInstallation = jobTypes.some(status => statuses.includes(status));
-          const hasJobRequest = jobTypes.includes("Pending");
+          const { hasBookedInstallation, hasJobRequest } = getJobTypesForDate(day);
           
           return (
             <Pressable

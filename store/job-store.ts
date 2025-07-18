@@ -4,13 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Job, JobStatus, Product } from "@/types/job";
 import { jobs as mockJobs } from "@/mocks/jobs";
 
-// Log mock data on import
-console.log("Mock jobs loaded:", mockJobs.map(job => ({
-  id: job.id,
-  status: job.status,
-  rating: job.rating,
-  hasRatingProperty: 'rating' in job
-})));
+
 
 interface JobState {
   jobs: Job[];

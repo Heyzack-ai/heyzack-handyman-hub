@@ -30,6 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const inAuthGroup = segments[0]?.startsWith('auth');
     const isSkillsPage = segments[1] === 'add-skills';
     
+    // Only run navigation logic after auth check is complete
     if (!isLoading) {
       if (isAuthenticated && inAuthGroup && !isSkillsPage && !isInitialSetup) {
         router.replace('/(tabs)');

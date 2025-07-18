@@ -23,6 +23,7 @@ import { useQuery, useQueries } from "@tanstack/react-query";
 import { useGetJobs } from "@/app/api/jobs/getJobs";
 import { useGetCustomer } from "@/app/api/customer/getCustomer";
 import ShimmerSkeleton from "@/components/ShimmerSkeleton";
+import { useGetPendingJobs } from "@/app/api/jobs/getJobs";
 
 import Job from "@/components/Job";
 
@@ -33,6 +34,8 @@ export default function HomeScreen() {
   );
   const [token, setToken] = useState<string | null>(null);
   const { data: jobsData, isLoading } = useGetJobs();
+  const { data: pendingJobs } = useGetPendingJobs();
+  console.log("Pending Jobs from home:", pendingJobs);
   const today = new Date().toISOString().split("T")[0];
 
   // Get unique customer codes that need to be fetched
@@ -251,7 +254,7 @@ export default function HomeScreen() {
           <Calendar
             selectedDate={selectedDate}
             onDateSelect={handleDateSelect}
-            jobs={jobsData?.data || []}
+            jobs={[...(jobsData?.data || []), ...(pendingJobs?.data || [])]}
           />
         </View>
 

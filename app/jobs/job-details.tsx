@@ -179,11 +179,14 @@ export default function JobDetailScreen() {
 
   const getProgressPercentage = () => {
     const statusOrder = [
-      "scheduled",
-      "stock collected",
-      "en_route",
-      "started",
-      "completed",
+      "Job Request",
+      "Accepted",
+      "Stock Collected",
+      "En Route",
+      "Contract Sent",
+      "Contract Signed",
+      "Job Started",
+      "Job Marked as Done",
     ];
     const currentIndex = statusOrder.indexOf(job.status);
     return ((currentIndex + 1) / statusOrder.length) * 100;
@@ -191,16 +194,22 @@ export default function JobDetailScreen() {
 
   const getStatusText = () => {
     switch (job.status.toLowerCase()) {
-      case "scheduled":
+      case "job request":
+        return "Job Request";
+      case "accepted":
         return "Accepted";
       case "stock collected":
         return "Stock Collected";
-      case "en_route":
+      case "en route": 
         return "En Route";
-      case "started":
-        return "Started";
-      case "completed":
-        return "Completed";
+      case "contract sent":
+        return "Contract Sent";
+      case "contract signed":
+        return "Contract Signed";
+      case "job started":
+        return "Job Started";
+      case "job marked as done":
+        return "Job Marked as Done";
       default:
         return "Accepted";
     }
