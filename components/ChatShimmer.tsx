@@ -12,20 +12,15 @@ export default function ChatShimmer({ count = 6 }: ChatShimmerProps) {
     <View style={styles.container}>
       {Array.from({ length: count }).map((_, index) => (
         <View key={index} style={styles.messageContainer}>
-          {/* Avatar shimmer */}
-          <View style={styles.avatarContainer}>
-            <Shimmer style={styles.avatar} />
-          </View>
-          
-          {/* Message content shimmer */}
-          <View style={styles.messageContent}>
-            {/* Name shimmer */}
-            <Shimmer style={styles.name} />
-            
-            {/* Message bubble shimmer */}
-            <View style={styles.bubbleContainer}>
-              <Shimmer style={styles.messageBubble} />
-            </View>
+          {/* Chat bubble shimmer - alternating left and right */}
+          <View style={[
+            styles.bubbleContainer,
+            index % 2 === 0 ? styles.bubbleLeft : styles.bubbleRight
+          ]}>
+            <Shimmer style={[
+              styles.messageBubble,
+              index % 2 === 0 ? styles.bubbleLeftStyle : styles.bubbleRightStyle
+            ]} />
           </View>
         </View>
       ))}
@@ -36,37 +31,30 @@ export default function ChatShimmer({ count = 6 }: ChatShimmerProps) {
 const styles = StyleSheet.create({
   container: {
     paddingVertical: 16,
-  },
-  messageContainer: {
-    flexDirection: "row",
-    marginBottom: 16,
     paddingHorizontal: 16,
   },
-  avatarContainer: {
-    marginRight: 12,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-  },
-  messageContent: {
-    flex: 1,
-  },
-  name: {
-    width: 80,
-    height: 14,
-    borderRadius: 7,
-    marginBottom: 8,
+  messageContainer: {
+    marginBottom: 12,
   },
   bubbleContainer: {
-    flexDirection: "row",
-    justifyContent: "flex-start",
+    maxWidth: "80%",
+  },
+  bubbleLeft: {
+    alignSelf: "flex-start",
+  },
+  bubbleRight: {
+    alignSelf: "flex-end",
   },
   messageBubble: {
-    width: Math.random() * 150 + 100, // Random width between 100-250
     height: 20,
     borderRadius: 16,
-    backgroundColor: Colors.light.gray[200],
+  },
+  bubbleLeftStyle: {
+    width: Math.random() * 120 + 80, // Random width between 80-200
+    borderBottomLeftRadius: 4,
+  },
+  bubbleRightStyle: {
+    width: Math.random() * 120 + 80, // Random width between 80-200
+    borderBottomRightRadius: 4,
   },
 }); 

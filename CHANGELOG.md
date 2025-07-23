@@ -7,7 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Image Upload API**: Implemented `sendImage` function in chat client
+  - Added support for uploading images in chat conversations
+  - Uses FormData to send image files with partnerId
+  - Matches curl request format: POST to `/chat/upload-image` with multipart/form-data
+  - Returns SendMessageResponse for consistent API response handling
+- **Chat Image Upload**: Integrated image upload functionality in chat screen
+  - Added image upload via camera and gallery with file type validation
+  - Restricted uploads to images only (JPG, PNG, GIF, WebP) - no PDFs or videos
+  - Added file extension validation and type checking
+  - Implemented proper error handling and user feedback
+  - Added haptic feedback for successful uploads
+  - Auto-reloads chat history after successful image upload
+  - **Image Message Display**: Added support for displaying image messages in chat
+    - Extended Message interface to include messageType and imageUrl fields
+    - Updated chat screen to render image messages based on messageType === 'image'
+    - Integrated with existing MessageBubble component for image display
+    - Supports both sent and received image messages
+  - **Image Upload Progress**: Added WhatsApp-style upload progress indicator
+    - Added progress bar with percentage display during image upload
+    - Disabled input controls during upload to prevent conflicts
+    - Added visual feedback with progress animation
+    - Improved user experience with clear upload status
+  - **Image Display Debugging**: Added debugging and fallback for image display
+    - Extended SendMessageResponse interface to include messageType and imageUrl
+    - Added console logging to track server response and message data
+    - Added temporary image message display for immediate feedback
+    - Improved debugging to identify image display issues
+  - **React Native Image Upload Fix**: Fixed zero-byte file upload issue
+    - Added platform-specific file handling for React Native vs Web
+    - Fixed blob conversion issue that was causing empty file uploads
+    - Updated sendImage function to handle React Native file objects with uri property
+    - Resolved "image is sending zero bytes" error
+  - **Duplicate Image Fix**: Fixed duplicate image rendering issue
+    - Removed temporary image message logic that was causing duplicates
+    - Let server handle image message creation and display
+    - Simplified message rendering to prevent duplicate images
+    - Resolved "showing 2 same uploaded image" issue
+  - **Chat Shimmer Fix**: Updated chat loading shimmer to show proper bubble shapes
+    - Changed from list-style shimmer (avatars + names) to chat bubble shimmer
+    - Added alternating left/right bubble positioning to mimic real chat
+    - Improved visual consistency with actual chat message layout
+    - Fixed "chat shimmer is like list instead of bubble shimmer" issue
+  - **Chat List Image Messages**: Added image icon display for recent image messages
+    - Added image detection in chat list using messageType === 'image'
+    - Shows image icon with "Photo" text instead of message content for images
+    - Consistent with individual chat screen image handling
+    - Improved user experience by clearly indicating image messages in chat list
+
 ### Fixed
+- **Image Upload Content-Type Error**: Fixed multipart/form-data Content-Type header issue
+  - Removed default application/json Content-Type header for FormData requests
+  - Allows axios to automatically set proper multipart/form-data header with boundary
+  - Resolves "Content-Type was not one of multipart/form-data" server error
 - **Auth Flow Flash**: Fixed signin screen briefly showing when user is already logged in
   - Added loading screen during auth check to eliminate navigation flash
   - Prevented navigation logic from running until auth check is complete

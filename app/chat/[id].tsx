@@ -26,6 +26,7 @@ import * as Haptics from "expo-haptics";
 import { useChat } from "@/hooks/use-chat";
 import { authClient } from "@/lib/auth-client";
 import { useGetPartnerById } from "@/app/api/user/getPartner";
+import { sendImage, Message } from "@/lib/chat-client";  
 
 export default function ChatConversationScreen() {
   const { id, partnerId, partnerName } = useLocalSearchParams<{ 
@@ -37,6 +38,8 @@ export default function ChatConversationScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
   const [messageText, setMessageText] = useState("");
   const [showMediaOptions, setShowMediaOptions] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   
   const { data: session } = authClient.useSession();
   
@@ -86,15 +89,70 @@ export default function ChatConversationScreen() {
     }
   };
 
-  const handleSendImage = async (imageUri: string) => {
+    const handleSendImage = async (imageUri: string) => {
     if (partnerId) {
       try {
-        // For now, we'll send the image URI as text
-        // In a real app, you'd upload the image first and send the URL
-        await sendChatMessage(`[Image: ${imageUri}]`);
+        setIsUploadingImage(true);
+        setUploadProgress(0);
+        
+        // For React Native, we need to handle the image URI differently
+        let file: File;
+        
+        if (Platform.OS === 'web') {
+          // Web platform - use fetch and blob
+          const response = await fetch(imageUri);
+          const blob = await response.blob();
+          file = new File([blob], 'image.jpg', { type: 'image/jpeg' });
+        } else {
+          // React Native platform - create file from URI
+          const fileName = imageUri.split('/').pop() || 'image.jpg';
+          const fileExtension = fileName.split('.').pop() || 'jpg';
+          const mimeType = `image/${fileExtension}`;
+          
+          // Create a file-like object for React Native
+          file = {
+            uri: imageUri,
+            name: fileName,
+            type: mimeType,
+          } as any;
+        }
+        
+
+        
+        // Simulate upload progress
+        const progressInterval = setInterval(() => {
+          setUploadProgress(prev => {
+            if (prev >= 90) {
+              clearInterval(progressInterval);
+              return prev;
+            }
+            return prev + 10;
+          });
+        }, 100);
+        
+        // Upload image using the API
+        const uploadResponse = await sendImage(file, partnerId);
+        
+        // Complete progress
+        setUploadProgress(100);
+        clearInterval(progressInterval);
+        
+
+        
+
+        
+        // Reload chat history to show the new message
+        loadChatHistory();
+        
+        if (Platform.OS !== "web") {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
       } catch (error) {
         console.error("Failed to send image:", error);
         Alert.alert("Error", "Failed to send image. Please try again.");
+      } finally {
+        setIsUploadingImage(false);
+        setUploadProgress(0);
       }
     }
   };
@@ -112,13 +170,19 @@ export default function ChatConversationScreen() {
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         quality: 0.8,
         allowsEditing: true,
+        aspect: [4, 3],
       });
       
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        handleSendImage(result.assets[0].uri);
-        if (Platform.OS !== "web") {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        const asset = result.assets[0];
+        
+        // Validate file type - only allow images
+        if (asset.type && asset.type !== 'image') {
+          Alert.alert("Invalid File Type", "Only images are allowed. Please select an image file.");
+          return;
         }
+        
+        handleSendImage(asset.uri);
       }
     } catch (error) {
       console.error("Error taking photo:", error);
@@ -142,13 +206,29 @@ export default function ChatConversationScreen() {
         quality: 0.8,
         allowsMultipleSelection: false,
         allowsEditing: true,
+        aspect: [4, 3],
       });
       
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        handleSendImage(result.assets[0].uri);
-        if (Platform.OS !== "web") {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        const asset = result.assets[0];
+        
+        // Validate file type - only allow images
+        if (asset.type && asset.type !== 'image') {
+          Alert.alert("Invalid File Type", "Only images are allowed. Please select an image file.");
+          return;
         }
+        
+        // Additional validation for file extension
+        const fileName = asset.fileName || asset.uri.split('/').pop() || '';
+        const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+        const fileExtension = fileName.toLowerCase().substring(fileName.lastIndexOf('.'));
+        
+        if (!allowedExtensions.includes(fileExtension)) {
+          Alert.alert("Invalid File Type", "Only image files (JPG, PNG, GIF, WebP) are allowed.");
+          return;
+        }
+        
+        handleSendImage(asset.uri);
       }
     } catch (error) {
       console.error("Error picking image:", error);
@@ -157,6 +237,12 @@ export default function ChatConversationScreen() {
       setShowMediaOptions(false);
     }
   };
+
+  interface extendMessage extends Message {
+    messageType?: string;
+    imageUrl?: string;
+  }
+  
 
   const displayName = partnerName || partner?.partner_name || "Partner";
 
@@ -191,22 +277,27 @@ export default function ChatConversationScreen() {
               <Text style={styles.emptyText}>No messages yet</Text>
               <Text style={styles.emptySubtext}>Start the conversation with {displayName}</Text>
             </View>
-          ) : (
-            messages.map((message) => (
-              <MessageBubble 
-                key={message.id} 
-                message={{
-                  id: message.id,
-                  content: message.message,
-                  type: "text",
-                  timestamp: message.createdAt,
-                  isFromMe: message.senderId === session?.user.id,
-                  status: "read",
-                  senderName: message.senderId === session?.user.id ? "You" : displayName,
-                  senderId: message.senderId,
-                }} 
-              />
-            ))
+                    ) : (
+            messages.map((message) => {
+              const extendedMessage = message as extendMessage;
+              const isImage = extendedMessage.messageType === 'image';
+              
+              return (
+                <MessageBubble 
+                  key={message.id} 
+                  message={{
+                    id: message.id,
+                    content: isImage ? extendedMessage.imageUrl || '' : message.message,
+                    type: isImage ? "image" : "text",
+                    timestamp: message.createdAt,
+                    isFromMe: message.senderId === session?.user.id,
+                    status: "read",
+                    senderName: message.senderId === session?.user.id ? "You" : displayName,
+                    senderId: message.senderId,
+                  }} 
+                />
+              );
+            })
           )}
         </ScrollView> 
         
@@ -214,38 +305,57 @@ export default function ChatConversationScreen() {
           <Pressable 
             style={styles.attachButton} 
             onPress={() => setShowMediaOptions(true)}
+            disabled={isUploadingImage}
           >
-            <Paperclip size={20} color={Colors.light.gray[500]} />
+            <Paperclip size={20} color={isUploadingImage ? Colors.light.gray[300] : Colors.light.gray[500]} />
           </Pressable>
           
           <TextInput
             style={styles.textInput}
-            placeholder="Type a message..."
+            placeholder={isUploadingImage ? "Uploading image..." : "Type a message..."}
             value={messageText}
             onChangeText={setMessageText}
             multiline
             maxLength={1000}
             placeholderTextColor={Colors.light.gray[500]}
+            editable={!isUploadingImage}
           />
           
           <Pressable
             style={[
               styles.sendButton,
-              messageText.trim() && !isSending ? styles.sendButtonActive : styles.sendButtonInactive,
+              messageText.trim() && !isSending && !isUploadingImage ? styles.sendButtonActive : styles.sendButtonInactive,
             ]}
             onPress={handleSendMessage}
-            disabled={!messageText.trim() || isSending}
+            disabled={!messageText.trim() || isSending || isUploadingImage}
           >
             {isSending ? (
               <ActivityIndicator size="small" color="white" />
             ) : (
               <Send
                 size={20}
-                color={messageText.trim() ? "white" : Colors.light.gray[400]}
+                color={messageText.trim() && !isUploadingImage ? "white" : Colors.light.gray[400]}
               />
             )}
           </Pressable>
         </View>
+        
+        {/* Upload Progress Indicator */}
+        {isUploadingImage && (
+          <View style={styles.uploadProgressContainer}>
+            <View style={styles.uploadProgressBar}>
+              <View 
+                style={[
+                  styles.uploadProgressFill, 
+                  { width: `${uploadProgress}%` }
+                ]} 
+              />
+            </View>
+            <Text style={styles.uploadProgressText}>
+              Uploading image... {uploadProgress}%
+            </Text>
+          </View>
+        )}
       </KeyboardAvoidingView>
 
       {/* Media Options Modal */}
@@ -428,6 +538,29 @@ const styles = StyleSheet.create({
   mediaOptionText: {
     fontSize: 14,
     color: Colors.light.text,
+    textAlign: "center",
+  },
+  uploadProgressContainer: {
+    backgroundColor: Colors.light.background,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: Colors.light.border,
+  },
+  uploadProgressBar: {
+    height: 4,
+    backgroundColor: Colors.light.gray[200],
+    borderRadius: 2,
+    marginBottom: 4,
+  },
+  uploadProgressFill: {
+    height: "100%",
+    backgroundColor: Colors.light.primary,
+    borderRadius: 2,
+  },
+  uploadProgressText: {
+    fontSize: 12,
+    color: Colors.light.gray[600],
     textAlign: "center",
   },
 });

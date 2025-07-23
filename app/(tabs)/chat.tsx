@@ -18,7 +18,7 @@ import { useRouter } from "expo-router";
 import { useChatStore } from "@/store/chat-store";
 import ConversationItem from "@/components/ConversationItem";
 import Colors from "@/constants/colors";
-import { Plus, Camera, Image as ImageIcon, X, Users } from "lucide-react-native";
+import { Plus, Camera, Image as ImageIcon, X, Users, Image } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
 import { useGetPartner } from "@/app/api/user/getPartner";
@@ -172,6 +172,9 @@ export default function ChatScreen() {
       ? partnerMessages[partnerMessages.length - 1] 
       : null;
 
+    // Check if the latest message is an image
+    const isImageMessage = latestMessage && (latestMessage as any).messageType === 'image';
+
     // Find the chat room for this partner to get unread count
     const partnerChatRoom = chatRooms?.find(room => 
       room.otherUser.id === partner.name || 
@@ -193,9 +196,18 @@ export default function ChatScreen() {
         </View>
         <View style={styles.partnerInfo}>
           <Text style={styles.partnerName}>{partner.partner_name || "Unknown Partner"}</Text>
-          <Text style={styles.latestMessage} numberOfLines={1} ellipsizeMode="tail">
-            {latestMessage ? latestMessage.message : "No messages yet"}
-          </Text>
+          <View style={styles.latestMessageContainer}>
+            {isImageMessage ? (
+              <View style={styles.imageMessageContainer}>
+                <Image size={16} color={Colors.light.gray[500]} />
+                <Text style={styles.imageMessageText}>Photo</Text>
+              </View>
+            ) : (
+              <Text style={styles.latestMessage} numberOfLines={1} ellipsizeMode="tail">
+                {latestMessage ? latestMessage.message : "No messages yet"}
+              </Text>
+            )}
+          </View>
         </View>
         {unreadCount > 0 && (
           <View style={styles.unreadBadge}>
@@ -528,6 +540,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.light.gray[600],
     marginTop: 4,
+  },
+  latestMessageContainer: {
+    marginTop: 4,
+  },
+  imageMessageContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  imageMessageText: {
+    fontSize: 14,
+    color: Colors.light.gray[600],
+    marginLeft: 4,
   },
 
   unreadBadge: {

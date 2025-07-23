@@ -6,6 +6,8 @@ export interface Message {
 	chatRoomId: string;
 	senderId: string;
 	message: string;
+	messageType?: string;
+	imageUrl?: string;
 }
 
 export interface ChatHistory {
@@ -38,6 +40,8 @@ export interface SendMessageResponse {
 	message: string;
 	createdAt: string;
 	senderId: string;
+	messageType?: string;
+	imageUrl?: string;
 }
 
 export interface ChatRoom {
@@ -134,6 +138,36 @@ export const getUnreadCount = async (): Promise<number> => {
 		"/chat/unread-count",
 	);
 	return response.data.data.count;
+};
+
+export const sendImage = async (
+	imageFile: File | any,
+	partnerId: string,
+): Promise<SendMessageResponse> => {
+	const formData = new FormData();
+	
+	// Handle both web File objects and React Native file-like objects
+	if (imageFile.uri) {
+		// React Native file object
+		formData.append('image', imageFile as any);
+	} else {
+		// Web File object
+		formData.append('image', imageFile);
+	}
+	
+	formData.append('partnerId', partnerId);
+
+	const response = await serverClient.post<{ data: SendMessageResponse }>(
+		"/chat/upload-image",
+		formData,
+		{
+			headers: {
+				'Content-Type': undefined, // Let axios set the proper multipart/form-data with boundary
+			},
+		},
+	);
+
+	return response.data.data;
 };
 
 /**
