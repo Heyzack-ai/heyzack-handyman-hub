@@ -21,8 +21,10 @@ import { useGetCustomer } from "@/app/api/customer/getCustomer";
 import { useGetPendingJobs } from "@/app/api/jobs/getJobs";
 import { useAcceptJob } from "@/app/api/jobs/acceptJob";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "@/src/i18n/useTranslations";
 
 export default function JobsScreen() {
+  const { t } = useTranslations();
   const jobs = useJobStore((state) => state.jobs);
   const [searchQuery, setSearchQuery] = useState("");
   const { data: jobsData, isLoading } = useGetJobs();
@@ -89,7 +91,7 @@ export default function JobsScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <Text style={styles.title}>Jobs</Text>
+        <Text style={styles.title}>{t("jobs.Jobs")}</Text>
       </View>
       <ScrollView
         style={styles.container}
@@ -104,7 +106,7 @@ export default function JobsScreen() {
           />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search jobs, customers, or addresses"
+            placeholder={t("jobs.searchJobs")}
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholderTextColor={Colors.light.gray[500]}
@@ -115,7 +117,7 @@ export default function JobsScreen() {
           // Show shimmer loading state
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Loading Jobs...</Text>
+              <Text style={styles.sectionTitle}>{t("jobs.loadingJobs")}</Text>
             </View>
             <ShimmerCard height={120} />
             <ShimmerCard height={120} />
@@ -124,9 +126,9 @@ export default function JobsScreen() {
           </View>
         ) : filteredJobs.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>No jobs found</Text>
+            <Text style={styles.emptyTitle}>{t("jobs.noJobs")}</Text>
             <Text style={styles.emptyText}>
-              Try adjusting your search or check back later for new jobs
+              {t("jobs.noJobsText")}
             </Text>
           </View>
         ) : (
@@ -134,7 +136,7 @@ export default function JobsScreen() {
             {requestedJobs?.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Job Requests</Text>
+                  <Text style={styles.sectionTitle}>{t("jobs.jobRequests")}</Text>
                   <Text style={[styles.count, styles.requestCount]}>
                     {requestedJobs.length}
                   </Text>
@@ -146,39 +148,40 @@ export default function JobsScreen() {
                       job={{
                         id: job.jobId,
                         name: job.jobId,
-                        title: job.installation?.title || "Untitled Job",
-                        description: job.installation?.description || "No description available",
+                        title: job.installation?.title || t("jobs.untitledJob"),
+                        description: job.installation?.description || t("jobs.noDescriptionAvailable"),
                         scheduled_date: job.installation?.scheduled_date || "",
                         status: "pending",
                         customer: {
                           id: job.jobId,
-                          name: job.installation?.customer_name || "Unknown Customer",
-                          customer_name: job.installation?.customer_name || "Unknown Customer",
+                          name: job.installation?.customer_name || t("jobs.unknownCustomer"),
+                          customer_name: job.installation?.customer_name || t("jobs.unknownCustomer"),
                           phone: "",
                           email: "",
-                          address: job.installation?.customer_address || "No address provided"
+                          address: job.installation?.customer_address || t("jobs.noAddressProvided")
                         },
                         products: [],
-                        partner: job.partner?.name || "Unknown Partner",
+                        partner: job.partner?.name || t("jobs.unknownPartner"),
                         duration: "",
                         rating: 0,
                         completion_photos: [],
                         notes: [],
                         contractsent: false,
                         type: "job_request",
-                        scheduledTime: ""
+                        scheduledTime: "",
+                        installationPhotos: []
                       }}
                       disableNavigation={true}
                     />
                     <View style={styles.jobRequestActions}>
                       <ActionButton
-                        title="Decline"
+                        title={t("jobs.decline")}
                         variant="outline"
                         onPress={() => handleDeclineJob(job.jobId)}
                         style={styles.declineButton}
                       />
                       <ActionButton
-                        title="Accept"
+                        title={t("jobs.accept")}
                         variant="primary"
                         onPress={() => handleAcceptJob(job.jobId)}
                         style={styles.acceptButton}
@@ -192,7 +195,7 @@ export default function JobsScreen() {
             {scheduledJobs?.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Scheduled</Text>
+                  <Text style={styles.sectionTitle}>{t("jobs.scheduled")}</Text>
                   <Text style={styles.count}>{scheduledJobs.length}</Text>
                 </View>
                 {scheduledJobs.map((job: any) => (
@@ -217,7 +220,7 @@ export default function JobsScreen() {
             {inProgressJobs?.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>In Progress</Text>
+                  <Text style={styles.sectionTitle}>{t("jobs.inProgress")}</Text>
                   <Text style={styles.count}>{inProgressJobs.length}</Text>
                 </View>
                 {inProgressJobs.map((job: any) => (
@@ -242,7 +245,7 @@ export default function JobsScreen() {
             {completedJobs?.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Completed</Text>
+                  <Text style={styles.sectionTitle}>{t("jobs.completed")}</Text>
                   <Text style={styles.count}>{completedJobs.length}</Text>
                 </View>
                 {completedJobs.map((job: any) => (

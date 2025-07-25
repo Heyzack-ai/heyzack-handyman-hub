@@ -7,24 +7,27 @@ import Header from "@/components/Header";
 import { useAddBank, useGetBank } from "../api/user/addBank";
 import { useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
+import { useTranslation } from "react-i18next";
+
+const { t } = useTranslation();
 
 // Define the validation schema
 const bankAccountSchema = z.object({
   bankName: z.string()
-    .min(1, "Bank name is required")
-    .regex(/^[A-Za-zÀ-ÿ\s\-']+$/, "Bank name should only contain letters, spaces, hyphens and apostrophes"),
+    .min(1, t("addBank.bankNameRequired"))
+    .regex(/^[A-Za-zÀ-ÿ\s\-']+$/, t("addBank.bankNameShouldOnlyContainLettersSpacesHyphensAndApostrophes")),
   accountName: z.string()
-    .min(1, "Account holder name is required")
-    .regex(/^[A-Za-zÀ-ÿ\s\-']+$/, "Account holder name should only contain letters, spaces, hyphens and apostrophes"),
+    .min(1, t("addBank.accountHolderNameRequired"))
+    .regex(/^[A-Za-zÀ-ÿ\s\-']+$/, t("addBank.accountHolderNameShouldOnlyContainLettersSpacesHyphensAndApostrophes")),
   iban: z.string()
-    .min(1, "IBAN is required")
+    .min(1, t("addBank.ibanRequired"))
     .refine(
       val => /^FR[0-9A-Z]{25}$/.test(val.replace(/\s+/g, "")),
-      "Invalid IBAN format. French IBAN should start with FR followed by 25 alphanumeric characters"
+      t("addBank.invalidIbanFormatFrenchIbanShouldStartWithFrFollowedBy25AlphanumericCharacters")
     ),
   bicSwift: z.string()
-    .min(1, "BIC/SWIFT code is required")
-    .regex(/^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/, "Invalid BIC/SWIFT format. Should be 8 or 11 characters, e.g. BNPAFRPP or BNPAFRPPXXX")
+    .min(1, t("addBank.bicSwiftCodeRequired"))
+    .regex(/^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/, t("addBank.invalidBicSwiftFormatShouldBe8Or11CharactersEgbNpAfrppOrBnpafrppxxx"))
 });
 
 // Type for form errors
@@ -36,9 +39,9 @@ type FormErrors = {
 };
 
 export default function AddBank() {
+  
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [accountType, setAccountType] = useState<"personal" | "business">("personal");
   const [accountName, setAccountName] = useState("");
   const [bankName, setBankName] = useState("");
   const [iban, setIban] = useState("");
@@ -81,11 +84,11 @@ export default function AddBank() {
     mutate(undefined, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["get-bank"] });
-        Alert.alert("Bank Account Added", "Your bank account has been successfully added");
+        Alert.alert(t("addBank.bankAccountAdded"), t("addBank.yourBankAccountHasBeenSuccessfullyAdded"));
         router.back();
       },
       onError: (error) => {
-        Alert.alert("Error", error instanceof Error ? error.message : "Failed to add bank account");
+        Alert.alert(t("addBank.error"), error instanceof Error ? error.message : t("addBank.failedToAddBankAccount"));
       }
     });
   };
@@ -136,17 +139,17 @@ export default function AddBank() {
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 }]}>
-      <Header title="Add Bank Account" />
+      <Header title={t("addBank.addBankAccount")} />
       
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account Information</Text>
+          <Text style={styles.sectionTitle}>{t("addBank.accountInformation")}</Text>
           
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Bank Name</Text>
+            <Text style={styles.inputLabel}>{t("addBank.bankName")}</Text>
             <TextInput
               style={[styles.input, errors.bankName && styles.inputError]}
-              placeholder="Enter bank name (e.g., BNP Paribas, Société Générale)"
+              placeholder={t("addBank.enterBankName")}
               value={bankName}
               onChangeText={(text) => {
                 setBankName(text);
@@ -159,10 +162,10 @@ export default function AddBank() {
           </View>
           
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Account Holder Name</Text>
+            <Text style={styles.inputLabel}>{t("addBank.accountHolderName")}</Text>
             <TextInput
               style={[styles.input, errors.accountName && styles.inputError]}
-              placeholder="Enter name on account"
+              placeholder={t("addBank.enterNameOnAccount")}
               value={accountName}
               onChangeText={(text) => {
                 setAccountName(text);
@@ -175,10 +178,10 @@ export default function AddBank() {
           </View>
           
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>IBAN</Text>
+            <Text style={styles.inputLabel}>{t("addBank.iban")}</Text>
             <TextInput
               style={[styles.input, errors.iban && styles.inputError]}
-              placeholder="FR76 XXXX XXXX XXXX XXXX XXXX XXX"
+              placeholder={t("addBank.enterIban")}
               value={iban}
               onChangeText={handleIbanChange}
               autoCapitalize="characters"
@@ -187,10 +190,10 @@ export default function AddBank() {
           </View>
           
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>BIC/SWIFT Code</Text>
+            <Text style={styles.inputLabel}>{t("addBank.bicSwiftCode")}</Text>
             <TextInput
               style={[styles.input, errors.bicSwift && styles.inputError]}
-              placeholder="BNPAFRPPXXX"
+              placeholder={t("addBank.enterBicSwiftCode")}
               value={bicSwift}
               onChangeText={handleBicSwiftChange}
               autoCapitalize="characters"
@@ -202,7 +205,7 @@ export default function AddBank() {
         <View style={styles.infoBox}>
           <CreditCard size={20} color={Colors.light.primary} />
           <Text style={styles.infoText}>
-            For French bank accounts, both IBAN and BIC/SWIFT code are required. Your information is securely stored and will be used for receiving payments for completed jobs.
+            {t("addBank.forFrenchBankAccountsBothIbanAndBicSwiftCodeAreRequired")}
           </Text>
         </View>
 
@@ -212,7 +215,7 @@ export default function AddBank() {
           disabled={isPending}
         >
           <Text style={styles.submitButtonText}>
-            {isPending ? "Adding..." : "Add Bank Account"}
+            {isPending ? t("addBank.adding") : t("addBank.addBankAccount")}
           </Text>
         </Pressable>
       </ScrollView>

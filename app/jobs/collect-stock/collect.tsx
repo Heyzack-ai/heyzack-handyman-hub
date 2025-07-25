@@ -24,9 +24,11 @@ import { useGetProduct } from "@/app/api/products/getProduct";
 import { useUpdateProductCollect } from "@/app/api/products/getProduct";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGetStock } from "@/app/api/products/getStock";
-
+import { useTranslation } from "react-i18next";
+ 
 // Custom skeleton for collect stock page
 const CollectStockSkeleton = () => {
+ 
   return (
     <View style={styles.container}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
@@ -62,30 +64,32 @@ const CollectStockSkeleton = () => {
 
 // Product Item Component that fetches its own data
 const CollectProductItem = ({ product, onCollect }: { product: any, onCollect: (productId: string) => void }) => {
+  const { t } = useTranslation();
   const { data: productData } = useGetProduct(product.item);
   const { data: stockData } = useGetStock(product.item);
+ 
   console.log(`Stock Data for ${product.item}:`, stockData);
   console.log(`Product item: ${product.item}, quantity: ${product.quantity}`);
   return (
     <View style={styles.productItem}>
       <View style={styles.productInfo}>
         <Text style={styles.productName}>{productData?.item_name || `Item ${product.item}`}</Text>
-        <Text style={styles.productRequired}>Required: {product.quantity || 1}</Text>
+        <Text style={styles.productRequired}>{t("collectStock.required")}: {product.quantity || 1}</Text>
         
         {stockData?.quantity !== undefined && stockData.quantity < (product.quantity) && product.status === "Collected" && (
           <Text style={styles.insufficientText}>
-            Insufficient Stock: {stockData.quantity}
+            {t("collectStock.insufficientStock", { quantity: stockData.quantity })}
           </Text>
         )}
       </View>
       
       {product.status === "collected" ? (
         <View style={styles.collectedBadge}>
-          <Text style={styles.collectedText}>Collected</Text>
+          <Text style={styles.collectedText}>{t("collectStock.collected")}</Text>
         </View>
       ) : (
         <View style={styles.toCollectBadge}>
-          <Text style={styles.toCollectText}>To Collect</Text>
+          <Text style={styles.toCollectText}>{t("collectStock.toCollect")}</Text>
         </View>
       )}
 
@@ -96,7 +100,7 @@ const CollectProductItem = ({ product, onCollect }: { product: any, onCollect: (
         onPress={() => onCollect(product.item)}
       >
         <Camera size={16} color={Colors.light.text} />
-        <Text style={styles.collectButtonText}>Upload Photo & Collect</Text>
+        <Text style={styles.collectButtonText}>{t("collectStock.uploadPhotoAndCollect")}</Text>
       </Pressable>
       )}
 
@@ -104,7 +108,7 @@ const CollectProductItem = ({ product, onCollect }: { product: any, onCollect: (
         <Pressable style={[styles.collectButton, { marginTop: 8 }]} onPress={() => productData.installation_guide && Linking.openURL(productData.installation_guide)}>
           <Book size={16} color={Colors.light.text} />
           <Text style={styles.collectButtonText}>
-            Installation Guides
+            {t("collectStock.installationGuides")}
           </Text>
         </Pressable>
       )}
@@ -113,6 +117,7 @@ const CollectProductItem = ({ product, onCollect }: { product: any, onCollect: (
 };
 
 export default function CollectStockScreen() {
+  const { t } = useTranslation(); 
   const { jobId } = useLocalSearchParams<{ jobId: string }>();
   const { products, item_name } = useLocalSearchParams<{ products: string, item_name: string }>();
   const router = useRouter();
@@ -159,14 +164,14 @@ export default function CollectStockScreen() {
     
     if (!currentJobId || currentJobId === "fallback-job-id") {
       console.log("No valid jobId, returning early");
-      Alert.alert("Error", "Job ID not found. Please try again.");
+      Alert.alert(t("collectStock.error"), t("collectStock.jobIdNotFound"));
       return;
     }
     
     // Check if we're on web platform
     if (Platform.OS === 'web') {
       console.log("Web platform detected, using alternative approach");
-      Alert.alert("Not Supported", "Camera functionality is not available on web platform. Please use a mobile device.");
+      Alert.alert(t("collectStock.notSupported"), t("collectStock.cameraNotAvailable"));
       return;
     }
     
@@ -174,25 +179,25 @@ export default function CollectStockScreen() {
     
     // Show options dialog
     Alert.alert(
-      "Select Photo",
-      "Choose how you want to add a photo",
+      t("collectStock.selectPhoto"),
+      t("collectStock.chooseHowToAddPhotos"),
       [
         {
-          text: "Camera",
+          text: t("collectStock.camera"),
           onPress: () => {
             console.log("Camera option selected");
             handleCameraCapture(productId);
           },
         },
         {
-          text: "Gallery",
+          text: t("collectStock.gallery"),
           onPress: () => {
             console.log("Gallery option selected");
             handleGalleryPick(productId);
           },
         },
         {
-          text: "Cancel",
+          text: t("collectStock.cancel"),
           style: "cancel",
           onPress: () => {
             console.log("Cancel option selected");
@@ -211,7 +216,7 @@ export default function CollectStockScreen() {
       
       if (status !== "granted") {
         console.log("Camera permission denied");
-        Alert.alert("Permission Required", "Camera permission is needed to take photos");
+        Alert.alert(t("collectStock.permissionRequired"), t("collectStock.cameraPermissionNeeded"));
         return;
       }
       
@@ -225,7 +230,7 @@ export default function CollectStockScreen() {
       handleImageResult(result, productId);
     } catch (error) {
       console.error("Error in handleCameraCapture:", error);
-      Alert.alert("Error", "Failed to collect product");
+      Alert.alert(t("collectStock.error"), t("collectStock.failedToCollectProduct"));
     }
   };
 
@@ -238,7 +243,7 @@ export default function CollectStockScreen() {
       
       if (status !== "granted") {
         console.log("Gallery permission denied");
-        Alert.alert("Permission Required", "Gallery permission is needed to select photos");
+        Alert.alert(t("collectStock.permissionRequired"), t("collectStock.galleryPermissionNeeded"));
         return;
       }
       
@@ -254,7 +259,7 @@ export default function CollectStockScreen() {
       handleImageResult(result, productId);
     } catch (error) {
       console.error("Error in handleGalleryPick:", error);
-      Alert.alert("Error", "Failed to collect product");
+      Alert.alert(t("collectStock.error"), t("collectStock.failedToCollectProduct"));
     }
   };
 
@@ -292,12 +297,12 @@ export default function CollectStockScreen() {
             if (index === result.assets.length - 1) {
               // Show success message only after the last image is processed
               queryClient.invalidateQueries({ queryKey: ["job", jobId] });
-              Alert.alert("Success", `${result.assets.length} photo(s) uploaded for product collection`);
+              Alert.alert(t("collectStock.success"), t("collectStock.photosUploadedSuccessfully", { count: result.assets.length }));
             }
           },
           onError: (error) => {
             console.error(`Failed to update product collection for ${productId}:`, error);
-            Alert.alert("Error", `Failed to collect product: ${error.message}`);
+            Alert.alert(t("collectStock.error"), t("collectStock.failedToCollectProduct"));
           }
         });
       });
@@ -314,12 +319,12 @@ export default function CollectStockScreen() {
     
     if (!allCollected) {
       Alert.alert(
-        "Incomplete Collection",
-        "Not all products have been collected. Do you want to continue anyway?",
+        t("collectStock.incompleteCollection"),
+        t("collectStock.notAllProductsCollected"),
         [
-          { text: "Cancel", style: "cancel", onPress: () => setIsLoading(false) },
+          { text: t("collectStock.cancel"), style: "cancel", onPress: () => setIsLoading(false) },
           { 
-            text: "Continue", 
+            text: t("collectStock.continue"), 
             onPress: () => {
               if (currentJobId) {
                 updateJobStatus({ jobId: currentJobId, status: "Stock Collected" });
@@ -346,7 +351,7 @@ export default function CollectStockScreen() {
   if (parsedProducts.length === 0) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <Header title="Collect Stock" onBack={() => router.back()} />
+        <Header title={t("collectStock.collectStock")} onBack={() => router.back()} />
         <CollectStockSkeleton />
       </SafeAreaView>
     );
@@ -354,7 +359,7 @@ export default function CollectStockScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-     <Header title="Collect Stock" onBack={() => router.back()} />
+     <Header title={t("collectStock.collectStock")} onBack={() => router.back()} />
       
       <View style={styles.container}>
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
@@ -380,7 +385,7 @@ export default function CollectStockScreen() {
           onPress={handleConfirmCollection}
           disabled={isLoading}
         >
-          <Text style={styles.confirmButtonText}>Confirm Stock Collection</Text>
+          <Text style={styles.confirmButtonText}>{t("collectStock.confirmCollection")}</Text>
         </Pressable>
         )}
       </View>

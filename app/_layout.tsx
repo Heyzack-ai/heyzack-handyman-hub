@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 // import { DevToolsProvider } from "../dev-tools";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
+import '@/src/i18n'
+import { LanguageProvider } from "@/src/i18n/LanguageContext";
 import { View, ActivityIndicator } from "react-native";
 import Splash from "@/components/Splash";
 
@@ -77,16 +79,18 @@ function RootLayoutNav({ queryClient }: { queryClient: QueryClient }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-        }}
-      >
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="notifications" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: "modal" }} />
-        <Stack.Screen name="auth" options={{ headerShown: false }} />
-      </Stack>
+      <LanguageProvider>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+          }}
+        >
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="notifications" options={{ headerShown: false }} />
+          <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+          <Stack.Screen name="auth" options={{ headerShown: false }} />
+        </Stack>
+      </LanguageProvider>
     </QueryClientProvider>
   );
 }

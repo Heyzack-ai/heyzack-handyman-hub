@@ -14,39 +14,39 @@ import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { Plus, X } from "lucide-react-native";
 import Colors from "@/constants/colors";
 import Header from "@/components/Header";
-
+import { useTranslation } from "react-i18next";
 export default function SkillsScreen() {
   const router = useRouter();
   const { email, password } = useLocalSearchParams();
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
-
+  const { t } = useTranslation();
   
   const availableSkills = [
-    "Electrical work",
-    "HVAC",
-    "Glass work",
-    "Heat Pump installation",
-    "Plumbing",
-    "Carpentry",
-    "Painting",
-    "Flooring",
-    "Roofing",
-    "Solar Panel Installation",
-    "Smart Home Setup",
-    "Security Systems"
+    {value: "Electrical work", label: t("auth.electricalWork")},
+    {value: "HVAC", label: t("auth.hvac")},
+    {value: "Glass work", label: t("auth.glassWork")},
+    {value: "Heat Pump installation", label: t("auth.heatPumpInstallation")},
+    {value: "Plumbing", label: t("auth.plumbing")},
+    {value: "Carpentry", label: t("auth.carpentry")},
+    {value: "Painting", label: t("auth.painting")},
+    {value: "Flooring", label: t("auth.flooring")},
+    {value: "Roofing", label: t("auth.roofing")},
+    {value: "Solar Panel Installation", label: t("auth.solarPanelInstallation")},
+    {value: "Smart Home Setup", label: t("auth.smartHomeSetup")},
+    {value: "Security Systems", label: t("auth.securitySystems")}
   ];
   
   const unselectedSkills = availableSkills.filter(
-    skill => !selectedSkills.includes(skill)
+    skill => !selectedSkills.includes(skill.value)
   );
 
-  const handleAddSkill = (skill: string) => {
-    setSelectedSkills([...selectedSkills, skill]);
+  const handleAddSkill = (skill: {value: string, label: string}) => {
+    setSelectedSkills([...selectedSkills, skill.value]);
   };
 
-  const handleRemoveSkill = (skill: string) => {
-    setSelectedSkills(selectedSkills.filter(s => s !== skill));
+  const handleRemoveSkill = (skill: {value: string, label: string}) => {
+    setSelectedSkills(selectedSkills.filter(s => s !== skill.value));
   };
 
   const handleSave = () => {
@@ -55,7 +55,7 @@ export default function SkillsScreen() {
     // Simulate API call
     setTimeout(() => {
       setIsSaving(false);
-      Alert.alert("Success", "Skills updated successfully");
+      Alert.alert(t("auth.success"), t("auth.skillsUpdatedSuccessfully"));
 
         router.push({
           pathname: "/auth/add-area",
@@ -70,48 +70,51 @@ export default function SkillsScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-     <Header title="Skills & Expertise" onBack={() => router.back()} />
+     <Header title={t("auth.skillsAndExpertise")} onBack={() => router.back()} />
       
       <View style={styles.container}>
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
           <Text style={styles.description}>
-            Select skills that best represent your expertise. These will be visible to customers and partners.
+            {t("auth.selectSkills")}
           </Text>
           
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Your Skills</Text>
+            <Text style={styles.sectionTitle}>{t("auth.yourSkills")}</Text>
             {selectedSkills.length > 0 ? (
               <View style={styles.skillTags}>
-                {selectedSkills.map((skill) => (
-                  <View key={skill} style={styles.selectedSkillTag}>
-                    <Text style={styles.selectedSkillText}>{skill}</Text>
+                {selectedSkills.map((skill) => {
+                  const skillData = availableSkills.find(s => s.value === skill);
+                  return (
+                    <View key={skill} style={styles.selectedSkillTag}>
+                      <Text style={styles.selectedSkillText}>{skillData?.label}</Text>
                     <Pressable
                       style={styles.removeButton}
-                      onPress={() => handleRemoveSkill(skill)}
+                      onPress={() => handleRemoveSkill({value: skill, label: skillData?.label || "" })}
                     >
                       <X size={16} color={Colors.light.primary} />
                     </Pressable>
                   </View>
-                ))}
+                );
+              })}
               </View>
             ) : (
               <Text style={styles.emptyText}>
-                You haven't added any skills yet. Add skills from the list below.
+                {t("auth.youHavenTAddedAnySkillsYetAddSkillsFromTheListBelow")}
               </Text>
             )}
           </View>
           
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Available Skills</Text>
+            <Text style={styles.sectionTitle}>{t("auth.availableSkills")}</Text>
             <View style={styles.skillTags}>
               {unselectedSkills.map((skill) => (
                 <Pressable
-                  key={skill}
+                  key={skill.value}
                   style={styles.unselectedSkillTag}
                   onPress={() => handleAddSkill(skill)}
                 >
                   <Plus size={16} color={Colors.light.gray[600]} />
-                  <Text style={styles.unselectedSkillText}>{skill}</Text>
+                  <Text style={styles.unselectedSkillText}>{skill.label}</Text>
                 </Pressable>
               ))}
             </View>
@@ -125,7 +128,7 @@ export default function SkillsScreen() {
             disabled={isSaving}
           >
             <Text style={styles.saveButtonText}>
-              {isSaving ? "Saving..." : "Save Changes"}
+              {isSaving ? t("auth.saving") : t("auth.saveChanges")}
             </Text>
           </Pressable>
         </View>

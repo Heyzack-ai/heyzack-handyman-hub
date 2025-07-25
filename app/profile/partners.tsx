@@ -20,6 +20,7 @@ import { useGetPartner } from "@/app/api/user/getPartner";
 import { Handyman } from "@/types/handyman";
 import { useLinkPartner } from "@/app/api/user/linkPartner";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 
 type Partner = {
   id: string;
@@ -29,6 +30,7 @@ type Partner = {
 };
 
 export default function PartnersScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useLocalSearchParams<{ partner_code: string, handyman_name: string }>();
   const { user } = useLocalSearchParams<{ user: string }>();
@@ -65,14 +67,14 @@ export default function PartnersScreen() {
 
   const handleJoinPartner = async () => {
     if (!partnerCode.trim()) {
-      Alert.alert("Error", "Please enter a partner code");
+      Alert.alert(t("partners.error"), t("partners.pleaseEnterPartnerCode"));
       return;
     }
 
     setIsJoining(true);
     try {
       if (!parsedUser) {
-        Alert.alert("Error", "Failed to get user data");
+        Alert.alert(t("partners.error"), t("partners.failedToGetUserData"));
         setIsJoining(false);
         return;
       }
@@ -80,15 +82,15 @@ export default function PartnersScreen() {
       linkPartner(undefined, {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ["user"] });
-          Alert.alert("Success", "You've successfully joined the partner");
+          Alert.alert(t("partners.success"), t("partners.youveSuccessfullyJoinedThePartner"));
           setModalVisible(false);
         },
         onError: () => {
-          Alert.alert("Error", "Failed to join partner");
+          Alert.alert(t("partners.error"), t("partners.failedToJoinPartner"));
         }
       });
     } catch (error) {
-      Alert.alert("Error", "Failed to join partner");
+      Alert.alert(t("partners.error"), t("partners.failedToJoinPartner"));
     } finally {
       setIsJoining(false);
     }
@@ -96,12 +98,12 @@ export default function PartnersScreen() {
 
   const handleRemovePartner = (partnerId: string) => {
     Alert.alert(
-      "Remove Partner",
-      "Are you sure you want to remove this partner?",
+      t("partners.removePartner"),
+      t("partners.areYouSureYouWantToRemoveThisPartner"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("partners.cancel"), style: "cancel" },
         {
-          text: "Remove",
+          text: t("partners.remove"),
           style: "destructive",
           onPress: () => {
             setPartners(partners.filter(p => p.id !== partnerId));
@@ -122,17 +124,17 @@ export default function PartnersScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 }]}>
-      <Header title="Partners" onBack={() => router.back()} />
+      <Header title={t("partners.partners")} onBack={() => router.back()} />
       
       <View style={styles.container}>
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <Text style={styles.description}>
-            Connect with partner companies to receive job assignments and collaborate on projects.
+            {t("partners.connectWithPartnerCompaniesToReceiveJobAssignmentsAndCollaborateOnProjects")}
           </Text>
           
           <Pressable style={styles.addButton} onPress={handleAddPartner}>
             <Plus size={20} color="white" />
-            <Text style={styles.addButtonText}>Add Partner</Text>
+            <Text style={styles.addButtonText}>{t("partners.addPartner")}</Text>
           </Pressable>
           
           <View style={styles.partnersContainer}>
@@ -144,11 +146,11 @@ export default function PartnersScreen() {
                   </View>
                   <View style={styles.partnerInfo}>
                     <Text style={styles.partnerName}>{initialPartner.partner_name || initialPartner.name}</Text>
-                    <Text style={styles.partnerCode}>Code: {initialPartner.partner_code || initialPartner.name}</Text>
-                    {initialPartner.email && <Text style={styles.partnerCode}>Email: {initialPartner.email}</Text>}
-                    {initialPartner.contact_person && <Text style={styles.partnerCode}>Contact Person: {initialPartner.contact_person}</Text>}
-                    {initialPartner.phone && <Text style={styles.partnerCode}>Phone: {initialPartner.phone}</Text>}
-                    {initialPartner.address && <Text style={styles.partnerCode}>Address: {initialPartner.address}</Text>}
+                    <Text style={styles.partnerCode}>{t("partners.code")}: {initialPartner.partner_code || initialPartner.name}</Text>
+                    {initialPartner.email && <Text style={styles.partnerCode}>{t("partners.email")}: {initialPartner.email}</Text>}
+                    {initialPartner.contact_person && <Text style={styles.partnerCode}>{t("partners.contactPerson")}: {initialPartner.contact_person}</Text>}
+                    {initialPartner.phone && <Text style={styles.partnerCode}>{t("partners.phone")}: {initialPartner.phone}</Text>}
+                    {initialPartner.address && <Text style={styles.partnerCode}>{t("partners.address")}: {initialPartner.address}</Text>}
                   </View>
                   <Pressable
                     style={styles.removeButton}
@@ -164,24 +166,24 @@ export default function PartnersScreen() {
             ) : (
               <View style={styles.emptyState}>
                 <Link2 size={48} color={Colors.light.gray[400]} />
-                <Text style={styles.emptyTitle}>No Partners Yet</Text>
+                <Text style={styles.emptyTitle}>{t("partners.noPartnersYet")}</Text>
                 <Text style={styles.emptyText}>
-                  Add a partner by entering their partner code to start receiving job assignments.
+                  {t("partners.addAPartnerByEnteringTheirPartnerCodeToStartReceivingJobAssignments")}
                 </Text>
               </View>
             )}
           </View>
           
           <View style={styles.infoBox}>
-            <Text style={styles.infoTitle}>About Partnerships</Text>
+            <Text style={styles.infoTitle}>{t("partners.aboutPartnerships")}</Text>
             <Text style={styles.infoText}>
-              • Partners can assign jobs directly to you through the platform.
+              {t("partners.partnersCanAssignJobsDirectlyToYouThroughThePlatform")}
             </Text>
             <Text style={styles.infoText}>
-              • You'll need a valid partner code to establish a connection.
+              {t("partners.youllNeedAValidPartnerCodeToEstablishAConnection")}
             </Text>
             <Text style={styles.infoText}>
-              • You can remove a partner at any time, but this will affect future job assignments.
+              {t("partners.youCanRemoveAPartnerAtAnyTimeButThisWillAffectFutureJobAssignments")}
             </Text>
           </View>
         </ScrollView>
@@ -195,7 +197,7 @@ export default function PartnersScreen() {
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Add Partner</Text>
+                <Text style={styles.modalTitle}>{t("partners.addPartner")}</Text>
                 <Pressable
                   style={styles.modalCloseButton}
                   onPress={() => setModalVisible(false)}
@@ -205,7 +207,7 @@ export default function PartnersScreen() {
               </View>
               
               <Text style={styles.modalDescription}>
-                Enter the partner code provided by the company you want to connect with.
+                {t("partners.enterThePartnerCodeProvidedByTheCompanyYouWantToConnectWith")}
               </Text>
               
               <View style={styles.codeInputContainer}>
@@ -213,7 +215,7 @@ export default function PartnersScreen() {
                   style={styles.codeInput}
                   value={partnerCode}
                   onChangeText={setPartnerCode}
-                  placeholder="Enter partner code"
+                  placeholder={t("partners.enterPartnerCode")}
                   autoCapitalize="characters"
                 />
               </View>
@@ -224,7 +226,7 @@ export default function PartnersScreen() {
                 disabled={isJoining}
               >
                 <Text style={styles.joinButtonText}>
-                  {isJoining ? "Joining..." : "Join Partner"}
+                  {isJoining ? t("partners.joining") : t("partners.joinPartner")}
                 </Text>
               </Pressable>
             </View>

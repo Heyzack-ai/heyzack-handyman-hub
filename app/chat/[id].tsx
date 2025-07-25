@@ -27,6 +27,7 @@ import { useChat } from "@/hooks/use-chat";
 import { authClient } from "@/lib/auth-client";
 import { useGetPartnerById } from "@/app/api/user/getPartner";
 import { sendImage, Message } from "@/lib/chat-client";  
+import { useTranslation } from "react-i18next";
 
 export default function ChatConversationScreen() {
   const { id, partnerId, partnerName } = useLocalSearchParams<{ 
@@ -40,7 +41,7 @@ export default function ChatConversationScreen() {
   const [showMediaOptions, setShowMediaOptions] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  
+  const { t } = useTranslation();
   const { data: session } = authClient.useSession();
   
   // Get partner details if partnerId is provided
@@ -52,6 +53,7 @@ export default function ChatConversationScreen() {
     isLoading,
     isSending,
     sendChatMessage,
+    sendImageMessage,
     loadChatHistory,
   } = useChat({
     otherUserId: partnerId,
@@ -84,7 +86,7 @@ export default function ChatConversationScreen() {
       } catch (error) {
         console.error("Failed to send message:", error);
         // Only show error alert, not success alert
-        Alert.alert("Error", "Failed to send message. Please try again.");
+        Alert.alert(t("chat.error"), t("chat.failedToSendMessage"));
       }
     }
   };
@@ -117,8 +119,6 @@ export default function ChatConversationScreen() {
           } as any;
         }
         
-
-        
         // Simulate upload progress
         const progressInterval = setInterval(() => {
           setUploadProgress(prev => {
@@ -130,26 +130,19 @@ export default function ChatConversationScreen() {
           });
         }, 100);
         
-        // Upload image using the API
-        const uploadResponse = await sendImage(file, partnerId);
+        // Upload image using the new sendImageMessage function
+        await sendImageMessage(file, partnerId);
         
         // Complete progress
         setUploadProgress(100);
         clearInterval(progressInterval);
-        
-
-        
-
-        
-        // Reload chat history to show the new message
-        loadChatHistory();
         
         if (Platform.OS !== "web") {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
       } catch (error) {
         console.error("Failed to send image:", error);
-        Alert.alert("Error", "Failed to send image. Please try again.");
+        Alert.alert(t("chat.error"), t("chat.failedToSendImage"));
       } finally {
         setIsUploadingImage(false);
         setUploadProgress(0);
@@ -162,7 +155,7 @@ export default function ChatConversationScreen() {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       
       if (status !== "granted") {
-        Alert.alert("Permission Required", "Camera permission is needed to take photos");
+        Alert.alert(t("chat.permissionRequired"), t("chat.cameraPermissionRequired"));
         return;
       }
       
@@ -178,7 +171,7 @@ export default function ChatConversationScreen() {
         
         // Validate file type - only allow images
         if (asset.type && asset.type !== 'image') {
-          Alert.alert("Invalid File Type", "Only images are allowed. Please select an image file.");
+          Alert.alert(t("chat.invalidFileType"), t("chat.onlyImagesAllowed"));
           return;
         }
         
@@ -186,7 +179,7 @@ export default function ChatConversationScreen() {
       }
     } catch (error) {
       console.error("Error taking photo:", error);
-      Alert.alert("Error", "Failed to take photo");
+      Alert.alert(t("chat.error"), t("chat.failedToTakePhoto"));
     } finally {
       setShowMediaOptions(false);
     }
@@ -197,7 +190,7 @@ export default function ChatConversationScreen() {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       
       if (status !== "granted") {
-        Alert.alert("Permission Required", "Gallery permission is needed to select photos");
+        Alert.alert(t("chat.permissionRequired"), t("chat.galleryPermissionRequired"));
         return;
       }
       
@@ -214,7 +207,7 @@ export default function ChatConversationScreen() {
         
         // Validate file type - only allow images
         if (asset.type && asset.type !== 'image') {
-          Alert.alert("Invalid File Type", "Only images are allowed. Please select an image file.");
+          Alert.alert(t("chat.invalidFileType"), t("chat.onlyImagesAllowed"));
           return;
         }
         
@@ -224,7 +217,7 @@ export default function ChatConversationScreen() {
         const fileExtension = fileName.toLowerCase().substring(fileName.lastIndexOf('.'));
         
         if (!allowedExtensions.includes(fileExtension)) {
-          Alert.alert("Invalid File Type", "Only image files (JPG, PNG, GIF, WebP) are allowed.");
+          Alert.alert(t("chat.invalidFileType"), t("chat.onlyImagesAllowed"));
           return;
         }
         
@@ -232,7 +225,7 @@ export default function ChatConversationScreen() {
       }
     } catch (error) {
       console.error("Error picking image:", error);
-      Alert.alert("Error", "Failed to select image");
+      Alert.alert(t("chat.error"), t("chat.failedToSelectImage"));
     } finally {
       setShowMediaOptions(false);
     }
@@ -249,7 +242,7 @@ export default function ChatConversationScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <Header title="Chat" onBack={() => router.back()} />
+        <Header title={t("chat.chat")} onBack={() => router.back()} />
         <View style={styles.messagesContainer}>
           <ChatShimmer count={8} />
         </View>
@@ -274,8 +267,8 @@ export default function ChatConversationScreen() {
         >
           {messages.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No messages yet</Text>
-              <Text style={styles.emptySubtext}>Start the conversation with {displayName}</Text>
+              <Text style={styles.emptyText}>{t("chat.noMessages")}</Text>
+              <Text style={styles.emptySubtext}>{t("chat.startConversation", { displayName })}</Text>
             </View>
                     ) : (
             messages.map((message) => {
@@ -312,7 +305,7 @@ export default function ChatConversationScreen() {
           
           <TextInput
             style={styles.textInput}
-            placeholder={isUploadingImage ? "Uploading image..." : "Type a message..."}
+            placeholder={isUploadingImage ? t("chat.uploadingImage") : t("chat.typeMessage")}
             value={messageText}
             onChangeText={setMessageText}
             multiline
@@ -352,7 +345,7 @@ export default function ChatConversationScreen() {
               />
             </View>
             <Text style={styles.uploadProgressText}>
-              Uploading image... {uploadProgress}%
+              {t("chat.uploadingImage")} {uploadProgress}%
             </Text>
           </View>
         )}
@@ -371,7 +364,7 @@ export default function ChatConversationScreen() {
         >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Share Media</Text>
+              <Text style={styles.modalTitle}>{t("chat.shareMedia")}</Text>
               <TouchableOpacity 
                 style={styles.closeButton} 
                 onPress={() => setShowMediaOptions(false)}
@@ -388,7 +381,7 @@ export default function ChatConversationScreen() {
                 <View style={[styles.mediaIconContainer, { backgroundColor: Colors.light.primary }]}>
                   <Camera size={24} color="#FFFFFF" />
                 </View>
-                <Text style={styles.mediaOptionText}>Camera</Text>
+                <Text style={styles.mediaOptionText}>{t("chat.camera")}</Text>
               </TouchableOpacity>
               
               <TouchableOpacity 
@@ -398,7 +391,7 @@ export default function ChatConversationScreen() {
                 <View style={[styles.mediaIconContainer, { backgroundColor: Colors.light.secondary }]}>
                   <ImageIcon size={24} color="#FFFFFF" />
                 </View>
-                <Text style={styles.mediaOptionText}>Gallery</Text>
+                  <Text style={styles.mediaOptionText}>{t("chat.gallery")}</Text>
               </TouchableOpacity>
             </View>
           </View>

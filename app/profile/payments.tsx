@@ -5,12 +5,13 @@ import { DollarSign, CheckCircle, Clock, AlertCircle } from "lucide-react-native
 import Colors from "@/constants/colors";
 import { useJobStore } from "@/store/job-store";
 import Header from "@/components/Header";
+import { useTranslation } from "react-i18next";
 
 export default function PaymentsScreen() {
   const router = useRouter();
   const { jobs } = useJobStore();
   const [activeTab, setActiveTab] = useState<"pending" | "received">("pending");
-
+  const { t } = useTranslation();
   // Filter completed jobs
   const completedJobs = jobs.filter(job => job.status === "completed");
   
@@ -20,22 +21,22 @@ export default function PaymentsScreen() {
 
   const requestPayment = (jobId: string) => {
     Alert.alert(
-      "Request Payment",
-      "Are you sure you want to request payment for this job?",
+      t("payments.requestPayment"),
+      t("payments.requestPaymentConfirmation"),
       [
         {
-          text: "Cancel",
+          text: t("payments.cancel"),
           style: "cancel"
         },
         {
-          text: "Request",
+          text: t("payments.request"),
           onPress: () => {
             try {
               useJobStore.getState().requestPayment(jobId);
-              Alert.alert("Success", "Payment request sent successfully!");
+              Alert.alert(t("payments.success"), t("payments.paymentRequestSentSuccessfully"));
             } catch (error) {
               console.error("Error requesting payment:", error);
-              Alert.alert("Error", "Failed to request payment. Please try again.");
+              Alert.alert(t("payments.error"), t("payments.failedToRequestPayment"));
             }
           }
         }
@@ -58,17 +59,16 @@ export default function PaymentsScreen() {
               styles.paymentStatusText, 
               { color: isPending ? Colors.light.warning : Colors.light.success }
             ]}>
-              {isPending ? "Pending" : "Received"}
+              {isPending ? t("payments.pending") : t("payments.received")}
             </Text>
           </View>
         </View>
         
         <Text style={styles.paymentCustomer}>{item.customer.name}</Text>
-        <Text style={styles.paymentDate}>Completed on {new Date(item.completedDate || item.scheduledDate).toLocaleDateString()}</Text>
+        <Text style={styles.paymentDate}>{t("payments.completedOn")} {new Date(item.completedDate || item.scheduledDate).toLocaleDateString()}</Text>
         
         <View style={styles.paymentDetails}>
           <View style={styles.paymentAmount}>
-            <DollarSign size={16} color={Colors.light.primary} />
             <Text style={styles.paymentAmountText}>${item.amount || "250.00"}</Text>
           </View>
           
@@ -77,14 +77,14 @@ export default function PaymentsScreen() {
               style={styles.requestButton}
               onPress={() => requestPayment(item.id)}
             >
-              <Text style={styles.requestButtonText}>Request Payment</Text>
+              <Text style={styles.requestButtonText}>{t("payments.requestPayment")}</Text>
             </Pressable>
           )}
           
           {!isPending && (
             <View style={styles.receivedInfo}>
               <CheckCircle size={16} color={Colors.light.success} />
-              <Text style={styles.receivedText}>Received on {new Date(item.paymentDate || new Date()).toLocaleDateString()}</Text>
+              <Text style={styles.receivedText}>{t("payments.receivedOn")} {new Date(item.paymentDate || new Date()).toLocaleDateString()}</Text>
             </View>
           )}
         </View>
@@ -97,14 +97,14 @@ export default function PaymentsScreen() {
       {type === "pending" ? (
         <>
           <Clock size={48} color={Colors.light.gray[400]} />
-          <Text style={styles.emptyStateTitle}>No Pending Payments</Text>
-          <Text style={styles.emptyStateText}>All your completed jobs have been paid</Text>
+          <Text style={styles.emptyStateTitle}>{t("payments.noPendingPayments")}</Text>
+          <Text style={styles.emptyStateText}>{t("payments.allCompletedJobsHaveBeenPaid")}</Text>
         </>
       ) : (
         <>
           <AlertCircle size={48} color={Colors.light.gray[400]} />
-          <Text style={styles.emptyStateTitle}>No Payments Received</Text>
-          <Text style={styles.emptyStateText}>You haven't received any payments yet</Text>
+          <Text style={styles.emptyStateTitle}>{t("payments.noPaymentsReceived")}</Text>
+          <Text style={styles.emptyStateText}>{t("payments.noPaymentsReceivedText")}</Text>
         </>
       )}
     </View>
@@ -112,10 +112,10 @@ export default function PaymentsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 }]}>
-      <Header title="Payments" />
+      <Header title={t("payments.payments")} />
       <Stack.Screen 
         options={{
-          title: "Payments",
+          title: t("payments.payments"),
           headerTitleStyle: {
             fontWeight: "600",
           },
@@ -135,7 +135,7 @@ export default function PaymentsScreen() {
               styles.tabText,
               activeTab === "pending" && styles.activeTabText
             ]}>
-              Pending
+              {t("payments.pending")}
             </Text>
           </Pressable>
           <Pressable 
@@ -149,7 +149,7 @@ export default function PaymentsScreen() {
               styles.tabText,
               activeTab === "received" && styles.activeTabText
             ]}>
-              Received
+              {t("payments.received")}
             </Text>
           </Pressable>
         </View>

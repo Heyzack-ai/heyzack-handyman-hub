@@ -19,8 +19,10 @@ import Colors from "@/constants/colors";
 import Header from "@/components/Header";
 import { useAddArea, useGetArea } from "../api/user/addArea";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 
 export default function ServiceAreaScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [zipCode, setZipCode] = useState("94105");
   const [radius, setRadius] = useState(25);
@@ -87,7 +89,7 @@ export default function ServiceAreaScreen() {
 
   const handleSearch = () => {
     // In a real app, this would validate the zipcode and update the map
-    Alert.alert("Search", `Searching for location with zipcode: ${zipCode}`);
+    Alert.alert(t("serviceArea.search"), `${t("serviceArea.searchingForLocationWithZipcode")} ${zipCode}`);
   };
 
   const { mutate, error, isPending } = useAddArea(zipCode, radius);
@@ -98,12 +100,12 @@ export default function ServiceAreaScreen() {
       onSuccess: () => {
         setIsSaving(false);
         queryClient.invalidateQueries({ queryKey: ["get-area"] });
-        Alert.alert("Success", "Service area updated successfully");
+        Alert.alert(t("serviceArea.success"), t("serviceArea.serviceAreaUpdatedSuccessfully"));
         router.back();
       },
       onError: (error) => {
         setIsSaving(false);
-        Alert.alert("Error", error instanceof Error ? error.message : "Failed to update service area");
+        Alert.alert(t("serviceArea.error"), error instanceof Error ? error.message : t("serviceArea.failedToUpdateServiceArea"));
       },
     });
 
@@ -113,7 +115,7 @@ export default function ServiceAreaScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={{ flex: 1 }}>
-        <Header title="Service Area" onBack={() => router.back()} />
+        <Header title={t("serviceArea.serviceArea")} onBack={() => router.back()} />
         <ScrollView 
           style={styles.container} 
           contentContainerStyle={styles.content} 
@@ -121,7 +123,7 @@ export default function ServiceAreaScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <Text style={styles.description}>
-            Set your service area to define where you're available to work. This helps match you with nearby jobs.
+            {t("serviceArea.setServiceAreaDescription")}
           </Text>
           
           <View style={styles.searchContainer}>
@@ -131,7 +133,7 @@ export default function ServiceAreaScreen() {
                 style={styles.input}
                 value={zipCode}
                 onChangeText={setZipCode}
-                placeholder="Enter ZIP code"
+                placeholder={t("serviceArea.enterZipCode")}
                 keyboardType="number-pad"
               />
             </View>
@@ -141,18 +143,18 @@ export default function ServiceAreaScreen() {
             </Pressable>
           </View>
           
-          <View style={styles.mapPlaceholder}>
+          {/* <View style={styles.mapPlaceholder}>
             <Text style={styles.mapPlaceholderText}>
               Map would be displayed here in a real app
             </Text>
             <Text style={styles.mapPlaceholderSubtext}>
               Service area: {zipCode} ({radius} km radius)
             </Text>
-          </View>
+          </View> */}
           
           <View style={styles.radiusContainer}>
             <View style={styles.radiusLabelContainer}>
-              <Text style={styles.radiusLabel}>Service Radius:</Text>
+              <Text style={styles.radiusLabel}>{t("serviceArea.serviceRadius")}:</Text>
               <View style={styles.radiusInputContainer}>
                 <TextInput
                   style={styles.radiusInputField}
@@ -188,7 +190,7 @@ export default function ServiceAreaScreen() {
               <Text style={styles.sliderLabel}>{MAX_RADIUS}</Text>
             </View>
             
-            <Text style={styles.presetLabel}>Preset Radius Options</Text>
+            <Text style={styles.presetLabel}>{t("serviceArea.presetRadiusOptions")}</Text>
             <View style={styles.radiusButtons}>
               {[10, 25, 50].map((value) => (
                 <Pressable
@@ -213,15 +215,18 @@ export default function ServiceAreaScreen() {
           </View>
           
           <View style={styles.infoBox}>
-            <Text style={styles.infoTitle}>About Service Areas</Text>
+            <Text style={styles.infoTitle}>{t("serviceArea.aboutServiceArea")}</Text>
             <Text style={styles.infoText}>
-              • Your service area determines which job requests you'll receive.
+              {t("serviceArea.aboutServiceAreaDescription")}
             </Text>
             <Text style={styles.infoText}>
-              • A larger radius means more potential jobs but longer travel times.
+              {t("serviceArea.aboutServiceAreaDescription2")}
             </Text>
             <Text style={styles.infoText}>
-              • You can update your service area at any time.
+              {t("serviceArea.aboutServiceAreaDescription3")}
+            </Text>
+            <Text style={styles.infoText}>
+              {t("serviceArea.aboutServiceAreaDescription4")}
             </Text>
           </View>
         </ScrollView>
@@ -233,7 +238,7 @@ export default function ServiceAreaScreen() {
             disabled={isSaving}
           >
             <Text style={styles.saveButtonText}>
-              {isSaving ? "Saving..." : "Save Service Area"}
+              {isSaving ? t("serviceArea.saving") : t("serviceArea.saveServiceArea")}
             </Text>
           </Pressable>
         </View>

@@ -17,7 +17,7 @@ import Colors from "@/constants/colors";
 import { useAuth } from "@/lib/auth-context";
 import { z } from "zod";
 import { Image } from "expo-image";
-
+import { useTranslation } from "react-i18next";
 // Define the validation schema
 const signInSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -33,6 +33,7 @@ type FormErrors = {
 export default function SignInScreen() {
   const router = useRouter();
   const { signIn } = useAuth();
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -69,8 +70,8 @@ export default function SignInScreen() {
     } catch (error) {
       console.error(error);
       Alert.alert(
-        "Error",
-        error instanceof Error ? error.message : "An unknown error occurred"
+        t("auth.error"),
+        error instanceof Error ? error.message : t("auth.anUnknownErrorOccurred")
       );
     } finally {
       setIsLoading(false);
@@ -104,17 +105,17 @@ export default function SignInScreen() {
             />
           </View>
 
-          <Text style={styles.title}>Sign In</Text>
+          <Text style={styles.title}>{t("auth.signIn")}</Text>
           <Text style={styles.subtitle}>
-            Welcome back! Please sign in to continue.
+            {t("auth.welcomeBackPleaseSignInToContinue")}
           </Text>
 
           <View style={styles.form}>
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={styles.label}>{t("auth.email")}</Text>
               <TextInput
                 style={[styles.input, errors.email && styles.inputError]}
-                placeholder="Enter your email"
+                placeholder={t("auth.enterYourEmail")}
                 value={email}
                 onChangeText={(text) => {
                   setEmail(text);
@@ -132,7 +133,7 @@ export default function SignInScreen() {
             </View>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Password</Text>
+              <Text style={styles.label}>{t("auth.password")}</Text>
               <View
                 style={[
                   styles.passwordContainer,
@@ -141,7 +142,7 @@ export default function SignInScreen() {
               >
                 <TextInput
                   style={styles.passwordInput}
-                  placeholder="Enter your password"
+                  placeholder={t("auth.enterYourPassword")}
                   value={password}
                   onChangeText={(text) => {
                     setPassword(text);
@@ -172,7 +173,7 @@ export default function SignInScreen() {
               onPress={handleForgotPassword}
               style={styles.forgotPassword}
             >
-              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+              <Text style={styles.forgotPasswordText}>{t("auth.forgotPassword")}</Text>
             </Pressable>
 
             <Pressable
@@ -181,15 +182,15 @@ export default function SignInScreen() {
               disabled={isLoading}
             >
               <Text style={styles.buttonText}>
-                {isLoading ? "Signing In..." : "Sign In"}
+                {isLoading ? t("auth.signingIn") : t("auth.signIn")}
               </Text>
             </Pressable>
           </View>
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Don't have an account?</Text>
+            <Text style={styles.footerText}>{t("auth.dontHaveAnAccount")}</Text>
             <Pressable onPress={handleSignUp}>
-              <Text style={styles.signUpText}>Sign Up</Text>
+              <Text style={styles.signUpText}>{t("auth.signUp")}</Text>
             </Pressable>
           </View>
         </ScrollView>

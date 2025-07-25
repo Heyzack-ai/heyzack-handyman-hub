@@ -16,10 +16,14 @@ import { ArrowLeft } from "lucide-react-native";
 import Colors from "@/constants/colors";
 import { authClient } from "@/lib/auth-client";
 import { z } from "zod";
+import { useTranslation } from "react-i18next";
+
+const { t } = useTranslation();
+
 
 // Define the validation schema
 const forgotPasswordSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
+  email: z.string().email(t("auth.pleaseEnterAValidEmailAddress")),
 });
 
 // Type for form errors
@@ -32,7 +36,7 @@ export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
-
+  const { t } = useTranslation();
   const validateForm = (): boolean => {
     try {
       forgotPasswordSchema.parse({ email });
@@ -64,17 +68,17 @@ export default function ForgotPasswordScreen() {
       });
 
       Alert.alert(
-        "Reset Link Sent",
-        "If an account exists with this email, you will receive a password reset link.",
-        [{ text: "OK", onPress: () => router.replace("/auth/signin") }]
+        t("auth.resetLinkSent"),
+        t("auth.ifAnAccountExistsWithThisEmailYouWillReceiveAPasswordResetLink"),
+        [{ text: t("auth.ok"), onPress: () => router.replace("/auth/signin") }]
       );
     } catch (error) {
       console.error(error);
       // Still show success message even on error for security reasons
       Alert.alert(
-        "Reset Link Sent",
-        "If an account exists with this email, you will receive a password reset link.",
-        [{ text: "OK", onPress: () => router.replace("/auth/signin") }]
+        t("auth.resetLinkSent"),
+        t("auth.ifAnAccountExistsWithThisEmailYouWillReceiveAPasswordResetLink"),
+        [{ text: t("auth.ok"), onPress: () => router.replace("/auth/signin") }]
       );
     } finally {
       setIsLoading(false);
@@ -97,17 +101,17 @@ export default function ForgotPasswordScreen() {
         >
          
 
-          <Text style={styles.title}>Forgot Password</Text>
+          <Text style={styles.title}>{t("auth.forgotPassword")}</Text>
           <Text style={styles.subtitle}>
-            Enter your email address and we'll send you a link to your email to reset your password.
+            {t("auth.enterYourEmailToResetPassword")}
           </Text>
 
           <View style={styles.form}>
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={styles.label}>{t("auth.email")}</Text>
               <TextInput
                 style={[styles.input, errors.email && styles.inputError]}
-                placeholder="Enter your email"
+                placeholder={t("auth.enterYourEmail")}
                 value={email}
                 onChangeText={(text) => {
                   setEmail(text);
@@ -128,15 +132,15 @@ export default function ForgotPasswordScreen() {
               disabled={isLoading}
             >
               <Text style={styles.buttonText}>
-                {isLoading ? "Sending..." : "Send Reset Link"}
+                {isLoading ? t("auth.sending") : t("auth.sendResetLink")}
               </Text>
             </Pressable>
           </View>
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Remember your password?</Text>
+            <Text style={styles.footerText}>{t("auth.rememberYourPassword")}</Text>
             <Pressable onPress={() => router.push("/auth/signin")}>
-              <Text style={styles.signInText}>Sign In</Text>
+              <Text style={styles.signInText}>{t("auth.signIn")}</Text>
             </Pressable>
           </View>
         </ScrollView>

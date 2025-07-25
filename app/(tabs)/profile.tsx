@@ -33,14 +33,14 @@ import {
 import Colors from "@/constants/colors";
 import ShimmerCard from "@/components/ShimmerCard";
 import ProfileSkeleton from "@/components/ProfileSkeleton";
-
+import { useTranslations } from "@/src/i18n/useTranslations";
 import { useGetUser } from "@/app/api/user/getUser";
 import { authClient } from "@/lib/auth-client";
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { signOut, deleteAccount } = useAuth();
-
+  const { t } = useTranslations();
   const { data: user, isLoading } = useGetUser();
   const BASE_URL = process.env.EXPO_PUBLIC_ASSET_URL;
   
@@ -133,15 +133,15 @@ export default function ProfileScreen() {
             })}
           >
             <Edit size={16} color={Colors.light.primary} />
-            <Text style={styles.editProfileText}>Edit Profile</Text>
+            <Text style={styles.editProfileText}>{t("profile.editProfile")}</Text>
           </Pressable>
         </View>
 
         <View style={styles.skillsContainer}>
           <View style={styles.skillsHeader}>
-            <Text style={styles.skillsTitle}>Skills</Text>
+            <Text style={styles.skillsTitle}>{t("profile.skills")}</Text>
             <Pressable onPress={() => router.push("/profile/skills")}>
-              <Text style={styles.addSkillText}>+ Add</Text>
+              <Text style={styles.addSkillText}>+ {t("profile.add")}</Text>
             </Pressable>
           </View>
           <View style={styles.skillTags}>
@@ -156,42 +156,42 @@ export default function ProfileScreen() {
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{technician.completedJobs}</Text>
-            <Text style={styles.statLabel}>Jobs Completed</Text>
+            <Text style={styles.statLabel}>{t("profile.jobsCompleted")}</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{technician.rating}</Text>
-            <Text style={styles.statLabel}>Rating</Text>
+            <Text style={styles.statLabel}>{t("profile.rating")}</Text>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Payment</Text>
+            <Text style={styles.sectionTitle}>{t("profile.payments")}</Text>
           {renderMenuItem(
             <CreditCard size={20} color={Colors.light.primary} />,
-            "Payments",
-            "View your payments",
+            t("profile.payments"),
+            t("profile.viewPayments"),
             () => router.push("/profile/payments")
           )}
 
           {renderMenuItem(
             <Banknote size={20} color={Colors.light.primary} />,
-            "Bank Account",
-            "Your bank accounts",
+            t("profile.bankAccount"),
+            t("profile.yourBankAccounts"),
             () => router.push("/profile/bankAccounts")
           )}
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Contact Information</Text>
+          <Text style={styles.sectionTitle}>{t("profile.contactInfo")}</Text>
           {renderMenuItem(
             <Mail size={20} color={Colors.light.primary} />,
-            "Email",
+            t("profile.email"),
             technician.email
           )}
           {renderMenuItem(
             <Phone size={20} color={Colors.light.primary} />,
-            "Phone",
+            t("profile.phone"),
             technician?.phone || "No phone number"
           )}
           {/* {renderMenuItem(
@@ -202,23 +202,23 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Work Preferences</Text>
+          <Text style={styles.sectionTitle}>{t("profile.workPreferences")}</Text>
           {renderMenuItem(
             <Clock size={20} color={Colors.light.gray[600]} />,
-            "Availability",
-            "Set your working hours",
+            t("profile.availability"),
+            t("profile.setWorkingHours"),
             () => router.push("/profile/availability")
           )}
           {renderMenuItem(
             <Globe size={20} color={Colors.light.gray[600]} />,
-            "Service Area",
-            "Define your service radius",
+            t("profile.serviceArea"),
+            t("profile.defineServiceRadius"),
             () => router.push("/profile/service-area")
           )}
           {renderMenuItem(
             <Link size={20} color={Colors.light.gray[600]} />,
-            "Partners",
-            "Manage your partner connections",
+            t("profile.partners"),
+            t("profile.managePartnerConnections"),
             () => router.push({
               pathname: "/profile/partners",
               params: {
@@ -229,11 +229,11 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Settings</Text>
+          <Text style={styles.sectionTitle}>{t("profile.settings")}</Text>
           {renderMenuItem(
             <Languages size={20} color={Colors.light.gray[600]} />,
-            "Language",
-            "English",
+            t("profile.language"),
+            t("profile.english"),
             () => router.push("/profile/language")
           )}
           {/* {renderMenuItem(
@@ -244,20 +244,20 @@ export default function ProfileScreen() {
           )} */}
           {renderMenuItem(
             <HelpCircle size={20} color={Colors.light.gray[600]} />,
-            "Help & Support",
+            t("profile.helpSupport"),
             undefined,
             () => router.push("/profile/help")
           )}
           {renderMenuItem(
             <LogOut size={20} color={Colors.light.error} />,
-            "Log Out",
+            t("profile.logOut"),
             undefined,
             async () => {
               try {
                 await signOut();
                 // The auth context will automatically redirect to signin
               } catch (error) {
-                Alert.alert("Error", "Failed to sign out. Please try again.");
+                Alert.alert(t("profile.error"), t("profile.failedToSignOut"));
               }
             }
           )}
@@ -268,16 +268,16 @@ export default function ProfileScreen() {
                 // Show delete account confirmation
                 const confirmed = await new Promise<boolean>((resolve) => {
                   Alert.alert(
-                    "Delete Account",
-                    "Are you sure you want to delete your account? This action cannot be undone.",
+                    t("profile.deleteAccount"),
+                    t("profile.deleteAccountConfirmation"),
                     [
                       {
-                        text: "Cancel",
+                        text: t("common.cancel"),
                         style: "cancel",
                         onPress: () => resolve(false),
                       },
                       {
-                        text: "Delete",
+                        text: t("profile.delete"),
                         style: "destructive",
                         onPress: async () => {
                           await deleteAccount();
@@ -292,11 +292,11 @@ export default function ProfileScreen() {
               }
             }}
           >
-            <Text style={styles.deleteAccountText}>Delete Account</Text>
+            <Text style={styles.deleteAccountText}>{t("profile.deleteAccount")}</Text>
           </Pressable>
         </View>
 
-        <Text style={styles.version}>Version 1.0.0</Text>
+        <Text style={styles.version}>{t("profile.version", { version: "1.0.0" })}</Text>
       </ScrollView>
     </SafeAreaView>
   );

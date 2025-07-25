@@ -27,18 +27,19 @@ import { useChat } from "@/hooks/use-chat";
 import { getChatRooms, getUnreadCount } from "@/lib/chat-client";
 import { authClient } from "@/lib/auth-client";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "@/src/i18n/useTranslations";
 
 export default function ChatScreen() {
   const router = useRouter();
   const { data: session } = authClient.useSession();
   const [showPartnerList, setShowPartnerList] = useState(false);
   const [showMediaOptions, setShowMediaOptions] = useState(false);
-  
+  const { t } = useTranslations();
   // Get current user's partner data - this IS the assigned partner
   const { data: currentPartner, isLoading: currentPartnerLoading } = useGetPartner("None");
   
-  console.log("Current Partner:", currentPartner);
-  console.log("Session:", session);
+  // console.log("Current Partner:", currentPartner);
+  // console.log("Session:", session);
 
   // Get chat data for the current partner
   const { messages: partnerMessages, loadChatHistory } = useChat({
@@ -96,7 +97,7 @@ export default function ChatScreen() {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       
       if (status !== "granted") {
-        Alert.alert("Permission Required", "Camera permission is needed to take photos");
+        Alert.alert(t("chat.permissionRequired"), t("chat.cameraPermissionRequired"));
         return;
       }
       
@@ -110,10 +111,10 @@ export default function ChatScreen() {
         if (Platform.OS !== "web") {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
-        Alert.alert("Success", "Photo captured! Select a partner to start a chat.");
+        Alert.alert(t("chat.success"), t("chat.photoCaptured"));
       }
     } catch (error) {
-      Alert.alert("Error", "Failed to take photo");
+      Alert.alert(t("chat.error"), t("chat.failedToTakePhoto"));
     } finally {
       setShowMediaOptions(false);
     }
@@ -124,7 +125,7 @@ export default function ChatScreen() {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       
       if (status !== "granted") {
-        Alert.alert("Permission Required", "Gallery permission is needed to select photos");
+        Alert.alert(t("chat.permissionRequired"), t("chat.galleryPermissionRequired"));
         return;
       }
       
@@ -139,10 +140,10 @@ export default function ChatScreen() {
         if (Platform.OS !== "web") {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
-        Alert.alert("Success", "Photo selected! Select a partner to start a chat.");
+        Alert.alert(t("chat.success"), t("chat.photoSelected"));
       }
     } catch (error) {
-      Alert.alert("Error", "Failed to select image");
+      Alert.alert(t("chat.error"), t("chat.failedToSelectImage"));
     } finally {
       setShowMediaOptions(false);
     }
@@ -161,7 +162,7 @@ export default function ChatScreen() {
       </View>
       <View style={styles.partnerInfo}>
         <Text style={styles.partnerName}>{partner.partner_name || "Unknown Partner"}</Text>
-        <Text style={styles.latestMessage}>Start a new conversation</Text>
+        <Text style={styles.latestMessage}>{t("chat.startChat")}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -195,7 +196,7 @@ export default function ChatScreen() {
           </Text>
         </View>
         <View style={styles.partnerInfo}>
-          <Text style={styles.partnerName}>{partner.partner_name || "Unknown Partner"}</Text>
+          <Text style={styles.partnerName}>{partner.partner_name || t("chat.unknownPartner")}</Text>
           <View style={styles.latestMessageContainer}>
             {isImageMessage ? (
               <View style={styles.imageMessageContainer}>
@@ -204,7 +205,7 @@ export default function ChatScreen() {
               </View>
             ) : (
               <Text style={styles.latestMessage} numberOfLines={1} ellipsizeMode="tail">
-                {latestMessage ? latestMessage.message : "No messages yet"}
+                {latestMessage ? latestMessage.message : t("chat.noMessages")}
               </Text>
             )}
           </View>
@@ -226,7 +227,7 @@ export default function ChatScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.container}>
           <View style={styles.header}>
-            <Text style={styles.title}>Messages</Text>
+            <Text style={styles.title}>{t("chat.chat")}</Text>
           </View>
           <ChatListShimmer />
         </View>
@@ -238,7 +239,7 @@ export default function ChatScreen() {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>Messages</Text>
+          <Text style={styles.title}>{t("chat.chat")}</Text>
           <View style={styles.headerRight}>
             {totalUnreadCount && totalUnreadCount > 0 && (
               <View style={styles.headerUnreadBadge}>
@@ -255,8 +256,8 @@ export default function ChatScreen() {
           {!currentPartner ? (
             <View style={styles.emptyContainer}>
               <Users size={48} color={Colors.light.gray[400]} />
-              <Text style={styles.emptyTitle}>No assigned partner</Text>
-              <Text style={styles.emptySubtitle}>You don't have a partner assigned yet</Text>
+              <Text style={styles.emptyTitle}>{t("chat.noAssignedPartner")}</Text>
+              <Text style={styles.emptySubtitle}>{t("chat.noAssignedPartnerText")}</Text>
             </View>
           ) : (
             renderAssignedPartnerItem(currentPartner)
@@ -276,7 +277,7 @@ export default function ChatScreen() {
           >
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Select Partner</Text>
+                <Text style={styles.modalTitle}>{t("chat.selectPartner")}</Text>
                 <TouchableOpacity 
                   style={styles.closeButton} 
                   onPress={() => setShowPartnerList(false)}
@@ -289,12 +290,12 @@ export default function ChatScreen() {
                 {unassignedLoading ? (
                   <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={Colors.light.primary} />
-                    <Text style={styles.loadingText}>Loading partners...</Text>
+                        <Text style={styles.loadingText}>{t("chat.loadingPartners")}</Text>
                   </View>
                 ) : !unassignedPartners || unassignedPartners.length === 0 ? (
                   <View style={styles.emptyContainer}>
-                    <Text style={styles.emptyTitle}>No available partners</Text>
-                    <Text style={styles.emptySubtitle}>All partners are already assigned</Text>
+                    <Text style={styles.emptyTitle}>{t("chat.noAvailablePartners")}</Text>
+                    <Text style={styles.emptySubtitle}>{t("chat.allPartnersAssigned")}</Text>
                   </View>
                 ) : (
                   unassignedPartners.map(renderPartnerItem)
@@ -317,7 +318,7 @@ export default function ChatScreen() {
           >
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Share Media</Text>
+                <Text style={styles.modalTitle}>{t("chat.shareMedia")}</Text>
                 <TouchableOpacity 
                   style={styles.closeButton} 
                   onPress={() => setShowMediaOptions(false)}

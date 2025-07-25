@@ -18,20 +18,23 @@ import { Image } from "expo-image";
 import { authClient } from "@/lib/auth-client";
 import { useAuth } from "@/lib/auth-context";
 import { z } from "zod";
+import { useTranslation } from "react-i18next";
+
+const { t } = useTranslation();
 
 // Define the validation schema
 const signUpSchema = z.object({
-  fullName: z.string().min(1, "Full name is required"),
-  email: z.string().email("Please enter a valid email address"),
+  fullName: z.string().min(1, t("auth.fullNameIsRequired")),
+  email: z.string().email(t("auth.pleaseEnterAValidEmailAddress")),
   phone: z.string()
     .regex(/^\+33\d{9}$/, "Phone number must be 9 digits after +33"),
   password: z.string()
-    .min(8, "Password must be at least 8 characters")
-    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-    .regex(/[0-9]/, "Password must contain at least one number"),
+    .min(8, t("auth.passwordMustBeAtLeast8Characters"))
+    .regex(/[A-Z]/, t("auth.passwordMustContainAtLeastOneUppercaseLetter"))
+    .regex(/[0-9]/, t("auth.passwordMustContainAtLeastOneNumber")),
   confirmPassword: z.string().min(1, "Please confirm your password"),
 }).refine(data => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
+  message: t("auth.passwordsDoNotMatch"),
   path: ["confirmPassword"],
 });
 
@@ -47,6 +50,7 @@ type FormErrors = {
 export default function SignUpScreen() {
   const router = useRouter();
   const { signUp } = useAuth();
+  const { t } = useTranslation();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("+33"); // Prefilled with France country code
@@ -156,17 +160,17 @@ export default function SignUpScreen() {
             />
           </View>
 
-          <Text style={styles.title}>Create Account</Text>
+          <Text style={styles.title}>{t("auth.createAccount")}</Text>
           <Text style={styles.subtitle}>
-            Sign up to start managing your service jobs
+            {t("auth.signUpToStartManagingYourServiceJobs")}
           </Text>
 
           <View style={styles.form}>
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Full Name</Text>
+              <Text style={styles.label}>{t("auth.fullName")}</Text>
               <TextInput
                 style={[styles.input, errors.fullName && styles.inputError]}
-                placeholder="Enter your full name"
+                placeholder={t("auth.enterYourFullName")}
                 value={fullName}
                 onChangeText={(text) => {
                   setFullName(text);
@@ -180,10 +184,10 @@ export default function SignUpScreen() {
             </View>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={styles.label}>{t("auth.email")}</Text>
               <TextInput
                 style={[styles.input, errors.email && styles.inputError]}
-                placeholder="Enter your email"
+                placeholder={t("auth.enterYourEmail")}
                 value={email}
                 onChangeText={(text) => {
                   setEmail(text);
@@ -199,10 +203,10 @@ export default function SignUpScreen() {
             </View>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Contact Number</Text>
+                <Text style={styles.label}>{t("auth.contactNumber")}</Text>
               <TextInput
                 style={[styles.input, errors.phone && styles.inputError]}
-                placeholder="Enter your contact number"
+                placeholder={t("auth.enterYourContactNumber")}
                 value={phone}
                 onChangeText={handlePhoneChange}
                 keyboardType="phone-pad"
@@ -212,11 +216,11 @@ export default function SignUpScreen() {
             </View>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Password</Text>
+              <Text style={styles.label}>{t("auth.password")}</Text>
               <View style={[styles.passwordContainer, errors.password && styles.inputError]}>
                 <TextInput
                   style={styles.passwordInput}
-                  placeholder="Create a password"
+                  placeholder={t("auth.createAPassword")}
                   value={password}
                   onChangeText={(text) => {
                     setPassword(text);
@@ -242,11 +246,11 @@ export default function SignUpScreen() {
             </View>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Confirm Password</Text>
+              <Text style={styles.label}>{t("auth.confirmPassword")}</Text>
               <View style={[styles.passwordContainer, errors.confirmPassword && styles.inputError]}>
                 <TextInput
                   style={styles.passwordInput}
-                  placeholder="Confirm your password"
+                  placeholder={t("auth.confirmYourPassword")}
                   value={confirmPassword}
                   onChangeText={(text) => {
                     setConfirmPassword(text);
@@ -277,15 +281,15 @@ export default function SignUpScreen() {
               disabled={isLoading}
             >
               <Text style={styles.buttonText}>
-                {isLoading ? "Creating Account..." : "Create Account"}
+                {isLoading ? t("auth.creatingAccount") : t("auth.createAccount")}
               </Text>
             </Pressable>
           </View>
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Already have an account?</Text>
+            <Text style={styles.footerText}>{t("auth.alreadyHaveAnAccount")}</Text>
             <Pressable onPress={handleSignIn}>
-              <Text style={styles.signInText}>Sign In</Text>
+              <Text style={styles.signInText}>{t("auth.signIn")}</Text>
             </Pressable>
           </View>
         </ScrollView>

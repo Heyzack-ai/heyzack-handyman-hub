@@ -21,8 +21,10 @@ import { useAddAvailability, useGetAvailability } from "../api/user/addAvailabil
 import { useQueryClient } from "@tanstack/react-query";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { WeekSchedule } from "@/types/availability";
+import { useTranslation } from "react-i18next";
 
 export default function AvailabilityScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
   const queryClient = useQueryClient();
@@ -68,13 +70,13 @@ export default function AvailabilityScreen() {
   const [schedule, setSchedule] = useState<WeekSchedule>(defaultSchedule);
 
   const days = [
-    { key: "monday", label: "Monday" },
-    { key: "tuesday", label: "Tuesday" },
-    { key: "wednesday", label: "Wednesday" },
-    { key: "thursday", label: "Thursday" },
-    { key: "friday", label: "Friday" },
-    { key: "saturday", label: "Saturday" },
-    { key: "sunday", label: "Sunday" },
+    { key: "monday", label: t("availability.monday") },
+    { key: "tuesday", label: t("availability.tuesday") },
+    { key: "wednesday", label: t("availability.wednesday") },
+    { key: "thursday", label: t("availability.thursday") },
+    { key: "friday", label: t("availability.friday") },
+    { key: "saturday", label: t("availability.saturday") },
+    { key: "sunday", label: t("availability.sunday") },
   ];
 
   const timeSlots = [
@@ -123,12 +125,12 @@ export default function AvailabilityScreen() {
       onSuccess: () => {
         setIsSaving(false);
         queryClient.invalidateQueries({ queryKey: ["get-availability"] });
-        Alert.alert("Success", "Availability schedule updated successfully");
+        Alert.alert(t("availability.success"), t("availability.availabilityScheduleUpdatedSuccessfully"));
         router.back();
       },
       onError: (error) => {
         setIsSaving(false);
-        Alert.alert("Error", error instanceof Error ? error.message : "Failed to update availability");
+        Alert.alert(t("availability.error"), error instanceof Error ? error.message : t("availability.failedToUpdateAvailability"));
       },
     });
 
@@ -197,12 +199,12 @@ export default function AvailabilityScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.timePickerContainer}>
             <Text style={styles.timePickerTitle}>
-              {isStartTime ? "Select Start Time" : "Select End Time"}
+              {isStartTime ? t("availability.selectStartTime") : t("availability.selectEndTime")}
             </Text>
             
             <View style={styles.timePickerContent}>
               <View style={styles.timePickerColumn}>
-                <Text style={styles.timePickerLabel}>Hour</Text>
+                <Text style={styles.timePickerLabel}>{t("availability.hour")}</Text>
                 <ScrollView 
                   ref={hourScrollViewRef}
                   style={styles.timePickerScroll} 
@@ -235,7 +237,7 @@ export default function AvailabilityScreen() {
               </View>
               
               <View style={styles.timePickerColumn}>
-                <Text style={styles.timePickerLabel}>Minute</Text>
+                <Text style={styles.timePickerLabel}>{t("availability.minute")}</Text>
                 <ScrollView 
                   ref={minuteScrollViewRef}
                   style={styles.timePickerScroll} 
@@ -267,7 +269,7 @@ export default function AvailabilityScreen() {
               </View>
               
               <View style={styles.timePickerColumn}>
-                <Text style={styles.timePickerLabel}>AM/PM</Text>
+                <Text style={styles.timePickerLabel}>{t("availability.amPm")}</Text>
                 <View style={styles.amPmContainer}>
                   <TouchableOpacity
                     style={[
@@ -282,7 +284,7 @@ export default function AvailabilityScreen() {
                     <Text style={[
                       styles.amPmButtonText,
                       tempHour < 12 && styles.amPmButtonTextSelected
-                    ]}>AM</Text>
+                      ]}>{t("availability.am")}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[
@@ -297,7 +299,7 @@ export default function AvailabilityScreen() {
                     <Text style={[
                       styles.amPmButtonText,
                       tempHour >= 12 && styles.amPmButtonTextSelected
-                    ]}>PM</Text>
+                    ]}>{t("availability.pm")}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -308,7 +310,7 @@ export default function AvailabilityScreen() {
                 style={styles.timePickerCancel}
                 onPress={() => setShowCustomTimePicker(false)}
               >
-                <Text style={styles.timePickerCancelText}>Cancel</Text>
+                <Text style={styles.timePickerCancelText}>{t("availability.cancel")}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.timePickerConfirm}
@@ -326,7 +328,7 @@ export default function AvailabilityScreen() {
                   setShowCustomTimePicker(false);
                 }}
               >
-                <Text style={styles.timePickerConfirmText}>Confirm</Text>
+                <Text style={styles.timePickerConfirmText}>{t("availability.confirm")}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -337,12 +339,12 @@ export default function AvailabilityScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <Header title="Set Availability" onBack={() => router.back()} />
+      <Header title={t("availability.setAvailability")} onBack={() => router.back()} />
       
       <View style={styles.container}>
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <Text style={styles.description}>
-            Set your weekly availability schedule. This helps customers know when you're available for jobs.
+            {t("availability.setAvailabilityDescription")}
           </Text>
           
           <View style={styles.scheduleContainer}>
@@ -380,7 +382,7 @@ export default function AvailabilityScreen() {
                       </Text>
                     </Pressable>
                     
-                    <Text style={styles.toText}>to</Text>
+                    <Text style={styles.toText}>{t("availability.to")}</Text>
                     
                     <Pressable
                       style={styles.timeSelector}
@@ -408,15 +410,9 @@ export default function AvailabilityScreen() {
           </View>
           
           <View style={styles.infoBox}>
-            <Text style={styles.infoTitle}>How Availability Works</Text>
+            <Text style={styles.infoTitle}>{t("availability.howAvailabilityWorks")}</Text>
             <Text style={styles.infoText}>
-              • Your availability is used to show customers when you can accept jobs.
-            </Text>
-            <Text style={styles.infoText}>
-              • You'll only receive job requests during your available hours.
-            </Text>
-            <Text style={styles.infoText}>
-              • You can update your availability at any time.
+              {t("availability.howAvailabilityWorksDescription1")}
             </Text>
           </View>
         </ScrollView>
@@ -428,7 +424,7 @@ export default function AvailabilityScreen() {
             disabled={isSaving}
           >
             <Text style={styles.saveButtonText}>
-              {isSaving ? "Saving..." : "Save Changes"}
+              {isSaving ? t("availability.saving") : t("availability.saveChanges")}
             </Text>
           </Pressable>
         </View>

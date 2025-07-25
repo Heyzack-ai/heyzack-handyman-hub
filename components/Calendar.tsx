@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, Pressable } from "react-native";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 import { Job, JobType } from "@/types/job";
 import Colors from "@/constants/colors";
+import { useTranslations } from "@/src/i18n/useTranslations";
 
 type CalendarProps = {
   selectedDate?: string;
@@ -12,7 +13,7 @@ type CalendarProps = {
 
 export default function Calendar({ selectedDate, onDateSelect, jobs = [] }: CalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
-  
+  const { t } = useTranslations();
   const statuses = [
     "Scheduled",
     "En Route",
@@ -26,11 +27,11 @@ export default function Calendar({ selectedDate, onDateSelect, jobs = [] }: Cale
   ];
 
   const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
+    t("home.January"), t("home.February"), t("home.March"), t("home.April"), t("home.May"), t("home.June"),
+    t("home.July"), t("home.August"), t("home.September"), t("home.October"), t("home.November"), t("home.December")
   ];
 
-  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const dayNames = [t("home.Sun"), t("home.Mon"), t("home.Tue"), t("home.Wed"), t("home.Thu"), t("home.Fri"), t("home.Sat") ];
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
@@ -169,11 +170,11 @@ export default function Calendar({ selectedDate, onDateSelect, jobs = [] }: Cale
       <View style={styles.legend}>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, styles.bookedDot]} />
-          <Text style={styles.legendText}>Booked Installation</Text>
+          <Text style={styles.legendText}>{t("home.bookedInstallation")}</Text>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, styles.requestDot]} />
-          <Text style={styles.legendText}>Job Request</Text>
+          <Text style={styles.legendText}>{t("home.jobRequest")}</Text>
         </View>
       </View>
     </View>

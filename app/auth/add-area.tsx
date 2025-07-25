@@ -22,8 +22,10 @@ import { useUpdateUser } from "@/app/api/user/getUser";
 import { Handyman } from "@/types/handyman";
 import { useAddArea } from "@/app/api/user/addArea";
 import { useAddSkills } from "@/app/api/user/addskills";
+import { useTranslation } from "react-i18next";
 
 export default function ServiceAreaScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { signIn } = useAuth();
   const { email, password, selectedSkills } = useLocalSearchParams();
@@ -95,7 +97,7 @@ if (typeof selectedSkills === "string") {
 
   const handleSearch = () => {
     // In a real app, this would validate the zipcode and update the map
-    Alert.alert("Search", `Searching for location with zipcode: ${zipCode}`);
+    Alert.alert(t("serviceArea.search"), `${t("serviceArea.searchingForLocationWithZipcode")} ${zipCode}`);
   };
 
   
@@ -109,13 +111,13 @@ if (typeof selectedSkills === "string") {
     const showError = (prefix: string, error: unknown) => {
       console.error(`${prefix} Error:`, error);
       Alert.alert(
-        "Error",
-        error instanceof Error ? error.message : "An unknown error occurred"
+        t("serviceArea.error"),
+        error instanceof Error ? error.message : t("serviceArea.unknownError")
       );
     };
 
     const handleSuccess = (message: string) => {
-      Alert.alert("Success", message);
+      Alert.alert(t("serviceArea.success"), message);
     };
 
     const navigateToHome = () => {
@@ -126,19 +128,19 @@ if (typeof selectedSkills === "string") {
       await signIn(email as string, password as string);
 
       updateUser(undefined, {
-        onSuccess: () => handleSuccess("Service area updated successfully"),
+        onSuccess: () => handleSuccess(t("serviceArea.serviceAreaUpdatedSuccessfully")),
         onError: (error) => showError("Update Area", error),
         onSettled: navigateToHome,
       });
 
       updateSkills(undefined, {
-        onSuccess: () => handleSuccess("Skills updated successfully"),
+        onSuccess: () => handleSuccess(t("serviceArea.skillsUpdatedSuccessfully")),
         onError: (error) => showError("Update Skills", error),
         onSettled: navigateToHome,
       });
 
     } catch (error) {
-      showError("Sign In", error);
+      showError(t("serviceArea.signIn"), error);
     } finally {
       setIsSaving(false);
     }
@@ -148,7 +150,7 @@ if (typeof selectedSkills === "string") {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={{ flex: 1 }}>
-        <Header title="Service Area" onBack={() => router.back()} />
+        <Header title={t("serviceArea.serviceArea")} onBack={() => router.back()} />
         <ScrollView 
           style={styles.container} 
           contentContainerStyle={styles.content} 
@@ -156,7 +158,7 @@ if (typeof selectedSkills === "string") {
           keyboardShouldPersistTaps="handled"
         >
           <Text style={styles.description}>
-            Set your service area to define where you're available to work. This helps match you with nearby jobs.
+            {t("serviceArea.setServiceAreaDescription")}
           </Text>
           
           <View style={styles.searchContainer}>
@@ -166,7 +168,7 @@ if (typeof selectedSkills === "string") {
                 style={styles.input}
                 value={zipCode}
                 onChangeText={setZipCode}
-                placeholder="Enter ZIP code"
+                placeholder={t("serviceArea.enterZipCode")}
                 keyboardType="number-pad"
               />
             </View>
@@ -176,18 +178,18 @@ if (typeof selectedSkills === "string") {
             </Pressable>
           </View>
           
-          <View style={styles.mapPlaceholder}>
+          {/* <View style={styles.mapPlaceholder}>
             <Text style={styles.mapPlaceholderText}>
               Map would be displayed here in a real app
             </Text>
             <Text style={styles.mapPlaceholderSubtext}>
               Service area: {zipCode} ({radius} km radius)
             </Text>
-          </View>
+          </View> */}
           
           <View style={styles.radiusContainer}>
             <View style={styles.radiusLabelContainer}>
-              <Text style={styles.radiusLabel}>Service Radius:</Text>
+              <Text style={styles.radiusLabel}>{t("serviceArea.serviceRadius")}:</Text>
               <View style={styles.radiusInputContainer}>
                 <TextInput
                   style={styles.radiusInputField}
@@ -223,7 +225,7 @@ if (typeof selectedSkills === "string") {
               <Text style={styles.sliderLabel}>{MAX_RADIUS}</Text>
             </View>
             
-            <Text style={styles.presetLabel}>Preset Radius Options</Text>
+            <Text style={styles.presetLabel}>{t("serviceArea.presetRadiusOptions")}</Text>
             <View style={styles.radiusButtons}>
               {[10, 25, 50].map((value) => (
                 <Pressable
@@ -248,15 +250,15 @@ if (typeof selectedSkills === "string") {
           </View>
           
           <View style={styles.infoBox}>
-            <Text style={styles.infoTitle}>About Service Areas</Text>
+              <Text style={styles.infoTitle}>{t("serviceArea.aboutServiceArea")}</Text>
             <Text style={styles.infoText}>
-              • Your service area determines which job requests you'll receive.
+              {t("serviceArea.aboutServiceAreaDescription")}
             </Text>
             <Text style={styles.infoText}>
-              • A larger radius means more potential jobs but longer travel times.
+              {t("serviceArea.aboutServiceAreaDescription6")}
             </Text>
             <Text style={styles.infoText}>
-              • You can update your service area at any time.
+              {t("serviceArea.aboutServiceAreaDescription5")}
             </Text>
           </View>
         </ScrollView>
@@ -268,7 +270,7 @@ if (typeof selectedSkills === "string") {
             disabled={isSaving}
           >
             <Text style={styles.saveButtonText}>
-              {isSaving ? "Saving..." : "Save Service Area"}
+                {isSaving ? t("serviceArea.saving") : t("serviceArea.saveServiceArea")}
             </Text>
           </Pressable>
         </View>

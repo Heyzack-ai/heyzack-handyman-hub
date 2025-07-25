@@ -6,8 +6,10 @@ import Colors from "@/constants/colors";
 import Header from "@/components/Header";
 import { useGetBank, useDeleteBank, useAddBank, useSetDefaultBank } from "@/app/api/user/addBank";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 
 export default function BankAccountsScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { data: bankData, isLoading } = useGetBank();
   const { mutate: deleteBank } = useDeleteBank();
@@ -35,15 +37,15 @@ export default function BankAccountsScreen() {
 
   const handleDeleteAccount = (account: any) => {
     Alert.alert(
-      "Remove Bank Account",
-      "Are you sure you want to remove this bank account?",
+      t("bankAccounts.removeBankAccount"),
+      t("bankAccounts.removeBankAccountConfirmation"),
       [
         {
-          text: "Cancel",
+          text: t("bankAccounts.cancel"),
           style: "cancel"
         },
         {
-          text: "Remove",
+          text: t("bankAccounts.remove"),
           style: "destructive",
           onPress: () => {
             deleteBank({
@@ -62,10 +64,10 @@ export default function BankAccountsScreen() {
                   bank.bicCode !== account.bicCode ||
                   bank.accountType !== account.accountType
                 ));
-                Alert.alert("Success", "Bank account removed successfully");
+                Alert.alert(t("bankAccounts.success"), t("bankAccounts.bankAccountRemovedSuccessfully"));
               },
               onError: (error) => {
-                Alert.alert("Error", "Failed to remove bank account");
+                Alert.alert(t("bankAccounts.error"), t("bankAccounts.failedToRemoveBankAccount"));
               }
             });
           }
@@ -86,12 +88,12 @@ export default function BankAccountsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 }]}>
-      <Header title="Bank Accounts" />
+      <Header title={t("bankAccounts.bankAccounts")} />
       
       {isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={Colors.light.primary} />
-          <Text style={styles.loadingText}>Loading bank accounts...</Text>
+          <Text style={styles.loadingText}>{t("bankAccounts.loadingBankAccounts")}</Text>
         </View>
       ) : (
         <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -109,7 +111,7 @@ export default function BankAccountsScreen() {
                     </Text>
                     {account.isDefault && (
                       <View style={styles.defaultBadge}>
-                        <Text style={styles.defaultText}>Default</Text>
+                        <Text style={styles.defaultText}>{t("bankAccounts.default")}</Text>
                       </View>
                     )}
                   </View>
@@ -119,7 +121,7 @@ export default function BankAccountsScreen() {
                         style={styles.actionButton}
                         onPress={() => handleSetDefault(account)}
                       >
-                        <Text style={styles.actionButtonText}>Set Default</Text>
+                        <Text style={styles.actionButtonText}>{t("bankAccounts.setDefault")}</Text>
                       </Pressable>
                     )}
                     <Pressable
@@ -135,9 +137,9 @@ export default function BankAccountsScreen() {
           ) : (
             <View style={styles.emptyState}>
               <CreditCard size={48} color={Colors.light.gray[400]} />
-              <Text style={styles.emptyTitle}>No Bank Accounts</Text>
+              <Text style={styles.emptyTitle}>{t("bankAccounts.noBankAccounts")}</Text>
               <Text style={styles.emptyText}>
-                Add a bank account to receive payments for your completed jobs
+                {t("bankAccounts.noBankAccountsText")}
               </Text>
             </View>
           )}
@@ -147,16 +149,16 @@ export default function BankAccountsScreen() {
             onPress={() => router.push("/profile/addBank")}
           >
             <Plus size={20} color="white" />
-            <Text style={styles.addButtonText}>Add New Bank Account</Text>
+            <Text style={styles.addButtonText}>{t("bankAccounts.addBankAccount")}</Text>
           </Pressable>
 
           <View style={styles.infoBox}>
-            <Text style={styles.infoTitle}>About Bank Accounts</Text>
+              <Text style={styles.infoTitle}>{t("bankAccounts.aboutBankAccounts")}</Text>
             <Text style={styles.infoText}>
-              Bank accounts are used to receive payments for completed jobs. You can add multiple accounts and set one as default.
+              {t("bankAccounts.aboutBankAccountsText")}
             </Text>
             <Text style={styles.infoText}>
-              Your bank information is securely stored and protected.
+              {t("bankAccounts.aboutBankAccountsText2")}
             </Text>
           </View>
         </ScrollView>

@@ -45,6 +45,7 @@ import { useGetPendingJobs } from "@/app/api/jobs/getJobs";
 import { useUpdateJobStatus } from "@/app/api/jobs/updateStatus";
 import { useUpdateCompletionPhoto } from "@/app/api/jobs/getCompletionPhoto";
 import { useGetProduct } from "@/app/api/products/getProduct";
+import { useTranslations } from "@/src/i18n/useTranslations";
 
 // Product Item Component that fetches its own data
 const ProductItem = ({ product }: { product: any }) => {
@@ -91,7 +92,7 @@ export default function JobDetailScreen() {
   const { mutate: updateJobStatusMutation } = useUpdateJobStatus();
   const IMAGE_URL = process.env.EXPO_PUBLIC_ASSET_URL;
   const { mutate: updateCompletionPhotoMutation } = useUpdateCompletionPhoto();
-
+  const { t } = useTranslations();
   // console.log("Job details:", jobDetails?.data);
   // console.log("Products:", jobDetails?.data?.products);
 
@@ -130,7 +131,7 @@ export default function JobDetailScreen() {
         setJobData(parsedJob);
       } catch (error) {
         console.error('Failed to parse job data:', error);
-        Alert.alert("Error", "Invalid job data");
+        Alert.alert(t("jobDetails.error"), t("jobDetails.invalidJobData"));
         router.back();
       }
     }
@@ -147,8 +148,8 @@ export default function JobDetailScreen() {
 
     if (job.status === "pending") {
       Alert.alert(
-        "Access Denied",
-        "You must accept the job request before viewing details"
+        t("jobDetails.accessDenied"),
+        t("jobDetails.accessDeniedText")
       );
       router.back();
     }
@@ -157,7 +158,7 @@ export default function JobDetailScreen() {
   if (!job) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <Header title="Job Details" onBack={() => router.back()} />
+        <Header title={t("jobDetails.jobDetails")} onBack={() => router.back()} />
         <ShimmerSkeleton />
       </SafeAreaView>
     );
@@ -219,7 +220,7 @@ export default function JobDetailScreen() {
     if (Platform.OS !== "web") {
       Linking.openURL(`tel:${phone}`);
     } else {
-      Alert.alert("Phone Call", `Call ${phone}`);
+      Alert.alert(t("jobDetails.phoneCall"), t("jobDetails.call", { phone }));
     }
   };
 
@@ -248,7 +249,7 @@ export default function JobDetailScreen() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
       updateJobStatusMutation({ jobId: jobData?.name, status: "Contract Sent" });
-      Alert.alert("Success", "Contract sent to customer");
+      Alert.alert(t("jobDetails.success"), t("jobDetails.contractSentToCustomer"));
       setIsLoading(false);
     }, 1000);
   };
@@ -282,8 +283,8 @@ export default function JobDetailScreen() {
     
     // Show options dialog
     Alert.alert(
-      "Select Photo",
-      "Choose how you want to add photos",
+      t("jobDetails.selectPhoto"),
+      t("jobDetails.chooseHowToAddPhotos"),
       [
         {
           text: "Camera",
@@ -308,8 +309,8 @@ export default function JobDetailScreen() {
 
       if (status !== "granted") {
         Alert.alert(
-          "Permission Required",
-          "Camera permission is needed to take photos"
+          t("jobDetails.permissionRequired"),
+          t("jobDetails.cameraPermissionNeeded")
         );
         return;
       }
@@ -324,7 +325,7 @@ export default function JobDetailScreen() {
       handleImageResult(result);
     } catch (error) {
       console.error("Error in handleCameraCapture:", error);
-      Alert.alert("Error", "Failed to open camera");
+      Alert.alert(t("jobDetails.error"), t("jobDetails.failedToOpenCamera"));
     }
   };
 
@@ -335,8 +336,8 @@ export default function JobDetailScreen() {
 
       if (status !== "granted") {
         Alert.alert(
-          "Permission Required",
-          "Gallery permission is needed to select photos"
+          t("jobDetails.permissionRequired"),
+          t("jobDetails.galleryPermissionNeeded")
         );
         return;
       }
@@ -353,7 +354,7 @@ export default function JobDetailScreen() {
       handleImageResult(result);
     } catch (error) {
       console.error("Error in handleGalleryPick:", error);
-      Alert.alert("Error", "Failed to open gallery");
+      Alert.alert(t("jobDetails.error"), t("jobDetails.failedToOpenGallery"));
     }
   };
 
@@ -410,16 +411,16 @@ export default function JobDetailScreen() {
         }
         
         if (errorCount === 0) {
-          Alert.alert("Success", `${successCount} photo(s) uploaded successfully`);
+          Alert.alert(t("jobDetails.success"), t("jobDetails.photosUploadedSuccessfully", { count: successCount }));
         } else if (successCount > 0) {
-          Alert.alert("Partial Success", `${successCount} photo(s) uploaded, ${errorCount} failed`);
+          Alert.alert(t("jobDetails.partialSuccess"), t("jobDetails.photosUploadedFailed", { count: successCount, errorCount }));
         } else {
-          Alert.alert("Error", "All photos failed to upload");
+          Alert.alert(t("jobDetails.error"), t("jobDetails.allPhotosFailedToUpload"));
         }
         
       } catch (error) {
         console.error("Error processing multiple images:", error);
-        Alert.alert("Error", "Failed to process images");
+        Alert.alert(t("jobDetails.error"), t("jobDetails.failedToProcessImages"));
       }
     } else {
       console.log("Image selection was canceled or no assets");
@@ -428,12 +429,12 @@ export default function JobDetailScreen() {
 
   const handleMarkComplete = () => {
     Alert.alert(
-      "Complete Job",
-      "Are you sure you want to mark this job as complete?",
+      t("jobDetails.completeJob"),
+      t("jobDetails.completeJobConfirmation"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Complete",
+          text: t("jobDetails.complete"),
           onPress: () => {
             updateJobStatusMutation({ jobId: job.id, status: "Job Marked as Done" });
             if (Platform.OS !== "web") {
@@ -497,9 +498,9 @@ export default function JobDetailScreen() {
       >
         {/* Job Progress Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Job Progress</Text>
+          <Text style={styles.sectionTitle}>{t("jobDetails.jobProgress")}</Text>
           <Text style={styles.statusText}>
-            Current Status: {getStatusText()}
+            {t("jobDetails.currentStatus")}: {getStatusText()}
           </Text>
 
           <View style={styles.progressContainer}>
@@ -526,37 +527,37 @@ export default function JobDetailScreen() {
               style={styles.primaryButton}
               onPress={handleCollectStock}
             >
-              <Text style={styles.primaryButtonText}>Collect Stock</Text>
+              <Text style={styles.primaryButtonText}>{t("jobDetails.collectStock")}</Text>
             </Pressable>
           )}
         </View>
 
         {/* Schedule Details */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Schedule Details</Text>
+          <Text style={styles.cardTitle}>{t("jobDetails.scheduleDetails")}</Text>
 
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Date:</Text>
+            <Text style={styles.detailLabel}>{t("jobDetails.date")}:</Text>
             <Text style={styles.detailValue}>{formattedDate}</Text>
           </View>
 
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Time:</Text>
+              <Text style={styles.detailLabel}>{t("jobDetails.time")}:</Text>
             <Text style={styles.detailValue}>{formattedTime}</Text>
           </View>
 
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Duration:</Text>
+            <Text style={styles.detailLabel}>{t("jobDetails.duration")}:</Text>
             <Text style={styles.detailValue}>{job.duration}</Text>
           </View>
 
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Type:</Text>
+            <Text style={styles.detailLabel}>{t("jobDetails.type")}:</Text>
             <Text style={styles.detailValue}>{job.title}</Text>
           </View>
 
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Status:</Text>
+            <Text style={styles.detailLabel}>{t("jobDetails.status")}:</Text>
             {/* <View style={styles.priorityBadge}>
               <Text style={styles.priorityText}>
               {job.status.charAt(0).toUpperCase() + job.status.slice(1).toLowerCase()}
@@ -568,7 +569,7 @@ export default function JobDetailScreen() {
 
         {/* Partner Details */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Partner Details</Text>
+          <Text style={styles.cardTitle}>{t("jobDetails.partnerDetails")}</Text>
           <Text style={styles.companyName}>{partnerData?.partner_name}</Text>
 
           <ContactRow
@@ -599,7 +600,7 @@ export default function JobDetailScreen() {
             style={styles.expandableHeader}
             onPress={() => setProductsExpanded(!productsExpanded)}
           >
-            <Text style={styles.cardTitle}>Products (Bill Of Materials)</Text>
+            <Text style={styles.cardTitle}>{t("jobDetails.products")}</Text>
             {productsExpanded ? (
               <ChevronUp size={20} />
             ) : (
@@ -619,7 +620,7 @@ export default function JobDetailScreen() {
                   onPress={handleCollectStock}
                 >
                   <Package size={16} color={Colors.light.text} />
-                  <Text style={styles.outlineButtonText}>Collect Stock</Text>
+                  <Text style={styles.outlineButtonText}>{t("jobDetails.collectStock")}</Text>
                 </Pressable>
               </View>
             </>
@@ -628,7 +629,7 @@ export default function JobDetailScreen() {
 
         {/* Customer Information */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Customer Information</Text>
+          <Text style={styles.cardTitle}>{t("jobDetails.customerInformation")}</Text>
           <Text style={styles.customerName}>{job.customer.customer_name}</Text>
 
           <ContactRow
@@ -655,10 +656,10 @@ export default function JobDetailScreen() {
 
         {/* Contract Status */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Contract Status</Text>
+          <Text style={styles.cardTitle}>{t("jobDetails.contractStatus")}</Text>
 
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Status:</Text>
+            <Text style={styles.detailLabel}>{t("jobDetails.status")}:</Text>
             <StatusBadge
               status={job.contractsent === true ? "sent" : "not_sent"}
               size="medium"
@@ -672,7 +673,7 @@ export default function JobDetailScreen() {
             >
               <FileText size={16} color={Colors.light.text} />
               <Text style={styles.contractButtonText}>
-                Send Contract to Customer
+                {t("jobDetails.sendContractToCustomer")}
               </Text>
             </Pressable>
           )}
@@ -681,13 +682,13 @@ export default function JobDetailScreen() {
         {/* Job Completion */}
         <View style={styles.card}>
           <View style={styles.expandableHeader}>
-            <Text style={styles.cardTitle}>Job Completion</Text>
+            <Text style={styles.cardTitle}>{t("jobDetails.jobCompletion")}</Text>
           </View>
 
           {jobDetails?.data?.completion_photos && jobDetails?.data?.completion_photos.length > 0 ? (
             <View style={styles.photosList}>
               <Text style={styles.photosTitle}>
-                {jobDetails?.data?.completion_photos?.length} photo(s) uploaded
+                {t("jobDetails.photoCount", { count: jobDetails?.data?.completion_photos?.length })} uploaded
                 
               </Text>
               <View style={styles.photosContainer}>
@@ -717,7 +718,7 @@ export default function JobDetailScreen() {
               </View>
             </View>
           ) : (
-            <Text style={styles.noPhotosText}>No photos uploaded yet</Text>
+              <Text style={styles.noPhotosText}>{t("jobDetails.noPhotosUploaded")}</Text>
           )}
 
           <Pressable 
@@ -728,14 +729,14 @@ export default function JobDetailScreen() {
             }}
           >
             <Camera size={20} color={Colors.light.primary} />
-            <Text style={styles.uploadButtonText}>Add Photo</Text>
+            <Text style={styles.uploadButtonText}>{t("jobDetails.addPhoto")}</Text>
           </Pressable>
         </View>
 
         {/* Mark as Complete Button */}
         {jobDetails?.data?.completion_photos && jobDetails?.data?.completion_photos.length > 0 && (
           <Pressable style={styles.completeButton} onPress={handleMarkComplete}>
-            <Text style={styles.completeButtonText}>Mark as Complete</Text>
+              <Text style={styles.completeButtonText}>{t("jobDetails.markAsComplete")}</Text>
           </Pressable>
         )}
       </ScrollView>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
   Text,
@@ -14,6 +14,7 @@ import { Stack, useRouter } from "expo-router";
 import { Check } from "lucide-react-native";
 import Colors from "@/constants/colors";
 import Header from "@/components/Header";
+import { useTranslations } from "@/src/i18n/useTranslations";
 
 type Language = {
   code: string;
@@ -23,38 +24,45 @@ type Language = {
 
 export default function LanguageScreen() {
   const router = useRouter();
-  const [selectedLanguage, setSelectedLanguage] = useState("en");
+  const { t, currentLanguage, changeLanguage } = useTranslations();
+  const [selectedLanguage, setSelectedLanguage] = useState("fr-FR");
   const [isSaving, setIsSaving] = useState(false);
   
   const languages: Language[] = [
-    { code: "en", name: "English", localName: "English" },
-    { code: "fr", name: "French", localName: "Français" },
-    // Add more languages as needed
+    { code: "fr-FR", name: t("language.french"), localName: "Français" },
+    { code: "en-US", name: t("language.english"), localName: "English" },
   ];
+
+  useEffect(() => {
+    setSelectedLanguage(currentLanguage);
+  }, [currentLanguage]);
 
   const handleSelectLanguage = (code: string) => {
     setSelectedLanguage(code);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setIsSaving(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      setIsSaving(false);
-      Alert.alert("Success", "Language updated successfully");
+    try {
+      await changeLanguage(selectedLanguage);
+      Alert.alert(t("common.success"), t("language.languageUpdated"));
       router.back();
-    }, 1000);
+    } catch (error) {
+      Alert.alert(t("common.error"), "Failed to update language");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 }]}>
-      <Header title="Language Settings" onBack={() => router.back()} />
+      <Header title={t("language.languageSettings")} onBack={() => router.back()} />
       
       <View style={styles.container}>
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
           <Text style={styles.description}>
-            Choose your preferred language for the app interface.
+            {t("language.chooseLanguage")}
           </Text>
           
           <View style={styles.languagesContainer}>
@@ -82,15 +90,15 @@ export default function LanguageScreen() {
           </View>
           
           <View style={styles.infoBox}>
-            <Text style={styles.infoTitle}>Language Settings</Text>
+            <Text style={styles.infoTitle}>{t("language.languageInfo.title")}</Text>
             <Text style={styles.infoText}>
-              • Changing the language will affect all text in the app.
+              {t("language.languageInfo.text1")}
             </Text>
             <Text style={styles.infoText}>
-              • Some content from partners may still appear in their original language.
+              {t("language.languageInfo.text2")}
             </Text>
             <Text style={styles.infoText}>
-              • You can change your language preference at any time.
+              {t("language.languageInfo.text3")}
             </Text>
           </View>
         </ScrollView>
@@ -102,7 +110,7 @@ export default function LanguageScreen() {
             disabled={isSaving}
           >
             <Text style={styles.saveButtonText}>
-              {isSaving ? "Saving..." : "Save Language"}
+              {isSaving ? t("language.saving") : t("language.saveLanguage")}
             </Text>
           </Pressable>
         </View>

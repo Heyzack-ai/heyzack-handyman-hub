@@ -23,14 +23,16 @@ import {
 } from "lucide-react-native";
 import Colors from "@/constants/colors";
 import Header from "@/components/Header";
+import { useTranslation } from "react-i18next";
 
 export default function HelpSupportScreen() {
+  const { t } = useTranslation();
   const handleCall = () => {
     const phoneNumber = "+1-800-123-4567";
     if (Platform.OS !== "web") {
       Linking.openURL(`tel:${phoneNumber}`);
     } else {
-      Alert.alert("Contact Support", `Call ${phoneNumber}`);
+      Alert.alert(t("help.contactSupport"), `Call ${phoneNumber}`);
     }
   };
 
@@ -40,38 +42,38 @@ export default function HelpSupportScreen() {
 
   const handleChat = () => {
     Alert.alert(
-      "Live Chat",
-      "This would open a live chat with support in a real app."
+      t("help.liveChat"),
+      t("help.thisWouldOpenALiveChatWithSupportInARealApp")
     );
   };
 
   const handleOpenLink = (title: string) => {
     Alert.alert(
       title,
-      `This would open the ${title} page in a real app.`
+      t("help.thisWouldOpenThePageInARealApp", { title })
     );
   };
 
   const faqItems = [
     {
-      question: "How do I update my availability?",
-      answer: "Go to Profile > Availability to set your working hours for each day of the week."
+      question: t("help.howDoIUpdateMyAvailability"),
+      answer: t("help.goToProfileAvailabilityToSetYourWorkingHoursForEachDayOfTheWeek")
     },
     {
-      question: "How do I accept a job request?",
-      answer: "Job requests appear in the Jobs tab. Tap on a job request and select 'Accept' to take the job."
+      question: t("help.howDoIAcceptAJobRequest"),
+      answer: t("help.jobRequestsAppearInTheJobsTabTapOnAJobRequestAndSelectAcceptToTakeTheJob")
     },
     {
-      question: "How do I collect stock for a job?",
-      answer: "Open the job details and tap on 'Collect Stock'. Follow the instructions to scan and collect each item."
+      question: t("help.howDoICollectStockForAJob"),
+      answer: t("help.openTheJobDetailsAndTapOnCollectStockFollowTheInstructionsToScanAndCollectEachItem")
     },
     {
-      question: "How do I get paid for completed jobs?",
-      answer: "Payments are processed automatically after a job is marked as complete and verified by the customer."
+      question: t("help.howDoIPaidForCompletedJobs"),
+      answer: t("help.paymentsAreProcessedAutomaticallyAfterAJobIsMarkedAsCompleteAndVerifiedByTheCustomer")
     },
     {
-      question: "How do I connect with a partner company?",
-      answer: "Go to Profile > Partners and tap 'Add Partner'. Enter the partner code provided by the company."
+      question: t("help.howDoIConnectWithAPartnerCompany"),
+      answer: t("help.goToProfilePartnersAndTapAddPartnerEnterThePartnerCodeProvidedByTheCompany")
     },
   ];
 
@@ -80,15 +82,15 @@ export default function HelpSupportScreen() {
       <Header title="Help & Support" onBack={() => router.back()} />
       <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.contactSection}>
-          <Text style={styles.sectionTitle}>Contact Support</Text>
+          <Text style={styles.sectionTitle}>{t("help.contactSupport")}</Text>
           
           <Pressable style={styles.contactItem} onPress={handleCall}>
             <View style={styles.contactIcon}>
               <Phone size={24} color={Colors.light.primary} />
             </View>
             <View style={styles.contactInfo}>
-              <Text style={styles.contactTitle}>Phone Support</Text>
-              <Text style={styles.contactSubtitle}>Available 24/7</Text>
+              <Text style={styles.contactTitle}>{t("help.phoneSupport")}</Text>
+              <Text style={styles.contactSubtitle}>{t("help.available247")}</Text>
             </View>
             <ChevronRight size={20} color={Colors.light.gray[500]} />
           </Pressable>
@@ -98,8 +100,8 @@ export default function HelpSupportScreen() {
               <Mail size={24} color={Colors.light.primary} />
             </View>
             <View style={styles.contactInfo}>
-              <Text style={styles.contactTitle}>Email Support</Text>
-              <Text style={styles.contactSubtitle}>Response within 24 hours</Text>
+              <Text style={styles.contactTitle}>{t("help.emailSupport")}</Text>
+              <Text style={styles.contactSubtitle}>{t("help.responseWithin24Hours")}</Text>
             </View>
             <ChevronRight size={20} color={Colors.light.gray[500]} />
           </Pressable>
@@ -109,15 +111,15 @@ export default function HelpSupportScreen() {
               <MessageSquare size={24} color={Colors.light.primary} />
             </View>
             <View style={styles.contactInfo}>
-              <Text style={styles.contactTitle}>Live Chat</Text>
-              <Text style={styles.contactSubtitle}>Available 9AM-6PM</Text>
+                <Text style={styles.contactTitle}>{t("help.liveChat")}</Text>
+              <Text style={styles.contactSubtitle}>{t("help.available9AM6PM")}</Text>
             </View>
             <ChevronRight size={20} color={Colors.light.gray[500]} />
           </Pressable>
         </View>
         
         <View style={styles.faqSection}>
-          <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
+          <Text style={styles.sectionTitle}>{t("help.frequentlyAskedQuestions")}</Text>
           
           {faqItems.map((item, index) => (
             <View key={index} style={styles.faqItem}>
@@ -131,14 +133,14 @@ export default function HelpSupportScreen() {
         </View>
         
         <View style={styles.linksSection}>
-          <Text style={styles.sectionTitle}>Legal Information</Text>
+          <Text style={styles.sectionTitle}>{t("help.legalInformation")}</Text>
           
           <Pressable 
             style={styles.linkItem} 
             onPress={() => handleOpenLink("Terms of Service")}
           >
             <FileText size={20} color={Colors.light.gray[600]} />
-            <Text style={styles.linkText}>Terms of Service</Text>
+            <Text style={styles.linkText}>{t("help.termsOfService")}</Text>
             <ChevronRight size={20} color={Colors.light.gray[500]} />
           </Pressable>
           
@@ -147,7 +149,7 @@ export default function HelpSupportScreen() {
             onPress={() => handleOpenLink("Privacy Policy")}
           >
             <Shield size={20} color={Colors.light.gray[600]} />
-            <Text style={styles.linkText}>Privacy Policy</Text>
+            <Text style={styles.linkText}>{t("help.privacyPolicy")}</Text>
             <ChevronRight size={20} color={Colors.light.gray[500]} />
           </Pressable>
         </View>
@@ -156,23 +158,23 @@ export default function HelpSupportScreen() {
           style={styles.deleteAccountButton}
           onPress={() => {
             Alert.alert(
-              "Delete Account",
-              "Are you sure you want to delete your account? This action cannot be undone.",
+              t("help.deleteAccount"),
+              t("help.areYouSureYouWantToDeleteYourAccountThisActionCannotBeUndone"),
               [
-                { text: "Cancel", style: "cancel" },
+                { text: t("help.cancel"), style: "cancel" },
                 { 
-                  text: "Delete", 
+                  text: t("help.delete"), 
                   style: "destructive",
                   onPress: () => {
                     // Handle account deletion
-                    Alert.alert("Account Deleted", "Your account has been successfully deleted.");
+                    Alert.alert(t("help.accountDeleted"), t("help.yourAccountHasBeenSuccessfullyDeleted"));
                   }
                 }
               ]
             );
           }}
         >
-          <Text style={styles.deleteAccountText}>Delete Account</Text>
+          <Text style={styles.deleteAccountText}>{t("help.deleteAccount")}</Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>

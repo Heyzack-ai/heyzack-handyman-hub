@@ -24,11 +24,13 @@ import { useGetJobs } from "@/app/api/jobs/getJobs";
 import { useGetCustomer } from "@/app/api/customer/getCustomer";
 import ShimmerSkeleton from "@/components/ShimmerSkeleton";
 import { useGetPendingJobs } from "@/app/api/jobs/getJobs";
+import { useTranslations } from "@/src/i18n/useTranslations";
 
 import Job from "@/components/Job";
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { t } = useTranslations();
   const [selectedDate, setSelectedDate] = useState<string>(
     new Date().toISOString().split("T")[0]
   );
@@ -180,8 +182,8 @@ export default function HomeScreen() {
             <Text style={styles.greeting}>Hello, Technician</Text>
             <Text style={styles.subtitle}>
               {isToday
-                ? "Here's your schedule for today"
-                : `Schedule for ${selectedDate}`}
+                ? t("home.headerSubtitle")
+                : t("home.scheduleFor", { date: selectedDate })}
             </Text>
           </View>
           <TouchableOpacity
@@ -208,11 +210,11 @@ export default function HomeScreen() {
         }}
       >
         <View style={styles.header}>
-          <Text style={styles.greeting}>Hello, Technician</Text>
+          <Text style={styles.greeting}>{t("home.headerTitle")}</Text>
           <Text style={styles.subtitle}>
             {isToday
-              ? "Here's your schedule for today"
-              : `Schedule for ${selectedDate}`}
+              ? t("home.headerSubtitle")
+              : t("home.scheduleFor", { date: selectedDate })}
           </Text>
         </View>
         <TouchableOpacity
@@ -230,12 +232,12 @@ export default function HomeScreen() {
       >
         <View style={{ width: "100%", marginBottom: 16 }}>
           <View style={{ flexDirection: "row", gap: 12 }}>
-            <Job title="Completed Jobs" number={completedJobsCount} />
-            <Job title="Pending Jobs" number={pendingJobsCount} />
+            <Job title={t("home.completedJobs")} number={completedJobsCount} />
+            <Job title={t("home.pendingJobs")} number={pendingJobsCount} />
           </View>
 
           <View style={{ marginTop: 16, height: 100 }}>
-            <Job title="Earnings" number={earnings} style={{ width: "100%" }} />
+            <Job title={t("home.earnings")} number={earnings} style={{ width: "100%" }} />
           </View>
         </View>
 
@@ -262,7 +264,7 @@ export default function HomeScreen() {
           <View style={styles.sectionHeader}>
             <Briefcase size={20} color={Colors.light.primary} />
             <Text style={styles.sectionTitle}>
-              {isToday ? "Today's Jobs" : `Jobs for ${selectedDate}`}
+              {isToday ? t("home.today") : t("home.scheduleFor", { date: selectedDate })}
             </Text>
             {selectedDateJobs.length > 0 && (
               <Text style={styles.count}>{selectedDateJobs.length}</Text>
@@ -284,8 +286,8 @@ export default function HomeScreen() {
               <CalendarIcon size={40} color={Colors.light.gray[400]} />
               <Text style={styles.emptyText}>
                 {isToday
-                  ? "No jobs scheduled for today"
-                  : "No jobs scheduled for this date"}
+                  ? t("home.noJobsToday")
+                  : t("home.noJobsForDate", { date: selectedDate })}
               </Text>
             </View>
           )}
@@ -294,7 +296,7 @@ export default function HomeScreen() {
         {upcomingJobs.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Upcoming Jobs</Text>
+              <Text style={styles.sectionTitle}>{t("home.upcomingJobs")}</Text>
             </View>
 
             {upcomingJobs.map((job: JobType) => (

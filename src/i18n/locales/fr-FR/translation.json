@@ -1,0 +1,126 @@
+{
+  "common": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "back": "Retour",
+    "next": "Suivant",
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "success": "Succès",
+    "retry": "Réessayer",
+    "close": "Fermer",
+    "done": "Terminé",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "confirm": "Confirmer",
+    "yes": "Oui",
+    "no": "Non"
+  },
+  "auth": {
+    "signIn": "Se connecter",
+    "signUp": "S'inscrire",
+    "signOut": "Se déconnecter",
+    "email": "Email",
+    "password": "Mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "forgotPassword": "Mot de passe oublié ?",
+    "resetPassword": "Réinitialiser le mot de passe",
+    "verifyCode": "Vérifier le code",
+    "resendCode": "Renvoyer le code",
+    "createAccount": "Créer un compte",
+    "alreadyHaveAccount": "Vous avez déjà un compte ?",
+    "dontHaveAccount": "Vous n'avez pas de compte ?",
+    "loginWithEmail": "Se connecter avec l'email",
+    "registerWithEmail": "S'inscrire avec l'email"
+  },
+  "navigation": {
+    "home": "Accueil",
+    "chat": "Chat",
+    "jobs": "Travaux",
+    "profile": "Profil",
+    "settings": "Paramètres",
+    "language": "Langue",
+    "help": "Aide & Support"
+  },
+  "chat": {
+    "messages": "Messages",
+    "newMessage": "Nouveau message",
+    "typeMessage": "Tapez un message...",
+    "send": "Envoyer",
+    "camera": "Caméra",
+    "gallery": "Galerie",
+    "photo": "Photo",
+    "image": "Image",
+    "noMessages": "Aucun message pour le moment",
+    "startConversation": "Commencer la conversation",
+    "uploadingImage": "Téléchargement de l'image...",
+    "failedToSend": "Échec de l'envoi du message. Veuillez réessayer.",
+    "failedToSendImage": "Échec de l'envoi de l'image. Veuillez réessayer."
+  },
+  "jobs": {
+    "jobs": "Travaux",
+    "availableJobs": "Travaux disponibles",
+    "myJobs": "Mes travaux",
+    "jobDetails": "Détails du travail",
+    "acceptJob": "Accepter le travail",
+    "completeJob": "Terminer le travail",
+    "jobStatus": {
+      "pending": "En attente",
+      "accepted": "Accepté",
+      "inProgress": "En cours",
+      "completed": "Terminé",
+      "cancelled": "Annulé"
+    },
+    "jobType": {
+      "installation": "Installation",
+      "repair": "Réparation",
+      "maintenance": "Maintenance",
+      "inspection": "Inspection"
+    }
+  },
+  "profile": {
+    "profile": "Profil",
+    "personalInfo": "Informations personnelles",
+    "contactInfo": "Informations de contact",
+    "bankAccounts": "Comptes bancaires",
+    "payments": "Paiements",
+    "availability": "Disponibilité",
+    "serviceArea": "Zone de service",
+    "skills": "Compétences",
+    "partners": "Partenaires",
+    "changePassword": "Changer le mot de passe",
+    "deleteAccount": "Supprimer le compte",
+    "logOut": "Se déconnecter",
+    "helpSupport": "Aide & Support",
+    "languageSettings": "Paramètres de langue"
+  },
+  "language": {
+    "languageSettings": "Paramètres de langue",
+    "chooseLanguage": "Choisissez votre langue préférée pour l'interface de l'application.",
+    "english": "Anglais",
+    "french": "Français",
+    "saveLanguage": "Enregistrer la langue",
+    "saving": "Enregistrement...",
+    "languageUpdated": "Langue mise à jour avec succès",
+    "languageInfo": {
+      "title": "Paramètres de langue",
+      "text1": "• Changer la langue affectera tout le texte de l'application.",
+      "text2": "• Certains contenus des partenaires peuvent encore apparaître dans leur langue d'origine.",
+      "text3": "• Vous pouvez changer votre préférence de langue à tout moment."
+    }
+  },
+  "errors": {
+    "networkError": "Erreur réseau. Veuillez vérifier votre connexion.",
+    "serverError": "Erreur serveur. Veuillez réessayer plus tard.",
+    "permissionDenied": "Permission refusée.",
+    "invalidInput": "Saisie invalide. Veuillez vérifier vos données.",
+    "fileTooLarge": "Fichier trop volumineux.",
+    "unsupportedFileType": "Type de fichier non pris en charge."
+  },
+  "notifications": {
+    "newMessage": "Nouveau message de {{sender}}",
+    "jobAssigned": "Nouveau travail assigné",
+    "jobCompleted": "Travail terminé avec succès",
+    "paymentReceived": "Paiement reçu"
+  }
+}
