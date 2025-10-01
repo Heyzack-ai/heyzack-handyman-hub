@@ -48,7 +48,7 @@ export function useUploadKycDocument() {
 
 
         const uploadRes = await axios.post(
-          `${BASE_URL}/erp/upload`,
+          `${BASE_URL}/kyc-documents`,
           formData,
           {
             headers: {
@@ -59,15 +59,17 @@ export function useUploadKycDocument() {
           }
         );
 
-        if (!uploadRes.data?.data?.message?.file_url) {
+        console.log("upload res", uploadRes?.data)
+
+        if (!uploadRes.data?.document_url) {
           throw new Error("Invalid file upload response");
         }
 
-        const fileUrl = uploadRes.data.data.message.file_url;
+        const fileUrl = uploadRes.data?.document_url;
 
         // 2. Update Handyman record with file URL
         const response = await axios.put(
-          `${BASE_URL}/erp/resource/Handyman/${extendedUser.erpId}`,
+          `${BASE_URL}/profile`,
           { kyc_document: fileUrl },
           {
             headers: {
@@ -79,7 +81,7 @@ export function useUploadKycDocument() {
         );
         
         return response.data;
-      } catch (error) {
+      } catch (error: any) {
         console.error("KYC document upload error:", error);
         if (axios.isAxiosError(error)) {
           if (error.code === "ECONNABORTED") {

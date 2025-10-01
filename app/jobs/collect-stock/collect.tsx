@@ -65,15 +65,16 @@ const CollectStockSkeleton = () => {
 // Product Item Component that fetches its own data
 const CollectProductItem = ({ product, onCollect }: { product: any, onCollect: (productId: string) => void }) => {
   const { t } = useTranslation();
-  const { data: productData } = useGetProduct(product.item);
-  const { data: stockData } = useGetStock(product.item);
+  const { data: productData } = useGetProduct(product.inventoryItemId);
+  const { data: stockData } = useGetStock(product.inventoryItemId);
+  console.log(`Product Data`, productData);
  
   console.log(`Stock Data for ${product.item}:`, stockData);
   console.log(`Product item: ${product.item}, quantity: ${product.quantity}`);
   return (
     <View style={styles.productItem}>
       <View style={styles.productInfo}>
-        <Text style={styles.productName}>{productData?.item_name || `Item ${product.item}`}</Text>
+        <Text style={styles.productName}>{productData?.name || `Item ${product.item}`}</Text>
         <Text style={styles.productRequired}>{t("collectStock.required")}: {product.quantity || 1}</Text>
         
         {stockData?.quantity !== undefined && stockData.quantity < (product.quantity) && product.status === "Collected" && (
@@ -94,7 +95,7 @@ const CollectProductItem = ({ product, onCollect }: { product: any, onCollect: (
       )}
 
 
-      {product.status === "Collected" && (
+      {product.status === "collected" && (
       <Pressable 
         style={styles.collectButton}
         onPress={() => onCollect(product.item)}
@@ -104,11 +105,12 @@ const CollectProductItem = ({ product, onCollect }: { product: any, onCollect: (
       </Pressable>
       )}
 
-      {productData?.installation_guide && (
-        <Pressable style={[styles.collectButton, { marginTop: 8 }]} onPress={() => productData.installation_guide && Linking.openURL(productData.installation_guide)}>
+      {productData?.manualUrl && (
+        <Pressable style={[styles.collectButton, { marginTop: 8 }]} onPress={() => productData.manualUrl && Linking.openURL(productData.manualUrl)}>
           <Book size={16} color={Colors.light.text} />
           <Text style={styles.collectButtonText}>
-            {t("collectStock.installationGuides")}
+            {/* {t("collectStock.installationGuides")} */}
+            {productData?.manualUrl ? t("collectStock.installationGuides") : ""}
           </Text>
         </Pressable>
       )}

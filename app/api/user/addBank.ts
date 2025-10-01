@@ -34,13 +34,13 @@ export function useAddBank(bankData: any) {
         const extendedUser = user.data.user as ExtendedUser;
         
         // Fetch current bank details
-        const current = await axios.get(`${BASE_URL}/erp/resource/Handyman/${extendedUser.erpId}`, {
+        const current = await axios.get(`${BASE_URL}/profile/bank-details`, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         });
-        const existing = current.data.data.bank_details || [];
+        const existing = current.data?.bank_details || [];
 
         // If new bank is default, set all existing to false
         let updatedBanks = existing;
@@ -50,17 +50,19 @@ export function useAddBank(bankData: any) {
         const bankArray = [
           ...updatedBanks,
           {
-            type: "Handyman",
+            type: bankData.type,
             bank_name: bankData.bank_name,
             account_holder_name: bankData.account_holder_name,
-            iban_number: bankData.iban_number,
+            iban_number: bankData.iban_number.trim(),
             bic_code: bankData.bic_code,
-            is_default: bankData.is_default
+            is_default: bankData.is_default,
           }
         ];
 
+        console.log(bankArray);
 
-        const response = await axios.put(`${BASE_URL}/resource/Handyman/${extendedUser.erpId}`, {
+
+        const response = await axios.put(`${BASE_URL}/profile/bank`, {
             bank_details: bankArray
         }, {
           headers: {
@@ -70,15 +72,15 @@ export function useAddBank(bankData: any) {
         });
 
         return response.data;
-      } catch (error) {
-        console.error("Failed to add bank:", error);
+      } catch (error: any) {
+        console.error("Failed to add bank:", error?.response?.data || error);
         throw error instanceof Error ? error : new Error("Failed to add bank");
       }
     },
   });
 };
 
-export const useDeleteBank = () => {
+export const useDeleteBank = (index: number) => {
   return useMutation({
     mutationKey: ["delete-bank"],
     mutationFn: async (bankToDelete: any) => {
@@ -95,7 +97,7 @@ export const useDeleteBank = () => {
       const extendedUser = user.data.user as ExtendedUser;
 
       // Get current bank details
-      const response = await axios.get(`${BASE_URL}/resource/Handyman/${extendedUser.erpId}`, {
+      const response = await axios.get(`${BASE_URL}profile/bank/${index}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -112,7 +114,7 @@ export const useDeleteBank = () => {
       );
 
       // Update with filtered bank details
-      await axios.put(`${BASE_URL}/resource/Handyman/${extendedUser.erpId}`, {
+      await axios.put(`${BASE_URL}/profile/bank`, {
         bank_details: updatedBankDetails
       }, {
         headers: {
@@ -143,7 +145,7 @@ export const useGetBank = () => {
 
         const extendedUser = user.data.user as ExtendedUser;
 
-        const response = await axios.get(`${BASE_URL}/erp/resource/Handyman/${extendedUser.erpId}`, {
+        const response = await axios.get(`${BASE_URL}/profile/bank-details`, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -156,9 +158,9 @@ export const useGetBank = () => {
           ...response.data,
           // Ensure bank_details is always an array
           data: {
-            ...response.data.data,
-            bank_details: Array.isArray(response.data.data?.bank_details) 
-              ? response.data.data.bank_details 
+            ...response.data,
+            bank_details: Array.isArray(response.data?.bank_details) 
+              ? response.data.bank_details 
               : []
           }
         };
@@ -181,13 +183,13 @@ export const useSetDefaultBank = () => {
       const extendedUser = user.data.user as ExtendedUser;
 
       // Fetch current bank details
-      const current = await axios.get(`${BASE_URL}/resource/Handyman/${extendedUser.erpId}`, {
+      const current = await axios.get(`${BASE_URL}/profile/bank-details`, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
-      const existing = current.data.data.bank_details || [];
+      const existing = current.data.bank_details || [];
 
       // Set selected as default, all others as not default
       const updatedBanks = existing.map((b: any) => {
@@ -200,7 +202,7 @@ export const useSetDefaultBank = () => {
         return { ...b, is_default: isMatch };
       });
 
-      const response = await axios.put(`${BASE_URL}/resource/Handyman/${extendedUser.erpId}`, {
+      const response = await axios.put(`${BASE_URL}/profile/bank`, {
         bank_details: updatedBanks
       }, {
         headers: {

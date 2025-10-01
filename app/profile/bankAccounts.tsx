@@ -7,12 +7,12 @@ import Header from "@/components/Header";
 import { useGetBank, useDeleteBank, useAddBank, useSetDefaultBank } from "@/app/api/user/addBank";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import * as SecureStore from 'expo-secure-store';
 
 export default function BankAccountsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { data: bankData, isLoading } = useGetBank();
-  const { mutate: deleteBank } = useDeleteBank();
   const queryClient = useQueryClient();
   const [bankAccounts, setBankAccounts] = useState<any[]>([]);
 
@@ -35,7 +35,7 @@ export default function BankAccountsScreen() {
     }
   }, [bankData]);
 
-  const handleDeleteAccount = (account: any) => {
+  const handleDeleteAccount = (account: any, index: number) => {
     Alert.alert(
       t("bankAccounts.removeBankAccount"),
       t("bankAccounts.removeBankAccountConfirmation"),
@@ -47,29 +47,47 @@ export default function BankAccountsScreen() {
         {
           text: t("bankAccounts.remove"),
           style: "destructive",
-          onPress: () => {
-            deleteBank({
-              bankName: account.bankName,
-              accountName: account.accountName,
-              accountNumber: account.accountNumber,
-              bicCode: account.bicCode,
-              accountType: account.accountType
-            }, {
-              onSuccess: () => {
-                queryClient.invalidateQueries({ queryKey: ["get-bank"] });
-                setBankAccounts(prev => prev.filter(bank => 
-                  bank.bankName !== account.bankName ||
-                  bank.accountName !== account.accountName ||
-                  bank.accountNumber !== account.accountNumber ||
-                  bank.bicCode !== account.bicCode ||
-                  bank.accountType !== account.accountType
-                ));
-                Alert.alert(t("bankAccounts.success"), t("bankAccounts.bankAccountRemovedSuccessfully"));
-              },
-              onError: (error) => {
-                Alert.alert(t("bankAccounts.error"), t("bankAccounts.failedToRemoveBankAccount"));
+          onPress: async () => {
+            try {
+              // Get current bank details and filter out the one to delete
+              const updatedBankDetails = bankAccounts.filter((_, idx) => idx !== index);
+              
+              // Call the API to update bank details
+               const token = await SecureStore.getItemAsync('auth_token');
+              if (!token) {
+                throw new Error("Authentication token not found");
               }
-            });
+
+              const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/profile/bank`, {
+                method: 'PUT',
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  bank_details: updatedBankDetails.map(acc => ({
+                    type: acc.accountType,
+                    bank_name: acc.bankName,
+                    account_holder_name: acc.accountName,
+                    iban_number: acc.accountNumber,
+                    bic_code: acc.bicCode,
+                    is_default: acc.isDefault,
+                  }))
+                })
+              });
+
+              if (!response.ok) {
+                throw new Error('Failed to delete bank account');
+              }
+
+              // Update local state
+              queryClient.invalidateQueries({ queryKey: ["get-bank"] });
+              setBankAccounts(prev => prev.filter((_, idx) => idx !== index));
+              Alert.alert(t("bankAccounts.success"), t("bankAccounts.bankAccountRemovedSuccessfully"));
+            } catch (error: any) {
+              console.error("Failed to delete bank account:", error);
+              Alert.alert(t("bankAccounts.error"), t("bankAccounts.failedToRemoveBankAccount"));
+            }
           }
         }
       ]
@@ -82,6 +100,17 @@ export default function BankAccountsScreen() {
     setDefaultBank(account, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["get-bank"] });
+        Alert.alert(
+          t("bankAccounts.success"),
+          t("bankAccounts.defaultBankAccountUpdated")
+        );
+      },
+      onError: (error: any) => {
+        console.error("Failed to set default bank account:", error);
+        Alert.alert(
+          t("bankAccounts.error"),
+          t("bankAccounts.failedToSetDefaultBankAccount")
+        );
       },
     });
   };
@@ -107,7 +136,7 @@ export default function BankAccountsScreen() {
                   <View style={styles.accountDetails}>
                     <Text style={styles.bankName}>{account.bankName || "Unknown Bank"}</Text>
                     <Text style={styles.accountInfo}>
-                      {account.accountType || "Account"} • {account.accountNumber || "No account number"}
+                      {account.accountType.charAt(0).toUpperCase() + "SAVINGS".slice(1).toLowerCase() || "Account"} • {account.accountNumber || "No account number"}
                     </Text>
                     {account.isDefault && (
                       <View style={styles.defaultBadge}>
@@ -126,7 +155,7 @@ export default function BankAccountsScreen() {
                     )}
                     <Pressable
                       style={[styles.actionButton, styles.deleteButton]}
-                      onPress={() => handleDeleteAccount(account)}
+                      onPress={() => handleDeleteAccount(account, idx)}
                     >
                       <Trash2 size={16} color={Colors.light.error} />
                     </Pressable>

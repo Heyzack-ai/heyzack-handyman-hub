@@ -17,7 +17,7 @@ type Partner = {
   address?: string;
 }
 
-export function useGetCustomer(customerCode: string) {
+export function useGetCustomer(customerCode?: string) {
   return useQuery<Customer>({
     queryKey: ["customer", customerCode],
     queryFn: async () => {
@@ -51,7 +51,7 @@ export function useGetCustomer(customerCode: string) {
           : new Error("Failed to fetch partner data");
       }
     },
-    enabled: !!customerCode,
+    enabled: !!customerCode && customerCode.trim() !== "",
     staleTime: 5 * 60 * 1000,
   });
 }

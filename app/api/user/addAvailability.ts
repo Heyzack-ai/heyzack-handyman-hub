@@ -42,7 +42,7 @@ export function useAddAvailability() {
           is_active: data.enabled
         }));
 
-        const response = await axios.put(`${BASE_URL}/erp/resource/Handyman/${extendedUser.erpId}`, {
+        const response = await axios.put(`${BASE_URL}/profile/availability`, {
           availability: availabilityArray
         }, {
           headers: {
@@ -52,8 +52,8 @@ export function useAddAvailability() {
         });
 
         return response.data;
-      } catch (error) {
-        console.error("Failed to add availability:", error);
+      } catch (error: any) {
+        console.error("Failed to add availability:", error?.response?.data || error);
         throw error instanceof Error ? error : new Error("Failed to add availability");
       }
     },
@@ -77,18 +77,20 @@ export const useGetAvailability = () => {
 
         const extendedUser = user.data.user as ExtendedUser;
 
-        const response = await axios.get(`${BASE_URL}/erp/resource/Handyman/${extendedUser.erpId}`, {
+        const response = await axios.get(`${BASE_URL}/profile/availability`, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         });
+
+        console.log("Response:", response.data);
         
 
         return response.data;
-      } catch (error) {
-        console.error("Failed to fetch availability:", error);
-        throw error;
+      } catch (error: any) {
+        console.error("Failed to fetch availability:", error?.response?.data);
+        throw error instanceof Error ? error : new Error("Failed to fetch availability");
       }
     },
   });

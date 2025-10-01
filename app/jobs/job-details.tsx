@@ -49,12 +49,12 @@ import { useTranslations } from "@/src/i18n/useTranslations";
 
 // Product Item Component that fetches its own data
 const ProductItem = ({ product }: { product: any }) => {
-  const { data: productData } = useGetProduct(product.item);
+  // const { data: productData } = useGetProduct(product.item);
   
   return (
     <View key={product.name} style={styles.productItem}>
       <View>
-        <Text style={styles.productName}>{productData?.item_name || `Item ${product.item}`}</Text>
+        <Text style={styles.productName}>{product.productName || `Item ${product.item}`}</Text>
         <Text style={styles.productRequired}>Required: {product.quantity}</Text>
       </View>
       <View
@@ -86,14 +86,14 @@ export default function JobDetailScreen() {
   const [productsExpanded, setProductsExpanded] = useState(true);
   const [completionExpanded, setCompletionExpanded] = useState(false);
   const [jobData, setJobData] = useState<Job | undefined>(undefined);
-  const { data: partnerData, isLoading: isPartnerLoading } = useGetPartnerById(jobData?.partner as string);
+  
   const { data: jobDetails, isLoading: isJobDetailsLoading } = useGetJobById(jobData?.name || '');
   const { data: pendingJobs } = useGetPendingJobs();
   const { mutate: updateJobStatusMutation } = useUpdateJobStatus();
   const IMAGE_URL = process.env.EXPO_PUBLIC_ASSET_URL;
   const { mutate: updateCompletionPhotoMutation } = useUpdateCompletionPhoto();
   const { t } = useTranslations();
-  // console.log("Job details:", jobDetails?.data);
+  // console.log("Job details:", jobData?.installation.products);
   // console.log("Products:", jobDetails?.data?.products);
 
   // // Debug completion photos data
@@ -248,7 +248,7 @@ export default function JobDetailScreen() {
       if (Platform.OS !== "web") {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
-      updateJobStatusMutation({ jobId: jobData?.name, status: "Contract Sent" });
+      updateJobStatusMutation({ jobId: job.id, status: "Contract Sent" });
       Alert.alert(t("jobDetails.success"), t("jobDetails.contractSentToCustomer"));
       setIsLoading(false);
     }, 1000);
@@ -265,7 +265,7 @@ export default function JobDetailScreen() {
       pathname: "/jobs/collect-stock/collect",
       params: {
         jobId: job.name || jobData?.name || job.id,
-        products: JSON.stringify(jobDetails?.data?.products || []),
+        products: JSON.stringify(jobDetails?.installation?.products || []),
         item_name: job.title || "Product Collection",
       },
     });
@@ -551,9 +551,15 @@ export default function JobDetailScreen() {
             <Text style={styles.detailValue}>{job.duration}</Text>
           </View>
 
-          <View style={styles.detailRow}>
+          <View style={[styles.detailRow, {alignItems: "flex-start"}]}>
             <Text style={styles.detailLabel}>{t("jobDetails.type")}:</Text>
-            <Text style={styles.detailValue}>{job.title}</Text>
+            <Text
+              style={[styles.detailValue, styles.detailValueMultiline]}
+              numberOfLines={2}
+              ellipsizeMode="tail"
+            >
+              {job.title}
+            </Text>
           </View>
 
           <View style={styles.detailRow}>
@@ -570,26 +576,26 @@ export default function JobDetailScreen() {
         {/* Partner Details */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>{t("jobDetails.partnerDetails")}</Text>
-          <Text style={styles.companyName}>{partnerData?.partner_name}</Text>
+          <Text style={styles.companyName}>{jobData?.installation?.partner.partnerName}</Text>
 
           <ContactRow
             icon={<Phone size={20} color={Colors.light.gray[600]} />}
-            text={partnerData?.phone || ""}
-            onPress={() => handleCall(partnerData?.phone || "")}
+            text={jobData?.installation?.partner.phone || ""}
+            onPress={() => handleCall(jobData?.installation?.partner.phone || "")}
             buttonColor="#4CD964"
           />
 
           <ContactRow
             icon={<Mail size={20} color={Colors.light.black} />}
-            text={partnerData?.email || ""}
-            onPress={() => handleEmail(partnerData?.email || "")}
+            text={jobData?.installation?.partner.email || ""}
+            onPress={() => handleEmail(jobData?.installation?.partner.email || "")}
             buttonColor="#4CD964"
           />
 
           <ContactRow
             icon={<MapPin size={20} color={Colors.light.gray[600]} />}
-            text={partnerData?.address || ""}
-            onPress={() => handleNavigate(partnerData?.address || "")}
+            text={jobData?.installation?.partner.address || ""}
+            onPress={() => handleNavigate(jobData?.installation?.partner.address || "")}
             buttonColor="#FF2D55"
           />
         </View>
@@ -610,8 +616,9 @@ export default function JobDetailScreen() {
 
           {productsExpanded && (
             <>
-              {Array.isArray(jobDetails?.data?.products) && jobDetails?.data?.products.map((product: any) => (
-                <ProductItem key={product.name} product={product} />
+              {Array.isArray(jobData?.installation?.products) && jobData?.installation?.products.map((product: any) => (
+             
+                <ProductItem key={product.inventoryItemId} product={product} />
               ))}
 
               <View style={styles.productActions}>
@@ -641,7 +648,7 @@ export default function JobDetailScreen() {
 
           <ContactRow
             icon={<Mail size={20} color={Colors.light.gray[600]} />}
-            text={job.customer.email}
+            text={job?.customer?.email}
             onPress={() => handleEmail(job.customer.email)}
             buttonColor="#4CD964"
           />
@@ -843,6 +850,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: Colors.light.text,
+  },
+  detailValueMultiline: {
+    flexShrink: 1,
+    maxWidth: '70%',
+    alignItems: 'flex-end',
   },
   priorityBadge: {
     backgroundColor: "#FFEBEE",

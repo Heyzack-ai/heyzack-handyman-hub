@@ -52,7 +52,7 @@ export function useUpdateCompletionPhoto() {
     
     
             const uploadRes = await axios.post(
-              `${BASE_URL}/erp/upload`,
+              `${BASE_URL}/handyman/jobs/${jobId}/completion-photos`,
               formData,
               {
                 headers: {

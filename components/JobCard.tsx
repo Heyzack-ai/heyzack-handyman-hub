@@ -69,10 +69,14 @@ export default function JobCard({ job, disableNavigation = false }: JobCardProps
   // Format date and time
   let formattedDate = '';
   let formattedTime = '';
-  if (job.scheduled_date) {
-    const dateObj = new Date(job.scheduled_date.replace(' ', 'T'));
-    formattedDate = dateObj.toLocaleDateString();
-    formattedTime = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const rawDate = job.scheduled_date || job.installation?.scheduledDate || '';
+  if (rawDate) {
+    const isoLike = rawDate.includes('T') ? rawDate : rawDate.replace(' ', 'T');
+    const dateObj = new Date(isoLike);
+    if (!isNaN(dateObj.getTime())) {
+      formattedDate = dateObj.toLocaleDateString();
+      formattedTime = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
   }
 
 
@@ -89,7 +93,7 @@ export default function JobCard({ job, disableNavigation = false }: JobCardProps
         <Text style={styles.title} numberOfLines={1}>
           {job.title}
         </Text>
-        <StatusBadge status={job.status} size="small" />
+        <StatusBadge status={(job?.status || job?.installation?.status || "")} size="small" />
       </View>
       
       <Text style={styles.description} numberOfLines={2}>

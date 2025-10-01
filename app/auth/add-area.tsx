@@ -102,7 +102,7 @@ if (typeof selectedSkills === "string") {
 
   
 
-  const { mutate: updateUser } = useAddArea(zipCode, radius);
+  const { mutate: updateUser } = useAddArea({ current_location: zipCode, service_area: radius });
   const { mutate: updateSkills } = useAddSkills(skillsArray);
 
   const handleSave = async () => {

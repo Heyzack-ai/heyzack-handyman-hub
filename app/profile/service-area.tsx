@@ -31,13 +31,14 @@ export default function ServiceAreaScreen() {
   const [isCustomRadius, setIsCustomRadius] = useState(false);
   const { data: areaData, isLoading } = useGetArea();
   const queryClient = useQueryClient();
+  console.log("Service area data:", areaData);
   useEffect(() => {
     
-    if (areaData?.data?.current_location) {
-      setZipCode(areaData.data.current_location);
+    if (areaData?.current_location) {
+      setZipCode(areaData.current_location);
     }
-    if (areaData?.data?.service_area) {
-      setRadius(areaData.data.service_area);
+    if (areaData?.service_area) {
+      setRadius(Math.round(areaData.service_area));
     }
   }, [areaData]);
 
@@ -92,7 +93,7 @@ export default function ServiceAreaScreen() {
     Alert.alert(t("serviceArea.search"), `${t("serviceArea.searchingForLocationWithZipcode")} ${zipCode}`);
   };
 
-  const { mutate, error, isPending } = useAddArea(zipCode, radius);
+  const { mutate, error, isPending } = useAddArea({ current_location: zipCode, service_area: radius });
   const handleSave = () => {
     setIsSaving(true);
     

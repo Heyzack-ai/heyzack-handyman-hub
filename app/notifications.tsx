@@ -1,9 +1,12 @@
 import React, { useState } from "react";
 import { StyleSheet, Text, View, ScrollView, Pressable, SafeAreaView, StatusBar, Platform } from "react-native";
 import { useRouter, Stack } from "expo-router";
-import { ArrowLeft, Bell, CheckCircle, AlertCircle, Calendar, Briefcase, Clock } from "lucide-react-native";
+import { ArrowLeft, Bell, CheckCircle, AlertCircle, Calendar, Briefcase, Clock, Trash2 } from "lucide-react-native";
 import Colors from "@/constants/colors";
 import Header from "@/components/Header";
+import NotificationsSkeleton from "@/components/NotificationsSkeleton";
+import { useDeleteNotification, useGetNotifications, useGetNotificationCount, type NotificationsResponse } from "@/app/api/notifications/getNotifications";
+import { useMarkAllNotifications } from "@/app/api/notifications/markAll";
 
 type Notification = {
   id: string;
@@ -14,61 +17,38 @@ type Notification = {
   type: "job" | "schedule" | "system" | "partner";
 };
 
-const notifications: Notification[] = [
-  {
-    id: "1",
-    title: "New Job Request",
-    message: "You have a new job request for Smart Security System Installation",
-    time: "10 minutes ago",
-    read: false,
-    type: "job"
-  },
-  {
-    id: "2",
-    title: "Job Completed",
-    message: "You've successfully completed the Full Smart Home Installation job",
-    time: "2 hours ago",
-    read: false,
-    type: "job"
-  },
-  {
-    id: "3",
-    title: "Schedule Change",
-    message: "Your job on June 8th has been rescheduled to June 10th",
-    time: "Yesterday",
-    read: true,
-    type: "schedule"
-  },
-  {
-    id: "4",
-    title: "Payment Received",
-    message: "You've received a payment of €450 for job #1234",
-    time: "2 days ago",
-    read: true,
-    type: "system"
-  },
-  {
-    id: "5",
-    title: "New Partner",
-    message: "Home Solutions Inc. has added you as a partner",
-    time: "3 days ago",
-    read: true,
-    type: "partner"
-  },
-  {
-    id: "6",
-    title: "System Maintenance",
-    message: "The app will be under maintenance on June 15th from 2-4 AM",
-    time: "1 week ago",
-    read: true,
-    type: "system"
-  }
-];
-
 export default function NotificationsScreen() {
   const router = useRouter();
-  const [notificationsList, setNotificationsList] = useState<Notification[]>(notifications);
-  
+  const { data: apiData, isLoading, error } = useGetNotifications();
+  const { data: countData } = useGetNotificationCount();
+  const markAllMutation = useMarkAllNotifications();
+  const deleteMutation = useDeleteNotification();
+  const notificationsFromApi: Notification[] = (apiData?.notifications || []).map((n) => ({
+    id: n.id,
+    title: n.title,
+    message: n.message,
+    time: n.time || "",
+    read: Boolean(n.read),
+    type: (n.type as Notification["type"]) || "system",
+  }));
+  const [notificationsList, setNotificationsList] = useState<Notification[]>(notificationsFromApi);
+  const unreadCount = (countData?.unreadCount ?? apiData?.unreadCount) ?? notificationsList.filter(n => !n.read).length;
+
+  // Keep local state in sync when API data arrives
+  React.useEffect(() => {
+    setNotificationsList(notificationsFromApi);
+  }, [apiData?.notifications?.length]);
+
+  // Show skeleton while loading notifications
+  if (isLoading) {
+    return (
+      <SafeAreaView style={[styles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 }]}> 
+        <Header title="Notifications" onBack={() => router.back()} />
+        <NotificationsSkeleton />
+      </SafeAreaView>
+    );
+  }
+
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case "job":
@@ -103,7 +83,7 @@ export default function NotificationsScreen() {
     }
   };
 
-  const unreadCount = notificationsList.filter(n => !n.read).length;
+  // unreadCount displayed above uses API-provided count when available
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 }]}>
@@ -112,9 +92,37 @@ export default function NotificationsScreen() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           {/* <Text style={styles.title}>Notifications</Text> */}
-          {unreadCount > 0 && (
-            <Text style={styles.unreadBadge}>{unreadCount} new</Text>
-          )}
+         {unreadCount > 0 ? (
+  <Text style={styles.unreadBadge}>{unreadCount} new</Text>
+) : (
+  <View style={{ width: 8 }} />
+)}
+          <View style={styles.headerButton}>
+            {unreadCount > 0 && (
+            <Pressable style={styles.markAllButton} onPress={async () => {
+              try {
+                await markAllMutation.mutateAsync();
+                setNotificationsList(prev => prev.map(n => ({...n, read: true})));
+              } catch (error) {
+                console.error("Error marking all notifications as read:", error);
+              }
+            }}>
+              <Text style={styles.markAllText}>Mark all as read</Text>
+            </Pressable>
+            )}
+            {notificationsList.length > 0 && (
+            <Pressable style={styles.deleteButton} onPress={async () => {
+              try {
+                await deleteMutation.mutateAsync();
+                setNotificationsList([]);
+              } catch (error) {
+                console.error("Error deleting notifications:", error);
+              }
+            }}>
+              <Trash2 size={24} color={Colors.light.white} />
+            </Pressable>
+            )}
+          </View>
         </View>
         
         {notificationsList.length > 0 ? (
@@ -168,10 +176,15 @@ const styles = StyleSheet.create({
   },
   headerButton: {
     padding: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 12,
   },
   header: {
     flexDirection: "row",
-    alignItems: "flex-end",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 24,
   },
   title: {
@@ -255,5 +268,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.light.gray[600],
     textAlign: "center",
+  },
+  markAllButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 100,
+    backgroundColor: Colors.light.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  markAllText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: Colors.light.white,
+  },
+  deleteButton: {
+    padding: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 100,
+    backgroundColor: Colors.light.error,
   },
 });

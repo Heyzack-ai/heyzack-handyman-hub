@@ -34,16 +34,14 @@ export function useAddSkills(skills: string[]) {
         const extendedUser = user.data.user as ExtendedUser;
         
         const skillsData = {
-          skills: JSON.stringify({
-            skills: skills.map((skill) => ({
-              name: skill
-            }))
-          })
+          skills: skills.map((skill) => ({
+            name: skill
+          }))
         };
 
         
 
-        const response = await axios.put(`${BASE_URL}/erp/resource/Handyman/${extendedUser.erpId}`, skillsData, {
+        const response = await axios.put(`${BASE_URL}/profile/skills`, skillsData, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -51,8 +49,8 @@ export function useAddSkills(skills: string[]) {
         });
 
         return response.data;
-      } catch (error) {
-        console.error("Failed to add skills:", error);
+      } catch (error: any) {
+        console.error("Failed to add skills:", error?.response?.data);
         throw error instanceof Error ? error : new Error("Failed to add skills");
       }
     },
@@ -76,18 +74,19 @@ export const useGetSkills = () => {
 
         const extendedUser = user.data.user as ExtendedUser;
 
-        const response = await axios.get(`${BASE_URL}/erp/resource/Handyman/${extendedUser.erpId}`, {
+        const response = await axios.get(`${BASE_URL}/profile/skills`, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         });
         
+        console.log(response.data);
 
         return response.data;
-      } catch (error) {
-        console.error("Failed to fetch skills:", error);
-        throw error;
+      } catch (error: any) {
+        console.error("Failed to fetch skills:", error?.response?.data);
+        throw error instanceof Error ? error : new Error("Failed to fetch skills");
       }
     },
   });

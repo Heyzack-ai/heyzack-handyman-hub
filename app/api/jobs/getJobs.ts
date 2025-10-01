@@ -23,6 +23,8 @@ export function useGetJobs() {
         queryFn: async () => {
             try {
                 const token = await SecureStore.getItemAsync('auth_token');
+                console.log("Token:", token);
+
                 if (!token) {
                     throw new Error("Authentication token not found");
                 }
@@ -39,7 +41,7 @@ export function useGetJobs() {
                 searchParams.append('filter', `[["handyman", "=", "${extendedUser.erpId}"]]`);
                 searchParams.append('fields', JSON.stringify(['title', 'description', 'rating', 'customer', 'scheduled_date', 'handyman', 'status', 'completion_photos', 'customer_signature', 'notes', 'installation_fare', 'name', 'duration', 'products', 'partner', 'contractsent']));
 
-                const response = await axios.get(`${BASE_URL}/erp/resource/Installation?${searchParams.toString()}`, {
+                const response = await axios.get(`${BASE_URL}/jobs`, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                         'Content-Type': 'application/json',
@@ -85,7 +87,7 @@ export function useGetJobById(id: string) {
                 searchParams.append('filter', `[["name", "=", "${id}"]]`);
                 searchParams.append('fields', JSON.stringify(['title', 'description', 'rating', 'customer', 'scheduled_date', 'handyman', 'status', 'completion_photos', 'customer_signature', 'notes', 'installation_fare', 'name', 'duration', 'products', 'partner', 'contractsent']));
 
-                const response = await axios.get(`${BASE_URL}/erp/resource/Installation/${id}`, {
+                const response = await axios.get(`${BASE_URL}/jobs/${id}`, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                         'Content-Type': 'application/json',
@@ -122,17 +124,14 @@ export function useGetPendingJobs() {
 
 
               
-                const response = await axios.get(`${BASE_URL}/handyman/jobs`, {
+                const response = await axios.get(`${BASE_URL}/jobs`, {
                     timeout: 20000,
                     headers: {
                         Authorization: `Bearer ${token}`,
                         'Content-Type': 'application/json',
                     },
                 });
-
-
-
-                
+                // console.log("getPendingJobs response:", response.data);
 
                 return response.data;
             } catch (error) {

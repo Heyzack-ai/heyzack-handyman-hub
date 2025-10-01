@@ -371,7 +371,16 @@
     "setDefault": "Set Default",
     "aboutBankAccounts": "About Bank Accounts",
     "aboutBankAccountsText": "Bank accounts are used to receive payments for completed jobs. You can add multiple accounts and set one as default.",
-    "aboutBankAccountsText2": "Your bank information is securely stored and protected."
+    "aboutBankAccountsText2": "Your bank information is securely stored and protected.",
+    "accountInformation": "Account Information",
+    "bankName": "Bank Name",
+    "enterBankName": "Enter Bank Name",
+    "accountHolderName": "Account Holder Name",
+    "enterNameOnAccount": "Enter Account Holder Name",
+    "ibanNumber": "IBAN Number",
+    "enterIban": "Enter IBAN Number",
+    "bicSwiftCode": "BIC/Swift Code",
+    "enterBicSwiftCode": "Enter BIC/Swift Code"
   },
   "availability": {
     "setAvailability": "Set Availability",
@@ -489,7 +498,8 @@
     "phone": "Phone",
     "address": "Address",
     "email": "Email",
-    "code": "Code"
+    "code": "Code",
+    "error": "Error"
     },
   "help": {
     "contactSupport": "Contact Support",

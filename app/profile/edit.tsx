@@ -44,16 +44,16 @@ export default function EditProfileScreen() {
 
   React.useEffect(() => {
     if (parsedUser) {
-      setFullName(parsedUser.handyman_name || "");
+      setFullName(parsedUser.name || "");
       setEmail(parsedUser.email || "");
-      setPhone(parsedUser.contact_number || "");
+      setPhone(parsedUser.phone || "");
       setAvatar(
         parsedUser?.profile_image
-          ? `${BASE_URL}${parsedUser.profile_image}`
-          : `https://avatar.iran.liara.run/username?username=${parsedUser?.handyman_name}`
+          ? `${parsedUser.profile_image}`
+          : `https://avatar.iran.liara.run/username?username=${parsedUser?.name}`
       );
       if (parsedUser?.kyc_document) {
-        setKycDocument(`${BASE_URL}${parsedUser.kyc_document}`);
+        setKycDocument(`${parsedUser.kyc_document}`);
         setIsVerified(
           String(parsedUser?.is_verified) === "1" ||
             String(parsedUser?.is_verified) === "true"
@@ -107,10 +107,10 @@ export default function EditProfileScreen() {
             Alert.alert("Success", "Document uploaded successfully");
             setIsSaving(false);
           },
-          onError: (error) => {
+          onError: (error: any) => {
             clearTimeout(uploadTimeout);
             setIsSaving(false);
-            console.error("Upload error:", error);
+            console.log("Upload error:", error?.response.data);
             Alert.alert(
               "Error",
               error instanceof Error
@@ -137,13 +137,13 @@ export default function EditProfileScreen() {
     updateUser(
       {
         ...parsedUser,
-        handyman_name: fullName,
+        name: fullName,
         email: email,
-        contact_number: phone,
+        phone: phone,
       } as Handyman & {
-        handyman_name: string;
+        name: string;
         email: string;
-        contact_number: string;
+        phone: string;
       },
       {
         onSuccess: () => {
@@ -208,7 +208,7 @@ export default function EditProfileScreen() {
               "The upload is taking longer than expected. Please try again with a smaller file or check your connection."
             );
           }
-        }, 30000); // 30 second timeout
+        }, 50000); // 50 second timeout (slightly longer than API timeout)
 
         uploadProfileImage(
           { fileUri: result.assets[0].uri },
@@ -217,8 +217,12 @@ export default function EditProfileScreen() {
               clearTimeout(uploadTimeout);
               queryClient.invalidateQueries({ queryKey: ["user"] });
 
+              console.log("Camera upload success response:", response);
+              console.log("Camera upload success response.data:", response?.data);
+
               // Check if response has the expected structure
-              if (!response?.data?.profile_image) {
+              if (!response?.data?.image_url) {
+                console.error("Invalid response structure:", response);
                 setIsSaving(false);
                 Alert.alert(
                   "Error",
@@ -227,10 +231,11 @@ export default function EditProfileScreen() {
                 return;
               }
 
-              const fileUrl = response.data.profile_image;
+              const fileUrl = response.data.image_url;
 
               // Update the UI immediately with the new image
-              setAvatar(`${BASE_URL}${fileUrl}`);
+              // The response already contains the full URL, no need to prepend BASE_URL
+              setAvatar(fileUrl);
               setIsSaving(false);
 
               // Refresh user data
@@ -318,8 +323,12 @@ export default function EditProfileScreen() {
               clearTimeout(uploadTimeout);
               queryClient.invalidateQueries({ queryKey: ["user"] });
 
+              console.log("Upload success response:", response);
+              console.log("Upload success response.data:", response?.data);
+
               // Check if response has the expected structure
-              if (!response?.data?.profile_image) {
+              if (!response?.data?.image_url) {
+                console.error("Invalid response structure:", response);
                 setIsSaving(false);
                 Alert.alert(
                   "Error",
@@ -328,10 +337,11 @@ export default function EditProfileScreen() {
                 return;
               }
 
-              const fileUrl = response.data.profile_image;
+              const fileUrl = response.data.image_url;
 
               // Update the UI immediately with the new image
-              setAvatar(`${BASE_URL}${fileUrl}`);
+              // The response already contains the full URL, no need to prepend BASE_URL
+              setAvatar(fileUrl);
               setIsSaving(false);
 
               // Refresh user data
@@ -429,6 +439,7 @@ export default function EditProfileScreen() {
               placeholder="Enter your email"
               keyboardType="email-address"
               autoCapitalize="none"
+              editable={false}
             />
           </View>
 

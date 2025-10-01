@@ -27,25 +27,25 @@ export function useGetProduct(productId: string) {
                 if (!token) {
                     throw new Error("Authentication token not found");
                 }
-                const searchParams = new URLSearchParams();
+                
                 //   searchParams.append('filter', `[["name", "=", "${productId}"]]`);
-                searchParams.append('fields', JSON.stringify(['item_name']));
-                const response = await axios.get<{ data: Product }>(`${BASE_URL}/erp/resource/Heyzack Item/${productId}`, {
+                console.log(`Fetching product with ID: ${productId}`);
+                const response = await axios.get<{ data: Product }>(`${BASE_URL}/products/${productId}`, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                         'Content-Type': 'application/json',
                     },
                 });
 
-                console.log("Product", response.data);
+                console.log("Product", response);
 
                 if (!response.data) {
                     throw new Error("Product not found");
                 }
 
                 return response.data.data;
-            } catch (error) {
-                console.error("Failed to fetch product:", error);
+            } catch (error: any) {
+                console.error("Failed to fetch product:", error?.response?.data || error);
                 throw error instanceof Error
                     ? error
                     : new Error("Failed to fetch product data");

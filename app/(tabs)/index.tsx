@@ -25,6 +25,7 @@ import { useGetCustomer } from "@/app/api/customer/getCustomer";
 import ShimmerSkeleton from "@/components/ShimmerSkeleton";
 import { useGetPendingJobs } from "@/app/api/jobs/getJobs";
 import { useTranslations } from "@/src/i18n/useTranslations";
+import { useGetNotificationCount } from "@/app/api/notifications/getNotifications";
 
 import Job from "@/components/Job";
 
@@ -37,18 +38,19 @@ export default function HomeScreen() {
   const [token, setToken] = useState<string | null>(null);
   const { data: jobsData, isLoading } = useGetJobs();
   const { data: pendingJobs } = useGetPendingJobs();
-  console.log("Pending Jobs from home:", pendingJobs);
+  const { data: notificationCount } = useGetNotificationCount();
+
   const today = new Date().toISOString().split("T")[0];
 
   // Get unique customer codes that need to be fetched
   const customerCodes = useMemo(() => {
-    if (!jobsData?.data) return [];
-    return jobsData.data
-      .map((job: any) => job.customer)
-      .filter((customer: any, index: number, arr: any[]) => 
+    if (!jobsData) return [];
+    return jobsData
+      .map((job: JobType) => job.customer)
+      .filter((customer: JobType['customer'], index: number, arr: JobType['customer'][]) => 
         customer && typeof customer === 'string' && arr.indexOf(customer) === index
       );
-  }, [jobsData?.data]);
+  }, [jobsData]);
 
   // Fetch customer data for all unique customers
   const customerQueries = useQueries({
@@ -90,6 +92,18 @@ export default function HomeScreen() {
 
   // Helper function to get customer data for a specific job
   const getCustomerForJob = (job: any) => {
+    // Prefer installation.customer if available
+    if (job.installation?.customer) {
+      const c = job.installation.customer;
+      return {
+        id: c.id || job.jobId || job.name || "",
+        name: c.customerName || c.name || job.customer,
+        customer_name: c.customerName || c.name || `Customer ${job.customer ?? ""}`,
+        phone: c.phone || job.customerPhone || '',
+        email: c.email || '',
+        address: c.address || job.installationAddress || ''
+      };
+    }
     // If job.customer is already an object with customer data, return it
     if (job.customer && typeof job.customer === 'object' && job.customer.customer_name) {
       return job.customer;
@@ -113,25 +127,54 @@ export default function HomeScreen() {
     
     // Fallback to basic customer object
     return {
-      name: job.customer,
-      customer_name: `Customer ${job.customer}`,
+      name: job.customer ?? '',
+      customer_name: job.customer ? `Customer ${job.customer}` : t("jobs.unknownCustomer"),
       phone: '',
       email: '',
       address: ''
     };
   };
 
+  // Normalize API job shape to UI Job type
+  const normalizeJob = (job: any): JobType => {
+    const customer = getCustomerForJob(job);
+    return {
+      installation: job.installation || {},
+      installationPhotos: job.installationPhotos || [],
+      id: job.id || job.jobId || job.name || "",
+      name: job.name || job.jobId || job.id || "",
+      title: job.title || job.jobType || job.installation?.title || t("jobs.untitledJob"),
+      description: job.description || job.jobDescription || job.installation?.description || t("jobs.noDescriptionAvailable"),
+      status: (job.status || job.installation?.status || "pending") as JobType["status"],
+      scheduled_date: job.scheduled_date || job.scheduledDate || job.installation?.scheduledDate || "",
+      scheduledTime: job.scheduledTime || "",
+      duration: job.duration || job.estimatedDuration || "",
+      customer,
+      products: job.products || job.installation?.products || [],
+      notes: job.notes || [],
+      completion_photos: job.completion_photos || [],
+      contractsent: job.contractsent || false,
+      rating: job.rating,
+      type: (job.type || (job.installation ? "booked_installation" : "job_request")) as JobType["type"],
+      paymentRequested: job.paymentRequested,
+      paymentReceived: job.paymentReceived,
+      paymentDate: job.paymentDate,
+      amount: job.amount,
+      completedDate: job.completedDate,
+      partner: job.installation?.partner?.partnerName || job.partner?.partnerName || job.partner || "",
+    } as JobType;
+  };
   const completedJobsCount =
-    jobsData?.data?.filter((job: any) => job.status === "Completed").length ||
+    (jobsData || [])?.filter((job: any) => job.status === "completed").length ||
     0;
   const pendingJobsCount =
-    jobsData?.data?.filter(
-      (job: any) => job.status !== "Completed" && job.status !== "On Hold"
+    (jobsData || [])?.filter(
+      (job: any) => job.status !== "completed" && job.status !== "on_hold"
     ).length || 0;
   const earnings =
-    jobsData?.data
-      ?.filter((job: any) => job.status === "Completed")
-      .reduce((acc: number, job: any) => acc + job.installation_fare, 0) || 0;
+    (jobsData || [])
+      ?.filter((job: any) => job.status === "completed")
+      .reduce((acc: number, job: any) => acc + (job.installation_fare || 0), 0) || 0;
 
   // Only try to access SecureStore on native platforms
   useEffect(() => {
@@ -142,16 +185,30 @@ export default function HomeScreen() {
     }
   }, []);
 
-  const selectedDateJobs = jobsData?.data?.filter(
-    (job: any) => job.scheduled_date?.slice(0, 10) === selectedDate
-  ) || [];
+  const selectedDateJobs = (jobsData || [])?.filter((job: any) => {
+    const dateStr =
+      job?.scheduled_date?.slice(0, 10) ||
+      job?.scheduledDate?.slice(0, 10) ||
+      job?.installation?.scheduledDate?.slice(0, 10);
+    return dateStr === selectedDate;
+  }) || [];
 
-  const todayJobs = jobsData?.data?.filter(
-    (job: any) => job.scheduled_date === today
-  );
+  const todayJobs = (jobsData || [])?.filter((job: any) => {
+    const dateStr =
+      job?.scheduled_date?.slice(0, 10) ||
+      job?.scheduledDate?.slice(0, 10) ||
+      job?.installation?.scheduledDate?.slice(0, 10);
+    return dateStr === today;
+  });
 
-  const upcomingJobs = (jobsData?.data || [])
-    .filter((job: any) => job.scheduled_date > today)
+  const upcomingJobs = (jobsData || [])
+    .filter((job: any) => {
+      const dateStr =
+        job?.scheduled_date?.slice(0, 10) ||
+        job?.scheduledDate?.slice(0, 10) ||
+        job?.installation?.scheduledDate?.slice(0, 10) || "";
+      return dateStr > today;
+    })
     .slice(0, 3);
 
   // Calculate stats
@@ -191,6 +248,13 @@ export default function HomeScreen() {
             onPress={() => router.push("/notifications")}
           >
             <Bell size={24} color={Colors.light.primary} />
+            {(notificationCount?.unread ?? 0) > 0 && (
+              <View style={styles.notificationBadge}>
+                <Text style={styles.notificationBadgeText}>
+                  {Math.min(notificationCount?.unread ?? 0, 99)}
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
         <ShimmerSkeleton />
@@ -222,6 +286,13 @@ export default function HomeScreen() {
           onPress={() => router.push("/notifications")}
         >
           <Bell size={24} color={Colors.light.primary} />
+          {(notificationCount?.unread ?? 0) > 0 && (
+            <View style={styles.notificationBadge}>
+              <Text style={styles.notificationBadgeText}>
+                {Math.min(notificationCount?.unread ?? 0, 99)}
+              </Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -256,7 +327,7 @@ export default function HomeScreen() {
           <Calendar
             selectedDate={selectedDate}
             onDateSelect={handleDateSelect}
-            jobs={[...(jobsData?.data || []), ...(pendingJobs?.data || [])]}
+            jobs={[...(jobsData || []), ...(pendingJobs || [])]}
           />
         </View>
 
@@ -272,14 +343,8 @@ export default function HomeScreen() {
           </View>
 
           {selectedDateJobs.length > 0 ? (
-            selectedDateJobs.map((job: JobType) => (
-              <JobCard
-                key={job.name}
-                job={{
-                  ...job,
-                  customer: getCustomerForJob(job)
-                }}
-              />
+            selectedDateJobs.map((job: any) => (
+              <JobCard key={job.name || job.jobId || job.id} job={normalizeJob(job)} />
             ))
           ) : (
             <View style={styles.emptyState}>
@@ -299,14 +364,8 @@ export default function HomeScreen() {
               <Text style={styles.sectionTitle}>{t("home.upcomingJobs")}</Text>
             </View>
 
-            {upcomingJobs.map((job: JobType) => (
-             <JobCard
-             key={job.name}
-             job={{
-               ...job,
-               customer: getCustomerForJob(job)
-             }}
-           />
+            {upcomingJobs.map((job: any) => (
+              <JobCard key={job.name || job.jobId || job.id} job={normalizeJob(job)} />
             ))}
 
             <ActionButton
@@ -423,5 +482,23 @@ const styles = StyleSheet.create({
     borderColor: Colors.light.border,
     padding: 8,
     borderRadius: 16,
+    position: 'relative',
+  },
+  notificationBadge: {
+    position: 'absolute',
+    right: -4,
+    top: -4,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: Colors.light.error,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  notificationBadgeText: {
+    color: Colors.light.white,
+    fontSize: 11,
+    fontWeight: '700',
   },
 });

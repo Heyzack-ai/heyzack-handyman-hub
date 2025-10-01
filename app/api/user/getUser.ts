@@ -7,21 +7,6 @@ import { Handyman } from "@/types/handyman";
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
 
-
-// Define the User type based on the response structure
-type User = {
-  id: string;
-  name: string;
-  email: string;
-  emailVerified: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  image?: string | null;
-  phone?: string | null;
-  erpId?: string;
-};
-
-
 export function useGetUser(options = {}) {
   return useQuery<Handyman>({
     queryKey: ["user"],
@@ -38,23 +23,23 @@ export function useGetUser(options = {}) {
           throw new Error("User not found");
         }
 
-        const extendedUser = user.data.user as User;
 
-        const response = await axios.get<{data: Handyman}>(`${BASE_URL}/erp/resource/Handyman/${extendedUser.erpId}`, {
+
+        const response = await axios.get<{data: Handyman}>(`${BASE_URL}/profile`, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         });
 
+        console.log('user', response.data);
         
-        if (!response.data?.data) {
-          throw new Error("User not found");
+        // Validate that we have user data
+        if (!response.data) {
+          throw new Error("No user data received from server");
         }
-
         
-        
-        return response.data.data as Handyman;
+        return response.data as unknown as Handyman;
       } catch (error) {
         console.error("Failed to fetch user:", error);
         throw error instanceof Error 
@@ -97,7 +82,7 @@ export const useUpdateUser = () => {
     mutationKey: ["update-user"],
     mutationFn: async (user: Handyman) => {
       const token = await SecureStore.getItemAsync('auth_token');
-      const response = await axios.put(`${BASE_URL}/resource/Handyman/${user.name}`, user, {
+      const response = await axios.put(`${BASE_URL}/profile`, user, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',

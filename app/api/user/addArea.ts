@@ -16,7 +16,7 @@ type ExtendedUser = {
   erpId?: string;
 };
 
-export function useAddArea(current_location: string, service_area: number) {
+export function useAddArea({ current_location, service_area }: { current_location: string, service_area: number }) {
   return useMutation({
     mutationKey: ["add-area"],
     mutationFn: async () => {
@@ -34,16 +34,19 @@ export function useAddArea(current_location: string, service_area: number) {
         const extendedUser = user.data.user as ExtendedUser;
         
         const areaData = {
-         current_location: current_location,
-         service_area: service_area
+         service_area: service_area,
+         current_location: current_location
         };
+        
+        console.log("Add area data:", areaData);
 
-        const response = await axios.put(`${BASE_URL}/erp/resource/Handyman/${extendedUser.erpId}`, areaData, {
+        const response = await axios.put(`${BASE_URL}/profile/area`, areaData, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         });
+
 
         return response.data;
       } catch (error) {
@@ -71,12 +74,14 @@ export const useGetArea = () => {
 
         const extendedUser = user.data.user as ExtendedUser;
 
-        const response = await axios.get(`${BASE_URL}/erp/resource/Handyman/${extendedUser.erpId}`, {
+        const response = await axios.get(`${BASE_URL}/profile/service-area`, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         });
+
+        console.log("Get area data:", response.data);
         
         return response.data;
       } catch (error) {

@@ -28,35 +28,60 @@ export default function JobsScreen() {
   const jobs = useJobStore((state) => state.jobs);
   const [searchQuery, setSearchQuery] = useState("");
   const { data: jobsData, isLoading } = useGetJobs();
-  const { data: customerData, error: customerError } = useGetCustomer(
-    jobsData?.data[0].customer
-  );
+
+ 
+  
+
+// console.log("customerData", customerData);
+
   const { data: requestedJobs } = useGetPendingJobs()
   const queryClient = useQueryClient();
   const { mutate: acceptJob } = useAcceptJob();
 
-  const filteredJobs = jobs.filter(
-    (job) =>
-      job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.customer.address.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const scheduledJobs = jobsData?.data?.filter(
-    (job: any) => job.status === "Scheduled"
-  );
-  const inProgressJobs = jobsData?.data?.filter(
+  const filteredJobs = (jobsData || []).filter(
     (job: any) =>
-      job.status !== "Completed" && job.status !== "On Hold"
-  );
-  const completedJobs = jobsData?.data?.filter(
-    (job: any) => job.status === "Completed"
+      (job.jobType || job.installation?.title || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (job.installation?.customer?.customerName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (job.installationAddress || job.installation?.customer?.address || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Filter job requests (jobs with type "job_request" that haven't been accepted yet)
-  const jobRequests = jobsData?.data?.filter(
-    (job: any) => job.status === "Pending"
+  const scheduledJobs = jobsData?.filter(
+    (job: any) => job.installation?.status === "scheduled" || job.response === "accepted"
   );
+  const inProgressJobs = jobsData?.filter(
+    (job: any) =>
+      job.installation?.status === "assigned" || job.installation?.status === "started"
+  );
+  const completedJobs = jobsData?.filter(
+    (job: any) => job.installation?.status === "completed"
+  );
+
+  // Build ID sets to prevent duplicates across sections
+  const scheduledIds = new Set((scheduledJobs || []).map((j: any) => j.jobId));
+  const inProgressIds = new Set((inProgressJobs || []).map((j: any) => j.jobId));
+  const completedIds = new Set((completedJobs || []).map((j: any) => j.jobId));
+
+  // Filter requestedJobs to show only true pending requests and exclude any that already appear in other sections
+  const pendingJobRequests = (requestedJobs || []).filter((job: any) => {
+    const status = (job.installation?.status || job.status || "").toLowerCase();
+    const response = (job.response || "").toLowerCase();
+
+    // Consider these as active/non-request statuses
+    const activeStatuses = new Set(["scheduled", "assigned", "started", "in_progress", "completed", "accepted"]);
+
+    const isPendingByStatus = status === "draft" || status === "pending" || status === "request";
+    const isPendingByResponse = response === "pending";
+    const isActive = activeStatuses.has(status) || response === "accepted" || response === "rejected";
+
+    const isDuplicated = scheduledIds.has(job.jobId) || inProgressIds.has(job.jobId) || completedIds.has(job.jobId);
+
+    return (isPendingByStatus || isPendingByResponse) && !isActive && !isDuplicated;
+  });
+
+  // Total jobs count for empty state check
+  const totalJobsCount = (filteredJobs?.length || 0) + (pendingJobRequests?.length || 0);
+  
+
 
   const handleAcceptJob = (jobId: string) => {
     Alert.alert("Accept Job", "Are you sure you want to accept this job?", [
@@ -124,7 +149,7 @@ export default function JobsScreen() {
             <ShimmerCard height={120} />
             <ShimmerCard height={120} />
           </View>
-        ) : filteredJobs.length === 0 ? (
+        ) : totalJobsCount === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyTitle}>{t("jobs.noJobs")}</Text>
             <Text style={styles.emptyText}>
@@ -133,16 +158,16 @@ export default function JobsScreen() {
           </View>
         ) : (
           <>
-            {requestedJobs?.length > 0 && (
+            {pendingJobRequests?.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>{t("jobs.jobRequests")}</Text>
                   <Text style={[styles.count, styles.requestCount]}>
-                    {requestedJobs.length}
+                    {pendingJobRequests.length}
                   </Text>
                 </View>
 
-                {requestedJobs.map((job: any) => (
+                {pendingJobRequests.map((job: any) => (
                   <View key={job.jobId} style={styles.jobRequestCard}>
                     <JobCard
                       job={{
@@ -150,25 +175,26 @@ export default function JobsScreen() {
                         name: job.jobId,
                         title: job.installation?.title || t("jobs.untitledJob"),
                         description: job.installation?.description || t("jobs.noDescriptionAvailable"),
-                        scheduled_date: job.installation?.scheduled_date || "",
-                        status: "pending",
+                        scheduled_date: job.scheduledDate || job.installation?.scheduledDate || "",
+                        status: job.installation?.status || "pending",
                         customer: {
                           id: job.jobId,
-                          name: job.installation?.customer_name || t("jobs.unknownCustomer"),
-                          customer_name: job.installation?.customer_name || t("jobs.unknownCustomer"),
-                          phone: "",
-                          email: "",
-                          address: job.installation?.customer_address || t("jobs.noAddressProvided")
+                          name: job.installation?.customer?.customerName || t("jobs.unknownCustomer"),
+                          customer_name: job.installation?.customer?.customerName || t("jobs.unknownCustomer"),
+                          phone: job.installation?.customer?.phone || job.customerPhone || "",
+                          email: job.installation?.customer?.email || "",
+                          address: job.installation?.customer?.address || job.installationAddress || t("jobs.noAddressProvided")
                         },
-                        products: [],
-                        partner: job.partner?.name || t("jobs.unknownPartner"),
-                        duration: "",
+                        installation: job.installation || {},
+                        products: job.installation?.products || [],
+                        partner: job.installation?.partner || t("jobs.unknownPartner"),
+                        duration: job.estimatedDuration || "",
                         rating: 0,
                         completion_photos: [],
                         notes: [],
                         contractsent: false,
                         type: "job_request",
-                        scheduledTime: "",
+                        scheduledTime: job.scheduledTime || "",
                         installationPhotos: []
                       }}
                       disableNavigation={true}
@@ -200,17 +226,33 @@ export default function JobsScreen() {
                 </View>
                 {scheduledJobs.map((job: any) => (
                   <JobCard
-                    key={job.name}
+                    key={job.jobId}
                     job={{
-                      ...job,
-                      customer:
-                        customerData &&
-                        ((typeof job.customer === "string" &&
-                          job.customer === customerData.name) ||
-                          (typeof job.customer === "object" &&
-                            job.customer.name === customerData.name))
-                          ? customerData
-                          : job.customer,
+                      id: job.id,
+                      name: job.jobId,
+                      title: job.jobType || job.installation?.title || "Untitled Job",
+                      description: job.jobDescription || job.installation?.description || "No description available",
+                      scheduled_date: job.scheduledDate || job.installation?.scheduledDate || "",
+                      scheduledTime: job.scheduledTime || "",
+                      status: job.installation?.status || "scheduled",
+                      duration: job.estimatedDuration || "",
+                      customer: {
+                        id: job.jobId,
+                        name: job.installation?.customer?.customerName || "Unknown Customer",
+                        customer_name: job.installation?.customer?.customerName || "Unknown Customer",
+                        phone: job.installation?.customer?.phone || job.customerPhone || "",
+                        email: job.installation?.customer?.email || "",
+                        address: job.installation?.customer?.address || job.installationAddress || "No address provided"
+                      },
+                      installation: job.installation || {},
+                      products: job.installation?.products || [],
+                      partner: job.installation?.partner?.partnerName || "Unknown Partner",
+                      rating: 0,
+                      completion_photos: [],
+                      notes: [],
+                      contractsent: false,
+                      type: "booked_installation",
+                      installationPhotos: []
                     }}
                   />
                 ))}
@@ -225,17 +267,33 @@ export default function JobsScreen() {
                 </View>
                 {inProgressJobs.map((job: any) => (
                   <JobCard
-                    key={job.name}
+                    key={job.jobId}
                     job={{
-                      ...job,
-                      customer:
-                        customerData &&
-                        ((typeof job.customer === "string" &&
-                          job.customer === customerData.name) ||
-                          (typeof job.customer === "object" &&
-                            job.customer.name === customerData.name))
-                          ? customerData
-                          : job.customer,
+                      id: job.id,
+                      name: job.jobId,
+                      title: job.jobType || job.installation?.title || "Untitled Job",
+                      description: job.jobDescription || job.installation?.description || "No description available",
+                      scheduled_date: job.scheduledDate || job.installation?.scheduledDate || "",
+                      scheduledTime: job.scheduledTime || "",
+                      status: job.installation?.status || "in_progress",
+                      duration: job.estimatedDuration || "",
+                      customer: {
+                        id: job.jobId,
+                        name: job.installation?.customer?.customerName || "Unknown Customer",
+                        customer_name: job.installation?.customer?.customerName || "Unknown Customer",
+                        phone: job.installation?.customer?.phone || job.customerPhone || "",
+                        email: job.installation?.customer?.email || "",
+                        address: job.installation?.customer?.address || job.installationAddress || "No address provided"
+                      },
+                      products: job.installation?.products || [],
+                      installation: job.installation || {},
+                      partner: job.installation?.partner?.partnerName || "Unknown Partner",
+                      rating: 0,
+                      completion_photos: [],
+                      notes: [],
+                      contractsent: false,
+                      type: "booked_installation",
+                      installationPhotos: []
                     }}
                   />
                 ))}
@@ -250,17 +308,33 @@ export default function JobsScreen() {
                 </View>
                 {completedJobs.map((job: any) => (
                   <JobCard
-                    key={job.name}
+                    key={job.jobId}
                     job={{
-                      ...job,
-                      customer:
-                        customerData &&
-                        ((typeof job.customer === "string" &&
-                          job.customer === customerData.name) ||
-                          (typeof job.customer === "object" &&
-                            job.customer.name === customerData.name))
-                          ? customerData
-                          : job.customer,
+                      id: job.id,
+                      name: job.jobId,
+                      title: job.jobType || job.installation?.title || "Untitled Job",
+                      description: job.jobDescription || job.installation?.description || "No description available",
+                      scheduled_date: job.scheduledDate || job.installation?.scheduledDate || "",
+                      scheduledTime: job.scheduledTime || "",
+                      status: job.installation?.status || "completed",
+                      duration: job.estimatedDuration || "",
+                      customer: {
+                        id: job.jobId,
+                        name: job.installation?.customer?.customerName || "Unknown Customer",
+                        customer_name: job.installation?.customer?.customerName || "Unknown Customer",
+                        phone: job.installation?.customer?.phone || job.customerPhone || "",
+                        email: job.installation?.customer?.email || "",
+                        address: job.installation?.customer?.address || job.installationAddress || "No address provided"
+                      },
+                      products: job.installation?.products || [],
+                      installation: job.installation || {},
+                      partner: job.installation?.partner || "Unknown Partner",
+                      rating: 0,
+                      completion_photos: [],
+                      notes: [],
+                      contractsent: false,
+                      type: "booked_installation",
+                      installationPhotos: []
                     }}
                   />
                 ))}

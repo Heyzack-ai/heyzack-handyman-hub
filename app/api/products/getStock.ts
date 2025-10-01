@@ -15,14 +15,12 @@ export function useGetStock(productId: string) {
                 if (!token) {
                     throw new Error("Authentication token not found");
                 }
-                const searchParams = new URLSearchParams();
-                searchParams.append('filter', `[["item", "=", "${productId}"]]`);
-                searchParams.append('fields', JSON.stringify(['item', 'quantity']));
+               
                 
                 console.log(`Fetching stock for productId: ${productId}`);
-                console.log(`API URL: ${BASE_URL}/erp/resource/Heyzack Stock?${searchParams.toString()}`);
+                console.log(`API URL: ${BASE_URL}/products/${productId}/stock`);
                 
-                const response = await axios.get<{ data: Stock[] }>(`${BASE_URL}/erp/resource/Heyzack Stock?${searchParams.toString()}`, {
+                const response = await axios.get<{ data: Stock[] }>(`${BASE_URL}/products/${productId}/stock`, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                         'Content-Type': 'application/json',
@@ -53,8 +51,8 @@ export function useGetStock(productId: string) {
 
                 console.log(`Stock data for ${productId}:`, stockData);
                 return stockData;
-            } catch (error) {
-                console.error(`Failed to fetch stock for ${productId}:`, error);
+            } catch (error: any) {
+                console.error(`Failed to fetch stock for ${productId}:`, error?.response?.data || error);
                 // Return default stock data on error
                 return {
                     item: productId,

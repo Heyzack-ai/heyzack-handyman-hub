@@ -83,13 +83,34 @@ export default function Calendar({ selectedDate, onDateSelect, jobs = [] }: Cale
     );
   };
 
+  const getScheduledDate = (job: any): string => {
+    // Support multiple shapes: scheduled_date, scheduledDate, installation.scheduledDate
+    return (
+      job?.scheduled_date ||
+      job?.scheduledDate ||
+      job?.installation?.scheduledDate ||
+      ""
+    );
+  };
+
+  const getStatus = (job: any): string | undefined => {
+    // Use top-level status, or installation.status; fall back to response === 'pending'
+    const status = job?.status || job?.installation?.status;
+    if (status) return String(status).toLowerCase();
+    if (job?.response === "pending") return "pending";
+    return undefined;
+  };
+
   const getJobTypesForDate = (day: number) => {
     const dateString = formatDate(day);
-    const dayJobs = (jobs ?? []).filter(job => job.scheduled_date?.startsWith(dateString));
-    
+    const dayJobs = (jobs ?? []).filter(job => getScheduledDate(job)?.startsWith(dateString));
+
     return {
-      hasBookedInstallation: dayJobs.some(job => job.status && job.status !== "pending"),
-      hasJobRequest: dayJobs.some(job => job.status === "pending")
+      hasBookedInstallation: dayJobs.some(job => {
+        const status = getStatus(job);
+        return !!status && status !== "pending";
+      }),
+      hasJobRequest: dayJobs.some(job => getStatus(job) === "pending"),
     };
   };
 

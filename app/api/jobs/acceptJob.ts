@@ -20,7 +20,7 @@ export function useAcceptJob() {
         }
 
         const response = await axios.post(
-          `${BASE_URL}/handyman/jobs/${jobId}/response`,
+          `${BASE_URL}/jobs/${jobId}/response`,
           {
             response: status,
           },
@@ -31,6 +31,8 @@ export function useAcceptJob() {
             },
           }
         );
+
+        console.log("acceptJob", response.data);
 
         return response.data;
       } catch (error) {

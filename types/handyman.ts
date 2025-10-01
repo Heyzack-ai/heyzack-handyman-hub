@@ -9,7 +9,7 @@ export interface Handyman {
     doctype: string
     email: string
     handyman_name: string
-    idx: number
+    id: string
     modified: string
     modified_by: string
     name: string
@@ -19,9 +19,10 @@ export interface Handyman {
     kyc_document: string
     profile_image: string
     is_verified: number
-    rating: number
-    jobs_completed: number
+    rating: string
+    completedJobs: number
     partner: string
+    phone: string
   }
   
   export interface Availability {

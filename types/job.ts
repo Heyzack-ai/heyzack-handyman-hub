@@ -8,7 +8,11 @@ export type JobStatus =
   | "declined"
   | "sent"
   | "not_sent"
-  | "Contract Sent";
+  | "Contract Sent"
+  | "draft"
+  | "assigned";
+
+
 
 export type JobType = "booked_installation" | "job_request";
 
@@ -36,7 +40,7 @@ export type Stock = {
 
 export type Customer = {
   id: string;
-  name: string;
+  name?: string;
   phone: string;
   email: string;
   address: string;
@@ -48,9 +52,10 @@ export type Customer = {
 };
 
 export interface Job {
+  installation: any;
   installationPhotos: string[];
   id: string;
-  name: string;
+  name?: string;
   title: string;
   description: string;
   status: JobStatus;

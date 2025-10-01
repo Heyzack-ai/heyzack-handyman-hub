@@ -35,6 +35,7 @@ import ShimmerCard from "@/components/ShimmerCard";
 import ProfileSkeleton from "@/components/ProfileSkeleton";
 import { useTranslations } from "@/src/i18n/useTranslations";
 import { useGetUser } from "@/app/api/user/getUser";
+import { useGetSkills } from "@/app/api/user/addskills";
 import { authClient } from "@/lib/auth-client";
 
 export default function ProfileScreen() {
@@ -42,6 +43,7 @@ export default function ProfileScreen() {
   const { signOut, deleteAccount } = useAuth();
   const { t } = useTranslations();
   const { data: user, isLoading } = useGetUser();
+  const { data: skillsData, isLoading: skillsLoading, error: skillsError } = useGetSkills();
   const BASE_URL = process.env.EXPO_PUBLIC_ASSET_URL;
   
 
@@ -54,19 +56,72 @@ export default function ProfileScreen() {
     );
   }
 
+
+  // Process skills data from useGetSkills hook
+  let processedSkills: Skill[] = [];
+  
+  if (skillsData) {
+    try {
+      // Check if skills are in skillsData.data.skills or directly in skillsData.skills
+      let skillsArray = skillsData.data?.skills || skillsData.skills;
+      
+      if (skillsArray) {
+        // If it's already an array, use it directly
+        if (Array.isArray(skillsArray)) {
+          processedSkills = skillsArray.map((skill: any) => ({
+            name: typeof skill === 'string' ? skill : skill.name || skill
+          }));
+        } else if (typeof skillsArray === 'string') {
+          // If it's a JSON string, parse it
+          const parsed = JSON.parse(skillsArray);
+          if (Array.isArray(parsed)) {
+            processedSkills = parsed.map((skill: any) => ({
+              name: typeof skill === 'string' ? skill : skill.name || skill
+            }));
+          } else if (parsed.skills && Array.isArray(parsed.skills)) {
+            processedSkills = parsed.skills.map((skill: any) => ({
+              name: typeof skill === 'string' ? skill : skill.name || skill
+            }));
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error processing skills:', error);
+      // Fallback to user skills if available
+      try {
+        const fallbackSkills = JSON.parse(user?.skills || "{\"skills\":[]}") as Skills;
+        processedSkills = fallbackSkills.skills || [];
+      } catch (fallbackError) {
+        console.error('Error parsing fallback skills:', fallbackError);
+        processedSkills = [];
+      }
+    }
+  } else {
+    // Fallback to user skills if skillsData is not available
+    try {
+      const fallbackSkills = JSON.parse(user?.skills || "{\"skills\":[]}") as Skills;
+      processedSkills = fallbackSkills.skills || [];
+    } catch (fallbackError) {
+      console.error('Error parsing fallback skills:', fallbackError);
+      processedSkills = [];
+    }
+  }
+
+  console.log("user", user)
+
   const technician = {
-    name: user?.handyman_name,
+    name: user?.name,
     email: user?.email,
-    phone: user?.contact_number,
+    phone: user?.phone,
     // location: "San Francisco, CA",
     avatar:
       user?.profile_image
-        ? `${BASE_URL}${user.profile_image}`
-        : `https://avatar.iran.liara.run/username?username=${user?.handyman_name}`,
-    completedJobs: user?.jobs_completed || 0,
-    rating: user?.rating || 0,
+        ? `${user.profile_image}`
+        : `https://avatar.iran.liara.run/username?username=${user?.name}`,
+    completedJobs: user?.completedJobs || 0,
+    rating: user?.rating || "0",
     isVerified: String(user?.is_verified) === "1" || String(user?.is_verified) === "true",
-    skills: JSON.parse(user?.skills || "{\"skills\":[]}") as Skills,
+    skills: { skills: processedSkills } as Skills,
   };
 
   interface Skills {
@@ -145,11 +200,25 @@ export default function ProfileScreen() {
             </Pressable>
           </View>
           <View style={styles.skillTags}>
-            {technician.skills.skills.map((skill, index) => (
-              <View key={index} style={styles.skillTag}>
-                <Text style={styles.skillText}>{skill.name}</Text>
-              </View>
-            ))}
+            {skillsLoading ? (
+              <Text style={[styles.skillText, { color: Colors.light.gray[600] }]}>
+                Loading skills...
+              </Text>
+            ) : skillsError ? (
+              <Text style={[styles.skillText, { color: Colors.light.error }]}>
+                Error loading skills
+              </Text>
+            ) : technician.skills.skills.length > 0 ? (
+              technician.skills.skills.map((skill, index) => (
+                <View key={index} style={styles.skillTag}>
+                  <Text style={styles.skillText}>{skill.name}</Text>
+                </View>
+              ))
+            ) : (
+              <Text style={[styles.skillText, { color: Colors.light.gray[600] }]}>
+                No skills added yet
+              </Text>
+            )}
           </View>
         </View>
 
@@ -167,12 +236,12 @@ export default function ProfileScreen() {
 
         <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t("profile.payments")}</Text>
-          {renderMenuItem(
+          {/* {renderMenuItem(
             <CreditCard size={20} color={Colors.light.primary} />,
             t("profile.payments"),
             t("profile.viewPayments"),
             () => router.push("/profile/payments")
-          )}
+          )} */}
 
           {renderMenuItem(
             <Banknote size={20} color={Colors.light.primary} />,

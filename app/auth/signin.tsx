@@ -66,7 +66,8 @@ export default function SignInScreen() {
     setIsLoading(true);
 
     try {
-      await signIn(email, password);
+      const res = await signIn(email, password);
+      console.log("signIn response:", res);
     } catch (error) {
       console.error(error);
       Alert.alert(

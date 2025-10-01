@@ -9,7 +9,27 @@ import { useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { useTranslation } from "react-i18next";
 
-const { t } = useTranslation();
+
+
+// Type for form errors
+type FormErrors = {
+  bankName?: string;
+  accountName?: string;
+  iban?: string;
+  bicSwift?: string;
+};
+
+export default function AddBank() {
+  
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [accountName, setAccountName] = useState("");
+  const [bankName, setBankName] = useState("");
+  const [iban, setIban] = useState("");
+  const [bicSwift, setBicSwift] = useState("");
+  const [errors, setErrors] = useState<FormErrors>({});
+
+  const { t } = useTranslation();
 
 // Define the validation schema
 const bankAccountSchema = z.object({
@@ -30,30 +50,13 @@ const bankAccountSchema = z.object({
     .regex(/^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/, t("addBank.invalidBicSwiftFormatShouldBe8Or11CharactersEgbNpAfrppOrBnpafrppxxx"))
 });
 
-// Type for form errors
-type FormErrors = {
-  bankName?: string;
-  accountName?: string;
-  iban?: string;
-  bicSwift?: string;
-};
-
-export default function AddBank() {
-  
-  const router = useRouter();
-  const queryClient = useQueryClient();
-  const [accountName, setAccountName] = useState("");
-  const [bankName, setBankName] = useState("");
-  const [iban, setIban] = useState("");
-  const [bicSwift, setBicSwift] = useState("");
-  const [errors, setErrors] = useState<FormErrors>({});
-
   const bankData = {
-    bank_name: bankName,
     account_holder_name: accountName,
-    iban_number: iban,
+    bank_name: bankName,
     bic_code: bicSwift,
-    is_default: true
+    iban_number: iban,
+    is_default: true,
+    type: "savings"
   };
 
   const { mutate, isPending } = useAddBank(bankData);

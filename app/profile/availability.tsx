@@ -32,8 +32,14 @@ export default function AvailabilityScreen() {
   const { data: availabilityData, isLoading } = useGetAvailability();
 
   useEffect(() => {
-    if (availabilityData?.data?.availability) {
-      let incoming = availabilityData.data.availability;
+    console.log("Full availabilityData:", JSON.stringify(availabilityData, null, 2));
+    
+    // Check if data is directly under availabilityData
+    if (availabilityData?.availability) {
+      console.log("Direct availability found:", JSON.stringify(availabilityData.availability, null, 2));
+      let incoming = availabilityData.availability;
+      
+      // Handle both string and object formats
       if (typeof incoming === "string") {
         try {
           incoming = JSON.parse(incoming);
@@ -41,9 +47,21 @@ export default function AvailabilityScreen() {
           incoming = [];
         }
       }
+      
       const normalized: WeekSchedule = { ...defaultSchedule };
+      
+      // Check if incoming is an array (new format) or has availability property (old format)
+      let availabilityArray = [];
       if (Array.isArray(incoming)) {
-        incoming.forEach((item: any) => {
+        availabilityArray = incoming;
+      } else if (incoming && Array.isArray(incoming.availability)) {
+        availabilityArray = incoming.availability;
+      }
+      
+      // Process the availability data
+      if (availabilityArray.length > 0) {
+        console.log("Processing availability array:", availabilityArray);
+        availabilityArray.forEach((item: any) => {
           if (item.day && normalized[item.day]) {
             normalized[item.day] = {
               enabled: !!item.is_active,
@@ -53,6 +71,47 @@ export default function AvailabilityScreen() {
           }
         });
       }
+      
+      setSchedule(normalized);
+      return;
+    }
+    
+    if (availabilityData?.data) {
+      console.log("availabilityData.data:", JSON.stringify(availabilityData.data, null, 2));
+      let incoming = availabilityData.data.availability;
+      
+      // Handle both string and object formats
+      if (typeof incoming === "string") {
+        try {
+          incoming = JSON.parse(incoming);
+        } catch {
+          incoming = [];
+        }
+      }
+      
+      const normalized: WeekSchedule = { ...defaultSchedule };
+      
+      // Check if incoming is an array (new format) or has availability property (old format)
+      let availabilityArray = [];
+      if (Array.isArray(incoming)) {
+        availabilityArray = incoming;
+      } else if (incoming && Array.isArray(incoming.availability)) {
+        availabilityArray = incoming.availability;
+      }
+      
+      // Process the availability data
+      if (availabilityArray.length > 0) {
+        availabilityArray.forEach((item: any) => {
+          if (item.day && normalized[item.day]) {
+            normalized[item.day] = {
+              enabled: !!item.is_active,
+              startTime: item.start_time || "09:00",
+              endTime: item.end_time || "17:00",
+            };
+          }
+        });
+      }
+      
       setSchedule(normalized);
     }
   }, [availabilityData]);

@@ -18,7 +18,7 @@ type Partner = {
 }
 
 export function useGetPartner(partnerCode: string) {
-  return useQuery<Partner>({
+  return useQuery<Partner | null>({
     queryKey: ["partner", partnerCode],
     queryFn: async () => {
       try {
@@ -26,24 +26,20 @@ export function useGetPartner(partnerCode: string) {
         if (!token) {
           throw new Error("Authentication token not found");
         }
-        const searchParams = new URLSearchParams();
-        searchParams.append('filter', `[["partner_code", "=", "${partnerCode}"]]`);
-        searchParams.append('fields', JSON.stringify(['name', 'partner_name', 'partner_code', 'contact_person', 'email', 'phone', 'address']));
-        const response = await axios.get<{ data: Partner[] }>(`${BASE_URL}/erp/resource/Installation Partner?${searchParams.toString()}`, {
+        
+        // API returns { message: string; partner: Partner | null }
+        const response = await axios.get<{ message: string; partner: Partner | null }>(`${BASE_URL}/profile/partner`, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         });
 
-        console.log(response.data);
+        console.log("partner", response.data);
 
-        if (!response.data?.data?.[0]) {
-          throw new Error("Partner not found");
-        }
-
-        return response.data.data[0];
-      } catch (error) {
+        // Return partner object (or null when not assigned)
+        return response.data?.partner ?? null;
+      } catch (error: any) {
         console.error("Failed to fetch partner:", error);
         throw error instanceof Error
           ? error

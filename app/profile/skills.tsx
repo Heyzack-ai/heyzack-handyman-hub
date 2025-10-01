@@ -24,20 +24,45 @@ export default function SkillsScreen() {
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   
-  const { data: skillsData, isLoading } = useGetSkills();
+  const { data: skillsData, isLoading, error: skillsError } = useGetSkills();
 
   useEffect(() => {
+    console.log("Skills data:", skillsData);
     
-    if (skillsData?.data?.skills) {
+    if (skillsData && !isLoading) {
       try {
-        const parsedSkills = JSON.parse(skillsData.data.skills);
-        const skillNames = parsedSkills.skills.map((skill: { name: string }) => skill.name);
+        let skillsArray;
+        
+        // Check different possible response structures
+        if (skillsData?.data?.skills) {
+          // Nested under data.skills
+          if (Array.isArray(skillsData.data.skills)) {
+            skillsArray = skillsData.data.skills;
+          } else {
+            const parsedSkills = JSON.parse(skillsData.data.skills);
+            skillsArray = parsedSkills.skills;
+          }
+        } else if (skillsData?.skills) {
+          // Direct skills property
+          if (Array.isArray(skillsData.skills)) {
+            skillsArray = skillsData.skills;
+          } else {
+            const parsedSkills = JSON.parse(skillsData.skills);
+            skillsArray = parsedSkills.skills;
+          }
+        } else {
+          // No skills found - user hasn't added any yet
+          console.log("No skills found - user hasn't added any skills yet");
+          return;
+        }
+        
+        const skillNames = skillsArray.map((skill: { name: string }) => skill.name);
         setSelectedSkills(skillNames);
       } catch (error) {
         console.error("Error parsing skills:", error);
       }
     }
-  }, [skillsData]);
+  }, [skillsData, isLoading]);
   
 
   const availableSkills = [
@@ -110,7 +135,13 @@ export default function SkillsScreen() {
           
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Your Skills</Text>
-            {selectedSkills.length > 0 ? (
+            {isLoading ? (
+              <Text style={styles.emptyText}>Loading your skills...</Text>
+            ) : skillsError ? (
+              <Text style={[styles.emptyText, { color: 'red' }]}>
+                Error loading skills: {skillsError instanceof Error ? skillsError.message : 'Unknown error'}
+              </Text>
+            ) : selectedSkills.length > 0 ? (
               <View style={styles.skillTags}>
                 {selectedSkills.map((skill) => (
                   <View key={skill} style={styles.selectedSkillTag}>

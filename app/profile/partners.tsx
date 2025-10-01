@@ -44,6 +44,7 @@ export default function PartnersScreen() {
   const { data: initialPartner, refetch: refetchInitialPartner } = useGetPartner(parsedUser?.partner || "");
   const { mutate: linkPartner } = useLinkPartner(partnerCode);
   const queryClient = useQueryClient();
+  console.log("initialPartner", initialPartner);
   
   // Handle deep link parameters
   useEffect(() => {
