@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import * as SecureStore from 'expo-secure-store';
 import axios from "axios";
 import { Job } from "@/types/job";
@@ -7,9 +7,9 @@ import { authClient } from "@/lib/auth-client";
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
 
-export function useUpdateJobStatus() {
-    return useMutation<Job, Error, { jobId: string, status: string }>({
-      mutationFn: async ({ jobId, status }) => {
+export function useSendContract() {
+    return useMutation<Job, Error, { jobId: string }>({
+      mutationFn: async ({ jobId }) => {
        
         try {
           const token = await SecureStore.getItemAsync('auth_token');
@@ -21,18 +21,21 @@ export function useUpdateJobStatus() {
           if (!user.data?.user) {
             throw new Error("User not found");
           }
+
+          console.log("Sending contract for job:", jobId);
+          console.log("Token:", token);
           
-          console.log("status", status);
-          
-          const response = await axios.patch<Job>(`${BASE_URL}/jobs/${jobId}/status`, 
+
+          const response = await axios.patch<Job>(
+            `${BASE_URL}/jobs/${jobId}/contract`,
+            {},
             {
-                status: status,
-            }, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-          });
+              headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+            }
+          );
 
           console.log(response.data);
 

@@ -38,7 +38,7 @@ export default function ChatScreen() {
   // Get current user's partner data - this IS the assigned partner
   const { data: currentPartner, isLoading: currentPartnerLoading } = useGetPartner("None");
   
-  // console.log("Current Partner:", currentPartner);
+  console.log("Current Partner:", currentPartner);
   // console.log("Session:", session);
 
   // Get chat data for the current partner
@@ -81,15 +81,15 @@ export default function ChatScreen() {
 
   const handlePartnerSelect = (partner: any) => {
     // Generate chat room ID and navigate to chat
-    const roomId = `chat_${session?.user.id}_${partner.name}`;
-    router.push(`/chat/${roomId}?partnerId=${partner.name}&partnerName=${partner.partner_name}`);
+    const roomId = `chat_${session?.user.id}_${partner.id || partner.name}`;
+    router.push(`/chat/${roomId}?partnerId=${partner.id || partner.name}&partnerName=${partner.name || partner.partner_name}`);
     setShowPartnerList(false);
   };
 
   const handlePartnerClick = (partner: any) => {
     // Navigate directly to chat with this partner
-    const roomId = `chat_${session?.user.id}_${partner.name}`;
-    router.push(`/chat/${roomId}?partnerId=${partner.name}&partnerName=${partner.partner_name}`);
+    const roomId = `chat_${session?.user.id}_${partner.id || partner.name}`;
+    router.push(`/chat/${roomId}?partnerId=${partner.id || partner.name}&partnerName=${partner.name || partner.partner_name}`);
   };
 
   const handleTakePhoto = async () => {
@@ -151,17 +151,17 @@ export default function ChatScreen() {
 
   const renderPartnerItem = (partner: any) => (
     <TouchableOpacity
-      key={partner.name}
+      key={partner.id || partner.name}
       style={styles.partnerItem}
       onPress={() => handlePartnerSelect(partner)}
     >
       <View style={styles.partnerAvatar}>
         <Text style={styles.partnerInitial}>
-          {partner.partner_name?.charAt(0) || "P"}
+          {partner.name?.charAt(0) || partner.partner_name?.charAt(0) || "P"}
         </Text>
       </View>
       <View style={styles.partnerInfo}>
-        <Text style={styles.partnerName}>{partner.partner_name || "Unknown Partner"}</Text>
+        <Text style={styles.partnerName}>{partner.name || partner.partner_name || "Unknown Partner"}</Text>
         <Text style={styles.latestMessage}>{t("chat.startChat")}</Text>
       </View>
     </TouchableOpacity>
@@ -177,26 +177,27 @@ export default function ChatScreen() {
     const isImageMessage = latestMessage && (latestMessage as any).messageType === 'image';
 
     // Find the chat room for this partner to get unread count
+    const partnerIdentifier = partner.id || partner.name;
     const partnerChatRoom = chatRooms?.find(room => 
-      room.otherUser.id === partner.name || 
-      room.roomId.includes(partner.name)
+      room.otherUser.id === partnerIdentifier || 
+      room.roomId.includes(partnerIdentifier)
     );
 
     const unreadCount = partnerChatRoom?.unreadCount || 0;
 
     return (
       <TouchableOpacity
-        key={partner.name}
+        key={partner.id || partner.name}
         style={styles.partnerItem}
         onPress={() => handlePartnerClick(partner)}
       >
         <View style={styles.partnerAvatar}>
           <Text style={styles.partnerInitial}>
-            {partner.partner_name?.charAt(0) || "P"}
+            {partner.name?.charAt(0) || partner.partner_name?.charAt(0) || "P"}
           </Text>
         </View>
         <View style={styles.partnerInfo}>
-          <Text style={styles.partnerName}>{partner.partner_name || t("chat.unknownPartner")}</Text>
+          <Text style={styles.partnerName}>{partner.name || t("chat.unknownPartner")}</Text>
           <View style={styles.latestMessageContainer}>
             {isImageMessage ? (
               <View style={styles.imageMessageContainer}>

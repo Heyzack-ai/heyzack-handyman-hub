@@ -124,14 +124,14 @@ export function useGetPendingJobs() {
 
 
               
-                const response = await axios.get(`${BASE_URL}/jobs`, {
+                const response = await axios.get(PENDING_URL || `${BASE_URL}/jobs`, {
                     timeout: 20000,
                     headers: {
                         Authorization: `Bearer ${token}`,
                         'Content-Type': 'application/json',
                     },
                 });
-                // console.log("getPendingJobs response:", response.data);
+                console.log("getPendingJobs response:", response.data);
 
                 return response.data;
             } catch (error) {

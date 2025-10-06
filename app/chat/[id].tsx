@@ -237,7 +237,7 @@ export default function ChatConversationScreen() {
   }
   
 
-  const displayName = partnerName || partner?.partner_name || "Partner";
+  const displayName = partnerName || partner?.name || partner?.partner_name || "Partner";
 
   if (isLoading) {
     return (

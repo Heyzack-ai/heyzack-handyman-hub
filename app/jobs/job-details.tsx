@@ -35,7 +35,7 @@ import {
 } from "lucide-react-native";
 import { useJobStore } from "@/store/job-store";
 import Colors from "@/constants/colors";
-import { Job } from "@/types/job";
+import { Job, JobStatus } from "@/types/job";
 import Header from "@/components/Header";
 import StatusBadge from "@/components/StatusBadge";
 import ShimmerSkeleton from "@/components/ShimmerSkeleton";
@@ -46,10 +46,13 @@ import { useUpdateJobStatus } from "@/app/api/jobs/updateStatus";
 import { useUpdateCompletionPhoto } from "@/app/api/jobs/getCompletionPhoto";
 import { useGetProduct } from "@/app/api/products/getProduct";
 import { useTranslations } from "@/src/i18n/useTranslations";
-
+import { useSendContract } from "@/app/api/jobs/sendContract";
+import { QueryClient } from "@tanstack/react-query";
 // Product Item Component that fetches its own data
 const ProductItem = ({ product }: { product: any }) => {
   // const { data: productData } = useGetProduct(product.item);
+
+  console.log("Product:", product);
   
   return (
     <View key={product.name} style={styles.productItem}>
@@ -93,9 +96,12 @@ export default function JobDetailScreen() {
   const IMAGE_URL = process.env.EXPO_PUBLIC_ASSET_URL;
   const { mutate: updateCompletionPhotoMutation } = useUpdateCompletionPhoto();
   const { t } = useTranslations();
-  // console.log("Job details:", jobData?.installation.products);
-  // console.log("Products:", jobDetails?.data?.products);
+  const { mutate: sendContractMutation } = useSendContract();
+  const queryClient = new QueryClient();
 
+  // console.log("Job details:", jobData?.installation);
+  console.log("Products:", jobDetails?.installation);
+// 
   // // Debug completion photos data
   // console.log("Completion photos:", jobData?.products);
   // console.log("Pending jobs:", jobDetails?.data?.products);
@@ -139,6 +145,7 @@ export default function JobDetailScreen() {
 
   // Use the parsed job data
   const job = jobData;
+  // console.log("Job:", job);
 
   // Redirect if job is not found or is pending
   useEffect(() => {
@@ -180,37 +187,40 @@ export default function JobDetailScreen() {
 
   const getProgressPercentage = () => {
     const statusOrder = [
-      "Job Request",
-      "Accepted",
-      "Stock Collected",
-      "En Route",
-      "Contract Sent",
-      "Contract Signed",
-      "Job Started",
-      "Job Marked as Done",
+      "job_request",
+      "accepted",
+      "stock_collected",   
+      "en_route", 
+      "contract_sent",
+      "contract_signed",
+      "job_started",
+      "job_completed",
+      "job_approved",
     ];
     const currentIndex = statusOrder.indexOf(job.status);
     return ((currentIndex + 1) / statusOrder.length) * 100;
   };
 
   const getStatusText = () => {
-    switch (job.status.toLowerCase()) {
-      case "job request":
+    switch (job.status) {
+      case "job_request":
         return "Job Request";
       case "accepted":
         return "Accepted";
-      case "stock collected":
+      case "stock_collected":
         return "Stock Collected";
-      case "en route": 
+      case "en_route": 
         return "En Route";
-      case "contract sent":
+      case "contract_sent":
         return "Contract Sent";
-      case "contract signed":
+      case "contract_signed":
         return "Contract Signed";
-      case "job started":
+      case "job_started":
         return "Job Started";
-      case "job marked as done":
-        return "Job Marked as Done";
+      case "job_completed":
+        return "Job Completed";
+      case "job_approved":
+        return "Job Approved";
       default:
         return "Accepted";
     }
@@ -240,7 +250,7 @@ export default function JobDetailScreen() {
       Linking.openURL(url);
     }
   };
-
+  
   const handleSendContract = async () => {
     setIsLoading(true);
     setTimeout(() => {
@@ -248,7 +258,8 @@ export default function JobDetailScreen() {
       if (Platform.OS !== "web") {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
-      updateJobStatusMutation({ jobId: job.id, status: "Contract Sent" });
+      sendContractMutation({ jobId: job.name || "" });
+      queryClient.invalidateQueries({ queryKey: ["get-jobs", job.name] });
       Alert.alert(t("jobDetails.success"), t("jobDetails.contractSentToCustomer"));
       setIsLoading(false);
     }, 1000);
@@ -668,7 +679,7 @@ export default function JobDetailScreen() {
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>{t("jobDetails.status")}:</Text>
             <StatusBadge
-              status={job.contractsent === true ? "sent" : "not_sent"}
+              status={job.status === "contract_sent" ? "sent" : "not_sent"}
               size="medium"
             />
           </View>

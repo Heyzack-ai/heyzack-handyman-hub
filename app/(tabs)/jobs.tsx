@@ -30,9 +30,6 @@ export default function JobsScreen() {
   const { data: jobsData, isLoading } = useGetJobs();
 
  
-  
-
-// console.log("customerData", customerData);
 
   const { data: requestedJobs } = useGetPendingJobs()
   const queryClient = useQueryClient();
@@ -50,30 +47,34 @@ export default function JobsScreen() {
   );
   const inProgressJobs = jobsData?.filter(
     (job: any) =>
-      job.installation?.status === "assigned" || job.installation?.status === "started"
+      job.installation?.status === "started" || job.installation?.status === "in_progress"
   );
   const completedJobs = jobsData?.filter(
     (job: any) => job.installation?.status === "completed"
   );
 
-  // Build ID sets to prevent duplicates across sections
-  const scheduledIds = new Set((scheduledJobs || []).map((j: any) => j.jobId));
-  const inProgressIds = new Set((inProgressJobs || []).map((j: any) => j.jobId));
-  const completedIds = new Set((completedJobs || []).map((j: any) => j.jobId));
+  // Helper to normalize job identifier across different shapes
+  const getJobId = (job: any) => job?.jobId || job?.id || job?.name || "";
+
+  // Build ID sets to prevent duplicates across sections using normalized IDs
+  const scheduledIds = new Set((scheduledJobs || []).map((j: any) => getJobId(j)));
+  const inProgressIds = new Set((inProgressJobs || []).map((j: any) => getJobId(j)));
+  const completedIds = new Set((completedJobs || []).map((j: any) => getJobId(j)));
 
   // Filter requestedJobs to show only true pending requests and exclude any that already appear in other sections
   const pendingJobRequests = (requestedJobs || []).filter((job: any) => {
     const status = (job.installation?.status || job.status || "").toLowerCase();
     const response = (job.response || "").toLowerCase();
 
-    // Consider these as active/non-request statuses
-    const activeStatuses = new Set(["scheduled", "assigned", "started", "in_progress", "completed", "accepted"]);
+    // Treat only truly active statuses as non-pending (exclude 'assigned' from active)
+    const activeStatuses = new Set(["scheduled", "started", "in_progress", "completed", "accepted"]);
 
-    const isPendingByStatus = status === "draft" || status === "pending" || status === "request";
-    const isPendingByResponse = response === "pending";
+    const isPendingByStatus = status === "draft" || status === "pending" || status === "request" || status === "assigned";
+    const isPendingByResponse = response === "pending" || response === "assigned";
     const isActive = activeStatuses.has(status) || response === "accepted" || response === "rejected";
 
-    const isDuplicated = scheduledIds.has(job.jobId) || inProgressIds.has(job.jobId) || completedIds.has(job.jobId);
+    const id = getJobId(job);
+    const isDuplicated = scheduledIds.has(id) || inProgressIds.has(id) || completedIds.has(id);
 
     return (isPendingByStatus || isPendingByResponse) && !isActive && !isDuplicated;
   });
@@ -167,18 +168,20 @@ export default function JobsScreen() {
                   </Text>
                 </View>
 
-                {pendingJobRequests.map((job: any) => (
-                  <View key={job.jobId} style={styles.jobRequestCard}>
+                {pendingJobRequests.map((job: any) => {
+                  const id = getJobId(job);
+                  return (
+                  <View key={id} style={styles.jobRequestCard}>
                     <JobCard
                       job={{
-                        id: job.jobId,
-                        name: job.jobId,
+                        id: id,
+                        name: id,
                         title: job.installation?.title || t("jobs.untitledJob"),
                         description: job.installation?.description || t("jobs.noDescriptionAvailable"),
                         scheduled_date: job.scheduledDate || job.installation?.scheduledDate || "",
-                        status: job.installation?.status || "pending",
+                        status: job.installation?.status || job.status || "pending",
                         customer: {
-                          id: job.jobId,
+                          id: id,
                           name: job.installation?.customer?.customerName || t("jobs.unknownCustomer"),
                           customer_name: job.installation?.customer?.customerName || t("jobs.unknownCustomer"),
                           phone: job.installation?.customer?.phone || job.customerPhone || "",
@@ -203,18 +206,18 @@ export default function JobsScreen() {
                       <ActionButton
                         title={t("jobs.decline")}
                         variant="outline"
-                        onPress={() => handleDeclineJob(job.jobId)}
+                        onPress={() => handleDeclineJob(id)}
                         style={styles.declineButton}
                       />
                       <ActionButton
                         title={t("jobs.accept")}
                         variant="primary"
-                        onPress={() => handleAcceptJob(job.jobId)}
+                        onPress={() => handleAcceptJob(id)}
                         style={styles.acceptButton}
                       />
                     </View>
                   </View>
-                ))}
+                );})}
               </View>
             )}
 

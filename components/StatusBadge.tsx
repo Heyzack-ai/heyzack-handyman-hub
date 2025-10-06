@@ -16,7 +16,7 @@ export default function StatusBadge({ status, size = "medium" }: StatusBadgeProp
         return Colors.light.info;
       case "pending":
         return Colors.light.warning;
-      case "stock collected":
+      case "stock_collected":
         return Colors.light.warning;
       case "en_route":
         return Colors.light.secondary;
@@ -30,10 +30,16 @@ export default function StatusBadge({ status, size = "medium" }: StatusBadgeProp
         return Colors.light.error;
       case "contract sent":
         return Colors.light.success;
+      case "contract_signed":
+        return Colors.light.success;
       case "draft":
         return Colors.light.gray[500];
       case "assigned":
         return Colors.light.secondary;
+      case "accepted":
+        return Colors.light.success;
+      case "stock_collected":
+        return Colors.light.warning;
       default:
         return Colors.light.gray[500];
     }
@@ -45,7 +51,7 @@ export default function StatusBadge({ status, size = "medium" }: StatusBadgeProp
         return "Scheduled";
       case "pending":
         return "Pending";
-      case "stock collected":
+      case "stock_collected":
         return "Stock Collected";
       case "en_route":
         return "En Route";
@@ -61,8 +67,12 @@ export default function StatusBadge({ status, size = "medium" }: StatusBadgeProp
         return "Contract Sent";
       case "draft":
         return "Draft";
+      case "contract_signed":
+        return "Contract Signed";
       case "assigned":
         return "Assigned";
+      case "accepted":
+        return "Accepted";
       default:
         return "Unknown";
     }

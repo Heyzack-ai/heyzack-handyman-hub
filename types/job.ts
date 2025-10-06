@@ -1,15 +1,21 @@
 export type JobStatus = 
   | "pending"
   | "scheduled" 
-  | "stock collected" 
+  | "stock_collected"   
   | "en_route" 
   | "started" 
   | "completed"
   | "declined"
   | "sent"
+  |"job_request"
+  |"accepted"
   | "not_sent"
-  | "Contract Sent"
+  | "contract_sent"
   | "draft"
+  | "contract_signed"
+  | "job_started"
+  | "job_completed"
+  | "job_approved"
   | "assigned";
 
 
@@ -17,6 +23,7 @@ export type JobStatus =
 export type JobType = "booked_installation" | "job_request";
 
 export type Product = {
+  sku: any;
   id: string;
   name: string;
   item: string;
