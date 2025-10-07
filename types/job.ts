@@ -24,6 +24,7 @@ export type JobType = "booked_installation" | "job_request";
 
 export type Product = {
   sku: any;
+  inventorycode: string;
   id: string;
   name: string;
   item: string;

@@ -21,89 +21,59 @@ type ExtendedUser = {
 export function useUpdateCompletionPhoto() {
     return useMutation({
         mutationKey: ["update-completion-photo"],
-        mutationFn: async ({ fileUri, jobId, completion_photos }: { fileUri: string, jobId: string, completion_photos: any[] }) => {
+        mutationFn: async ({ fileUri, jobId }: { fileUri: string, jobId: string }) => {
           try {
             const token = await SecureStore.getItemAsync('auth_token');
             if (!token) throw new Error("Authentication token not found");
-            
-            const user = await authClient.getSession();
-            if (!user.data?.user) throw new Error("User not found");
-            
-            const extendedUser = user.data.user as ExtendedUser;
     
-            // 1. Upload file to ERPNext
+            // Upload completion photo
             const formData = new FormData();
-            const fileName = fileUri.split("/").pop() || `kyc_${Date.now()}.jpg`;
-            const fileType = fileUri.toLowerCase().endsWith(".pdf") 
-              ? "application/pdf" 
-              : fileUri.toLowerCase().endsWith(".png")
-                ? "image/png"
-                : "image/jpeg";
+            const fileName = fileUri.split("/").pop() || `completion_${Date.now()}.jpg`;
+            const fileType = fileUri.toLowerCase().endsWith(".png") ? "image/png" : "image/jpeg";
             
-            // @ts-ignore
-            formData.append("file", {
+            // For React Native, we need to append the file with proper format
+            formData.append("files", {
               uri: fileUri,
               name: fileName,
               type: fileType
-            });
+            } as any);
             formData.append("is_private", "1");
-
-            console.log("Form Data:", formData);
+            
+            console.log("Uploading file:", fileName, "Type:", fileType, "JobId:", jobId);
     
-    
-            const uploadRes = await axios.post(
-              `${BASE_URL}/handyman/jobs/${jobId}/completion-photos`,
+            const response = await axios.post(
+              `${BASE_URL}/jobs/${jobId}/completion-photos`,
               formData,
               {
                 headers: {
                   Authorization: `Bearer ${token}`,
                   "Content-Type": "multipart/form-data"
                 },
-                timeout: 30000, // 30 second timeout
+                timeout: 30000,
               }
             );
+            
+            console.log("Upload response:", JSON.stringify(response.data, null, 2));
+            console.log("Response status:", response.status);
+            console.log("Response headers:", response.headers);
     
-            if (!uploadRes.data?.data?.message?.file_url) {
-              throw new Error("Invalid file upload response");
+            // Check if response is successful
+            if (response.status !== 200 && response.status !== 201) {
+              throw new Error(`Upload failed with status: ${response.status}`);
             }
-    
-            const fileUrl = uploadRes.data.data.message.file_url;
-
-            console.log("File URL:", fileUrl);
-    
-            // 2. Create new completion photo object
-            const newCompletionPhoto = {
-              installation: jobId,
-              image: fileUrl,
-            };
             
-            // 3. Add new photo to existing photos
-            const updatedCompletionPhotos = [
-              ...completion_photos,
-              newCompletionPhoto
-            ];
-            
-            // 4. Update the Installation resource with the new completion_photos array
-            const response = await axios.put<{ data: Job }>(`${BASE_URL}/erp/resource/Installation/${jobId}`, 
-              {
-                  completion_photos: updatedCompletionPhotos
-              }, {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json',
-              },
-            });
-    
-            console.log("Installation update response:", response.data);
-    
-            if (!response.data?.data) {
-              throw new Error("Job not found");
+            // Handle different response structures
+            if (response.data?.data) {
+              return response.data.data;
+            } else if (response.data) {
+              return response.data;
+            } else {
+              console.warn("Unexpected response structure, but upload appears successful");
+              return { success: true, message: "Upload completed" };
             }
-    
-            return response.data.data;
             
-          } catch (error) {
-            console.error("KYC document upload error:", error);
+          } catch (error: any) {
+            console.error("Completion photo upload error:", error?.response?.data || error.message);
             if (axios.isAxiosError(error)) {
               if (error.code === "ECONNABORTED") {
                 throw new Error("Upload timed out. Please try again with a smaller file.");

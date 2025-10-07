@@ -99,11 +99,15 @@ const CollectProductItem = ({
   onCollect,
 }: {
   product: any;
-  onCollect: (sku: string) => void;
+  onCollect: (id: string) => void;
 }) => {
   const { t } = useTranslation();
-  // Use the stable `item` identifier passed from Installation products
-  const rawItemId = product?.item ?? product?.inventoryItemId ?? "";
+  // Use a stable identifier preferring inventoryItemId, then item, inventorycode, then sku
+  const rawItemId = (product as any)?.inventoryItemId ?? product?.item ?? (product as any)?.inventorycode ?? product?.sku ?? "";
+  console.log("identifier candidates:", {
+   
+    inventorycode: (product as any)?.inventorycode,
+  });
   const itemId = String(rawItemId).trim();
   if (!itemId) {
     console.log("CollectProductItem: missing itemId for product", product);
@@ -217,6 +221,8 @@ export default function CollectStockScreen() {
     }
   }, [products]);
 
+  // productId is passed from the CollectProductItem component when the user presses the "Upload Photo & Collect" button.
+  // It is derived from the product's stable identifier (item or inventoryItemId) that was originally passed into CollectProductItem.
   const handleCollectProduct = async (productId: string) => {
     console.log("handleCollectProduct called with productId:", productId);
     console.log("jobId:", jobId);
@@ -298,6 +304,9 @@ export default function CollectStockScreen() {
 
       console.log("Camera result:", result);
       handleImageResult(result, productId);
+      const currentJobId = jobId || "fallback-job-id";
+      console.log("Using jobId:", currentJobId);
+      queryClient.invalidateQueries({ queryKey: ["get-jobs", currentJobId]});
     } catch (error) {
       console.error("Error in handleCameraCapture:", error);
       Alert.alert(
@@ -334,6 +343,8 @@ export default function CollectStockScreen() {
 
       console.log("Gallery result:", result);
       handleImageResult(result, productId);
+      const currentJobId = jobId || "fallback-job-id";
+      queryClient.invalidateQueries({ queryKey: ["get-jobs", currentJobId]});
     } catch (error) {
       console.error("Error in handleGalleryPick:", error);
       Alert.alert(
@@ -388,11 +399,13 @@ export default function CollectStockScreen() {
                 console.warn("Failed to invalidate/update product cache for", productId, e);
               }
 
-              // Update local state to mark product as collected (match by item or inventoryItemId)
+              // Update local state to mark product as collected (match by inventoryItemId, item, inventorycode, or sku)
               setParsedProducts((prev) =>
                 prev.map((p) =>
+                  (String((p as any).inventoryItemId ?? "") === String(productId)) ||
                   (String((p as any).item ?? "") === String(productId)) ||
-                  (String((p as any).inventoryItemId ?? "") === String(productId))
+                  (String((p as any).inventorycode ?? "") === String(productId)) ||
+                  (String((p as any).sku ?? "") === String(productId))
                     ? { ...p, isCollected: true, status: "collected" }
                     : p
                 )
@@ -408,8 +421,9 @@ export default function CollectStockScreen() {
                 // Show success message only after the last image is processed
                 const currentJobId = jobId || "fallback-job-id";
                 if (currentJobId && currentJobId !== "fallback-job-id") {
-                  // Invalidate job details using the correct query key
+                  // Invalidate and refetch job details using the correct query key
                   queryClient.invalidateQueries({ queryKey: ["get-jobs", currentJobId] });
+                  queryClient.refetchQueries({ queryKey: ["get-jobs", currentJobId], type: "active" });
                 }
                 Alert.alert(
                   t("collectStock.success"),
@@ -456,6 +470,31 @@ export default function CollectStockScreen() {
       (product: Product) => String(product.status).toLowerCase() === "collected" || (product as any).isCollected === true
     );
 
+    const handleStatusUpdate = () => {
+      updateJobStatus({
+        jobId: currentJobId,
+        status: "stock_collected",
+      }, {
+        onSuccess: () => {
+          // Invalidate and refetch job details to update UI
+          queryClient.invalidateQueries({ queryKey: ["get-jobs", currentJobId] });
+          queryClient.refetchQueries({ queryKey: ["get-jobs", currentJobId] });
+          
+          if (Platform.OS !== "web") {
+            Haptics.notificationAsync(
+              Haptics.NotificationFeedbackType.Success
+            );
+          }
+          setIsLoading(false);
+          router.back();
+        },
+        onError: (error) => {
+          console.error("Failed to update job status:", error);
+          setIsLoading(false);
+        }
+      });
+    };
+
     if (!allCollected) {
       Alert.alert(
         t("collectStock.incompleteCollection"),
@@ -468,32 +507,13 @@ export default function CollectStockScreen() {
           },
           {
             text: t("collectStock.continue"),
-            onPress: () => {
-              if (currentJobId) {
-                updateJobStatus({
-                  jobId: currentJobId,
-                  status: "stock_collected",
-                });
-                if (Platform.OS !== "web") {
-                  Haptics.notificationAsync(
-                    Haptics.NotificationFeedbackType.Success
-                  );
-                }
-                setIsLoading(false);
-                router.back();
-              }
-            },
+            onPress: handleStatusUpdate,
           },
         ]
       );
     } else {
       // Send standardized lowercase status expected by API
-      updateJobStatus({ jobId: currentJobId, status: "stock_collected" });
-      if (Platform.OS !== "web") {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      }
-      setIsLoading(false);
-      router.back();
+      handleStatusUpdate();
     }
   };
 
@@ -532,7 +552,7 @@ export default function CollectStockScreen() {
 
             return (
               <CollectProductItem
-                key={(product as any).inventoryItemId || product.item || product.sku || `${product.item}-${index}`}
+                key={(product as any).inventoryItemId || (product as any).inventorycode || product.item || product.sku || `${product.item}-${index}`}
                 product={product}
                 onCollect={handleCollectProduct}
               />

@@ -26,7 +26,7 @@ export function useSendContract() {
           console.log("Token:", token);
           
 
-          const response = await axios.patch<Job>(
+          const response = await axios.post<Job>(
             `${BASE_URL}/jobs/${jobId}/contract`,
             {},
             {
@@ -37,7 +37,7 @@ export function useSendContract() {
             }
           );
 
-          console.log(response.data);
+          console.log("Response:", response);
 
           if (!response.data) {
             throw new Error("Job not found");
@@ -45,10 +45,10 @@ export function useSendContract() {
 
           return response.data;
         } catch (error: any) {
-          console.error("Failed to update job status:", error?.response?.data || error.message);
+          console.error("Failed to send contract for job:", error?.response?.data || error.message);
           throw error instanceof Error
             ? error
-            : new Error("Failed to update job status");
+            : new Error("Failed to send contract for job");
         }
       },
     });

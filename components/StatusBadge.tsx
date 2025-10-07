@@ -28,7 +28,7 @@ export default function StatusBadge({ status, size = "medium" }: StatusBadgeProp
         return Colors.light.success;
       case "not_sent":
         return Colors.light.error;
-      case "contract sent":
+      case "contract_sent":
         return Colors.light.success;
       case "contract_signed":
         return Colors.light.success;
@@ -40,6 +40,8 @@ export default function StatusBadge({ status, size = "medium" }: StatusBadgeProp
         return Colors.light.success;
       case "stock_collected":
         return Colors.light.warning;
+      case "job_completed":
+        return Colors.light.success;
       default:
         return Colors.light.gray[500];
     }
@@ -63,7 +65,7 @@ export default function StatusBadge({ status, size = "medium" }: StatusBadgeProp
         return "Sent";
       case "not_sent":
         return "Not Sent";
-      case "contract sent":
+      case "contract_sent":
         return "Contract Sent";
       case "draft":
         return "Draft";
@@ -73,6 +75,8 @@ export default function StatusBadge({ status, size = "medium" }: StatusBadgeProp
         return "Assigned";
       case "accepted":
         return "Accepted";
+      case "job_completed":
+        return "Completed";
       default:
         return "Unknown";
     }

@@ -131,7 +131,6 @@ export function useGetPendingJobs() {
                         'Content-Type': 'application/json',
                     },
                 });
-                console.log("getPendingJobs response:", response.data);
 
                 return response.data;
             } catch (error) {

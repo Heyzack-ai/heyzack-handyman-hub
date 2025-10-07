@@ -42,7 +42,7 @@ export function useGetProduct(productId: string | number) {
                     });
                     console.log("Product response raw (primary):", response?.data);
                 } catch (primaryErr: any) {
-                    console.warn(`Primary products endpoint failed for ${id}, will try ERP Item:`, primaryErr?.response?.data || primaryErr);
+                    console.warn(`Primary products endpoint failed for ${id}:`, primaryErr?.response?.data || primaryErr);
                 }
 
                 const normalizeProduct = (raw: any): Product | null => {
@@ -63,22 +63,6 @@ export function useGetProduct(productId: string | number) {
                 };
 
                 let productPayload = normalizeProduct(response?.data);
-
-                // Fallback to ERP Item resource if primary payload is missing/null
-                if (!productPayload) {
-                    try {
-                        const erpRes = await axios.get(`${BASE_URL}/erp/resource/Item/${encodeURIComponent(id)}`, {
-                            headers: {
-                                Authorization: `Bearer ${token}`,
-                                'Content-Type': 'application/json',
-                            },
-                        });
-                        console.log("ERP Item response raw (fallback):", erpRes?.data);
-                        productPayload = normalizeProduct(erpRes?.data);
-                    } catch (erpErr: any) {
-                        console.warn(`ERP Item fallback failed for ${id}:`, erpErr?.response?.data || erpErr);
-                    }
-                }
 
                 if (!productPayload) {
                     console.log(`Product ${id} not found or payload missing after all attempts, returning null`);

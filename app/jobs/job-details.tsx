@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { Image } from "expo-image";
 import { Stack, useRouter, useLocalSearchParams } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
 import {
@@ -47,35 +48,39 @@ import { useUpdateCompletionPhoto } from "@/app/api/jobs/getCompletionPhoto";
 import { useGetProduct } from "@/app/api/products/getProduct";
 import { useTranslations } from "@/src/i18n/useTranslations";
 import { useSendContract } from "@/app/api/jobs/sendContract";
-import { QueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+
 // Product Item Component that fetches its own data
 const ProductItem = ({ product }: { product: any }) => {
-  // const { data: productData } = useGetProduct(product.item);
-
-  console.log("Product:", product);
-  
+  const status = (product?.status || "").toString().toLowerCase();
+  const collected = status === "collected" || product?.isCollected === true;
+  const label = collected ? "Collected" : "To Collect";
   return (
-    <View key={product.name} style={styles.productItem}>
+    <View
+      key={
+        product?.name ||
+        product?.inventoryItemId ||
+        product?.item ||
+        product?.sku
+      }
+      style={styles.productItem}
+    >
       <View>
-        <Text style={styles.productName}>{product.productName || `Item ${product.item}`}</Text>
-        <Text style={styles.productRequired}>Required: {product.quantity}</Text>
+        <Text style={styles.productName}>
+          {product?.productName || `Item ${product?.item ?? ""}`}
+        </Text>
+        <Text style={styles.productRequired}>
+          Required: {product?.quantity ?? 0}
+        </Text>
       </View>
       <View
         style={[
           styles.statusBadge,
-          product.status === "collected"
-            ? styles.availableBadge
-            : styles.shortBadge,
+          collected ? styles.availableBadge : styles.shortBadge,
         ]}
       >
-        <Text
-          style={
-            product.status === "collected"
-              ? styles.availableText
-              : styles.shortText
-          }
-        >
-          {product.status === "pending" ? "To Collect" : "Collected"}
+        <Text style={collected ? styles.availableText : styles.shortText}>
+          {label}
         </Text>
       </View>
     </View>
@@ -89,29 +94,49 @@ export default function JobDetailScreen() {
   const [productsExpanded, setProductsExpanded] = useState(true);
   const [completionExpanded, setCompletionExpanded] = useState(false);
   const [jobData, setJobData] = useState<Job | undefined>(undefined);
-  
-  const { data: jobDetails, isLoading: isJobDetailsLoading } = useGetJobById(jobData?.name || '');
+
+  // Prefer robust ID: name -> id -> jobId
+  const robustJobId =
+    jobData?.name || (jobData as any)?.id || (jobData as any)?.jobId || "";
+  const { data: jobDetails, isLoading: isJobDetailsLoading } =
+    useGetJobById(robustJobId);
   const { data: pendingJobs } = useGetPendingJobs();
   const { mutate: updateJobStatusMutation } = useUpdateJobStatus();
   const IMAGE_URL = process.env.EXPO_PUBLIC_ASSET_URL;
   const { mutate: updateCompletionPhotoMutation } = useUpdateCompletionPhoto();
   const { t } = useTranslations();
   const { mutate: sendContractMutation } = useSendContract();
-  const queryClient = new QueryClient();
+  const queryClient = useQueryClient();
 
   // console.log("Job details:", jobData?.installation);
-  console.log("Products:", jobDetails?.installation);
-// 
+  console.log("JobDetails installation:", jobDetails);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (robustJobId) {
+        queryClient.invalidateQueries({ queryKey: ["get-jobs", robustJobId] });
+        queryClient.refetchQueries({
+          queryKey: ["get-jobs", robustJobId],
+          type: "active",
+          exact: true,
+        });
+      }
+    }, [robustJobId])
+  );
+  //
   // // Debug completion photos data
   // console.log("Completion photos:", jobData?.products);
   // console.log("Pending jobs:", jobDetails?.data?.products);
 
-  let formattedDate = '';
-  let formattedTime = '';
+  let formattedDate = "";
+  let formattedTime = "";
   if (jobData?.scheduled_date) {
-    const dateObj = new Date(jobData.scheduled_date.replace(' ', 'T'));
+    const dateObj = new Date(jobData.scheduled_date.replace(" ", "T"));
     formattedDate = dateObj.toLocaleDateString();
-    formattedTime = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    formattedTime = dateObj.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   }
 
   const {
@@ -128,15 +153,15 @@ export default function JobDetailScreen() {
     if (params.job) {
       try {
         const parsedJob = JSON.parse(params.job as string) as Job;
-        
+
         // Parse products if it's a string
-        if (typeof parsedJob.products === 'string') {
+        if (typeof parsedJob.products === "string") {
           parsedJob.products = JSON.parse(parsedJob.products);
         }
-        
+
         setJobData(parsedJob);
       } catch (error) {
-        console.error('Failed to parse job data:', error);
+        console.error("Failed to parse job data:", error);
         Alert.alert(t("jobDetails.error"), t("jobDetails.invalidJobData"));
         router.back();
       }
@@ -165,7 +190,10 @@ export default function JobDetailScreen() {
   if (!job) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <Header title={t("jobDetails.jobDetails")} onBack={() => router.back()} />
+        <Header
+          title={t("jobDetails.jobDetails")}
+          onBack={() => router.back()}
+        />
         <ShimmerSkeleton />
       </SafeAreaView>
     );
@@ -189,27 +217,29 @@ export default function JobDetailScreen() {
     const statusOrder = [
       "job_request",
       "accepted",
-      "stock_collected",   
-      "en_route", 
+      "stock_collected",
+      "en_route",
       "contract_sent",
       "contract_signed",
       "job_started",
       "job_completed",
       "job_approved",
     ];
-    const currentIndex = statusOrder.indexOf(job.status);
+    const currentStatus = jobDetails?.installation?.status || job.status;
+    const currentIndex = statusOrder.indexOf(currentStatus);
     return ((currentIndex + 1) / statusOrder.length) * 100;
   };
 
   const getStatusText = () => {
-    switch (job.status) {
+    const currentStatus = jobDetails?.installation?.status || job.status;
+    switch (currentStatus) {
       case "job_request":
         return "Job Request";
       case "accepted":
         return "Accepted";
       case "stock_collected":
         return "Stock Collected";
-      case "en_route": 
+      case "en_route":
         return "En Route";
       case "contract_sent":
         return "Contract Sent";
@@ -250,7 +280,7 @@ export default function JobDetailScreen() {
       Linking.openURL(url);
     }
   };
-  
+
   const handleSendContract = async () => {
     setIsLoading(true);
     setTimeout(() => {
@@ -258,9 +288,17 @@ export default function JobDetailScreen() {
       if (Platform.OS !== "web") {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
-      sendContractMutation({ jobId: job.name || "" });
-      queryClient.invalidateQueries({ queryKey: ["get-jobs", job.name] });
-      Alert.alert(t("jobDetails.success"), t("jobDetails.contractSentToCustomer"));
+      sendContractMutation({ jobId: robustJobId || "" });
+      queryClient.invalidateQueries({ queryKey: ["get-jobs", robustJobId] });
+      queryClient.refetchQueries({
+        queryKey: ["get-jobs", robustJobId],
+        type: "active",
+        exact: true,
+      });
+      Alert.alert(
+        t("jobDetails.success"),
+        t("jobDetails.contractSentToCustomer")
+      );
       setIsLoading(false);
     }, 1000);
   };
@@ -269,14 +307,20 @@ export default function JobDetailScreen() {
     console.log("handleCollectStock called");
     console.log("job.id:", job.id);
     console.log("job.name:", job.name);
-    console.log("jobData?.name:", jobData?.name);
+    console.log("jobData?.status:", jobData?.status);
     console.log("jobDetails?.data?.name:", jobDetails?.data?.name);
-    
+
     router.push({
       pathname: "/jobs/collect-stock/collect",
       params: {
-        jobId: job.name || jobData?.name || job.id,
-        products: JSON.stringify(jobDetails?.installation?.products || []),
+        jobId: robustJobId,
+        products: JSON.stringify(
+          jobDetails?.installation?.products ||
+            (jobDetails as any)?.products ||
+            jobData?.installation?.products ||
+            (jobData as any)?.products ||
+            []
+        ),
         item_name: job.title || "Product Collection",
       },
     });
@@ -285,13 +329,16 @@ export default function JobDetailScreen() {
   const handleTakePhoto = async () => {
     console.log("handleTakePhoto called");
     console.log("Platform:", Platform.OS);
-    
+
     // Check if we're on web platform
-    if (Platform.OS === 'web') {
-      Alert.alert("Not Supported", "Camera functionality is not available on web platform");
+    if (Platform.OS === "web") {
+      Alert.alert(
+        "Not Supported",
+        "Camera functionality is not available on web platform"
+      );
       return;
     }
-    
+
     // Show options dialog
     Alert.alert(
       t("jobDetails.selectPhoto"),
@@ -331,7 +378,7 @@ export default function JobDetailScreen() {
         quality: 0.8,
         allowsEditing: true,
       });
-      
+
       console.log("Camera result:", result);
       handleImageResult(result);
     } catch (error) {
@@ -342,7 +389,8 @@ export default function JobDetailScreen() {
 
   const handleGalleryPick = async () => {
     try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
       console.log("Gallery permission status:", status);
 
       if (status !== "granted") {
@@ -360,7 +408,7 @@ export default function JobDetailScreen() {
         allowsMultipleSelection: true,
         selectionLimit: 10, // Allow up to 10 images
       });
-      
+
       console.log("Gallery result:", result);
       handleImageResult(result);
     } catch (error) {
@@ -372,66 +420,125 @@ export default function JobDetailScreen() {
   const handleImageResult = async (result: any) => {
     if (!result.canceled && result.assets && result.assets.length > 0) {
       console.log(`Processing ${result.assets.length} images`);
-      
+
       try {
         // Get current completion photos from job data
         let currentCompletionPhotos = jobData?.completion_photos || [];
-        
+
         // Process each image individually
         let successCount = 0;
         let errorCount = 0;
-        
+
         for (let i = 0; i < result.assets.length; i++) {
           const asset = result.assets[i];
           const imageUri = asset.uri;
-          console.log(`Processing image ${i + 1}/${result.assets.length}:`, imageUri);
-          
+          console.log(
+            `Processing image ${i + 1}/${result.assets.length}:`,
+            imageUri
+          );
+
           try {
             await new Promise((resolve, reject) => {
-              updateCompletionPhotoMutation({
-                jobId: jobData?.name || '',
-                completion_photos: currentCompletionPhotos as any,
-                fileUri: imageUri
-              }, {
-                onSuccess: (updatedJob: any) => {
-                  console.log(`Successfully uploaded image ${i + 1}`);
-                  successCount++;
-                  // Update the current completion photos with the new data from the response
-                  if (updatedJob?.completion_photos) {
-                    currentCompletionPhotos = updatedJob.completion_photos;
-                    console.log(`Updated completion_photos array now has ${currentCompletionPhotos.length} items`);
-                  }
-                  resolve(true);
+              updateCompletionPhotoMutation(
+                {
+                  jobId: robustJobId,
+                  
+                  fileUri: imageUri,
                 },
-                onError: (error) => {
-                  console.error(`Failed to upload image ${i + 1}:`, error);
-                  errorCount++;
-                  reject(error);
+                {
+                  onSuccess: (updatedJob: any) => {
+                    console.log(`Successfully uploaded image ${i + 1}`);
+                    successCount++;
+                    // Update the current completion photos with the new data from the response
+                    if (updatedJob?.completion_photos) {
+                      currentCompletionPhotos = updatedJob.completion_photos;
+                      console.log(
+                        `Updated completion_photos array now has ${currentCompletionPhotos.length} items`
+                      );
+                    }
+                    // After final image upload, refresh job details cache
+                    if (i === result.assets.length - 1) {
+                      try {
+                        queryClient.invalidateQueries({
+                          queryKey: ["get-jobs", robustJobId],
+                        });
+                        queryClient.refetchQueries({
+                          queryKey: ["get-jobs", robustJobId],
+                          type: "active",
+                          exact: true,
+                        });
+                      } catch (e) {
+                        console.warn(
+                          "Failed to refresh job details after photo upload",
+                          e
+                        );
+                      }
+                    }
+                    resolve(true);
+                  },
+                  onError: (error) => {
+                    console.error(`Failed to upload image ${i + 1}:`, error);
+                    errorCount++;
+                    reject(error);
+                  },
                 }
-              });
+              );
             });
           } catch (error) {
             console.error(`Error uploading image ${i + 1}:`, error);
             errorCount++;
           }
         }
-        
+
         // Show final result
         if (Platform.OS !== "web") {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
-        
+
         if (errorCount === 0) {
-          Alert.alert(t("jobDetails.success"), t("jobDetails.photosUploadedSuccessfully", { count: successCount }));
+          Alert.alert(
+            t("jobDetails.success"),
+            t("jobDetails.photosUploadedSuccessfully", { count: successCount })
+          );
         } else if (successCount > 0) {
-          Alert.alert(t("jobDetails.partialSuccess"), t("jobDetails.photosUploadedFailed", { count: successCount, errorCount }));
+          Alert.alert(
+            t("jobDetails.partialSuccess"),
+            t("jobDetails.photosUploadedFailed", {
+              count: successCount,
+              errorCount,
+            })
+          );
         } else {
-          Alert.alert(t("jobDetails.error"), t("jobDetails.allPhotosFailedToUpload"));
+          Alert.alert(
+            t("jobDetails.error"),
+            t("jobDetails.allPhotosFailedToUpload")
+          );
         }
-        
+
+        // Refresh job details so completion photos update in UI
+        if (successCount > 0 && robustJobId) {
+          try {
+            queryClient.invalidateQueries({
+              queryKey: ["get-jobs", robustJobId],
+            });
+            queryClient.refetchQueries({
+              queryKey: ["get-jobs", robustJobId],
+              type: "active",
+              exact: true,
+            });
+          } catch (e) {
+            console.warn(
+              "Failed to refetch job details after photo upload:",
+              e
+            );
+          }
+        }
       } catch (error) {
         console.error("Error processing multiple images:", error);
-        Alert.alert(t("jobDetails.error"), t("jobDetails.failedToProcessImages"));
+        Alert.alert(
+          t("jobDetails.error"),
+          t("jobDetails.failedToProcessImages")
+        );
       }
     } else {
       console.log("Image selection was canceled or no assets");
@@ -447,12 +554,33 @@ export default function JobDetailScreen() {
         {
           text: t("jobDetails.complete"),
           onPress: () => {
-            updateJobStatusMutation({ jobId: job.id, status: "Job Marked as Done" });
-            if (Platform.OS !== "web") {
-              Haptics.notificationAsync(
-                Haptics.NotificationFeedbackType.Success
-              );
-            }
+            updateJobStatusMutation(
+              { jobId: robustJobId, status: "job_completed" },
+              {
+                onSuccess: () => {
+                  try {
+                    queryClient.invalidateQueries({
+                      queryKey: ["get-jobs", robustJobId],
+                    });
+                    queryClient.refetchQueries({
+                      queryKey: ["get-jobs", robustJobId],
+                      type: "active",
+                      exact: true,
+                    });
+                  } catch (e) {
+                    console.warn(
+                      "Failed to refresh job after status update",
+                      e
+                    );
+                  }
+                  if (Platform.OS !== "web") {
+                    Haptics.notificationAsync(
+                      Haptics.NotificationFeedbackType.Success
+                    );
+                  }
+                },
+              }
+            );
           },
         },
       ]
@@ -538,14 +666,18 @@ export default function JobDetailScreen() {
               style={styles.primaryButton}
               onPress={handleCollectStock}
             >
-              <Text style={styles.primaryButtonText}>{t("jobDetails.collectStock")}</Text>
+              <Text style={styles.primaryButtonText}>
+                {t("jobDetails.collectStock")}
+              </Text>
             </Pressable>
           )}
         </View>
 
         {/* Schedule Details */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>{t("jobDetails.scheduleDetails")}</Text>
+          <Text style={styles.cardTitle}>
+            {t("jobDetails.scheduleDetails")}
+          </Text>
 
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>{t("jobDetails.date")}:</Text>
@@ -553,16 +685,16 @@ export default function JobDetailScreen() {
           </View>
 
           <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>{t("jobDetails.time")}:</Text>
+            <Text style={styles.detailLabel}>{t("jobDetails.time")}:</Text>
             <Text style={styles.detailValue}>{formattedTime}</Text>
           </View>
 
-          <View style={styles.detailRow}>
+          {/* <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>{t("jobDetails.duration")}:</Text>
             <Text style={styles.detailValue}>{job.duration}</Text>
-          </View>
+          </View> */}
 
-          <View style={[styles.detailRow, {alignItems: "flex-start"}]}>
+          <View style={[styles.detailRow, { alignItems: "flex-start" }]}>
             <Text style={styles.detailLabel}>{t("jobDetails.type")}:</Text>
             <Text
               style={[styles.detailValue, styles.detailValueMultiline]}
@@ -575,38 +707,44 @@ export default function JobDetailScreen() {
 
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>{t("jobDetails.status")}:</Text>
-            {/* <View style={styles.priorityBadge}>
-              <Text style={styles.priorityText}>
-              {job.status.charAt(0).toUpperCase() + job.status.slice(1).toLowerCase()}
-              </Text>
-            </View> */}
-            <StatusBadge status={job.status} size="medium" />
+            <StatusBadge
+              status={jobDetails?.installation?.status || job.status}
+              size="medium"
+            />
           </View>
         </View>
 
         {/* Partner Details */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>{t("jobDetails.partnerDetails")}</Text>
-          <Text style={styles.companyName}>{jobData?.installation?.partner.partnerName}</Text>
+          <Text style={styles.companyName}>
+            {jobData?.installation?.partner.partnerName}
+          </Text>
 
           <ContactRow
             icon={<Phone size={20} color={Colors.light.gray[600]} />}
             text={jobData?.installation?.partner.phone || ""}
-            onPress={() => handleCall(jobData?.installation?.partner.phone || "")}
+            onPress={() =>
+              handleCall(jobData?.installation?.partner.phone || "")
+            }
             buttonColor="#4CD964"
           />
 
           <ContactRow
             icon={<Mail size={20} color={Colors.light.black} />}
             text={jobData?.installation?.partner.email || ""}
-            onPress={() => handleEmail(jobData?.installation?.partner.email || "")}
+            onPress={() =>
+              handleEmail(jobData?.installation?.partner.email || "")
+            }
             buttonColor="#4CD964"
           />
 
           <ContactRow
             icon={<MapPin size={20} color={Colors.light.gray[600]} />}
             text={jobData?.installation?.partner.address || ""}
-            onPress={() => handleNavigate(jobData?.installation?.partner.address || "")}
+            onPress={() =>
+              handleNavigate(jobData?.installation?.partner.address || "")
+            }
             buttonColor="#FF2D55"
           />
         </View>
@@ -627,10 +765,31 @@ export default function JobDetailScreen() {
 
           {productsExpanded && (
             <>
-              {Array.isArray(jobData?.installation?.products) && jobData?.installation?.products.map((product: any) => (
-             
-                <ProductItem key={product.inventoryItemId} product={product} />
-              ))}
+              {Array.isArray(jobDetails?.installation?.products)
+                ? jobDetails.installation.products.map((product: any) => (
+                    <ProductItem
+                      key={
+                        product.inventoryItemId ||
+                        product.item ||
+                        product.sku ||
+                        product.name
+                      }
+                      product={product}
+                    />
+                  ))
+                : Array.isArray(jobData?.installation?.products)
+                ? jobData.installation.products.map((product: any) => (
+                    <ProductItem
+                      key={
+                        product.inventoryItemId ||
+                        product.item ||
+                        product.sku ||
+                        product.name
+                      }
+                      product={product}
+                    />
+                  ))
+                : null}
 
               <View style={styles.productActions}>
                 <Pressable
@@ -638,7 +797,9 @@ export default function JobDetailScreen() {
                   onPress={handleCollectStock}
                 >
                   <Package size={16} color={Colors.light.text} />
-                  <Text style={styles.outlineButtonText}>{t("jobDetails.collectStock")}</Text>
+                  <Text style={styles.outlineButtonText}>
+                    {t("jobDetails.collectStock")}
+                  </Text>
                 </Pressable>
               </View>
             </>
@@ -647,7 +808,9 @@ export default function JobDetailScreen() {
 
         {/* Customer Information */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>{t("jobDetails.customerInformation")}</Text>
+          <Text style={styles.cardTitle}>
+            {t("jobDetails.customerInformation")}
+          </Text>
           <Text style={styles.customerName}>{job.customer.customer_name}</Text>
 
           <ContactRow
@@ -679,12 +842,22 @@ export default function JobDetailScreen() {
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>{t("jobDetails.status")}:</Text>
             <StatusBadge
-              status={job.status === "contract_sent" ? "sent" : "not_sent"}
+              status={
+                ["contract_sent", "contract_signed", "job_completed"].some((s) =>
+                  (jobDetails?.installation?.status || job.status)?.includes(s)
+                )
+                  ? "sent"
+                  : "not_sent"
+              }
               size="medium"
             />
           </View>
 
-          {job.contractsent !== true && (
+          {!(
+            ["contract_sent", "contract_signed", "job_completed"].some((s) =>
+              (jobDetails?.installation?.status || job.status)?.includes(s)
+            )
+          ) && (
             <Pressable
               style={styles.contractButton}
               onPress={handleSendContract}
@@ -700,35 +873,43 @@ export default function JobDetailScreen() {
         {/* Job Completion */}
         <View style={styles.card}>
           <View style={styles.expandableHeader}>
-            <Text style={styles.cardTitle}>{t("jobDetails.jobCompletion")}</Text>
+            <Text style={styles.cardTitle}>
+              {t("jobDetails.jobCompletion")}
+            </Text>
           </View>
 
-          {jobDetails?.data?.completion_photos && jobDetails?.data?.completion_photos.length > 0 ? (
+          {jobDetails?.installation?.completion_photos &&
+          jobDetails?.installation?.completion_photos.length > 0 ? (
             <View style={styles.photosList}>
               <Text style={styles.photosTitle}>
-                {t("jobDetails.photoCount", { count: jobDetails?.data?.completion_photos?.length })} uploaded
-                
+                {t("jobDetails.photoCount", {
+                  count: jobDetails?.installation?.completion_photos?.length,
+                })}{" "}
+                uploaded
               </Text>
               <View style={styles.photosContainer}>
                 <FlatList
-                  data={jobDetails?.data?.completion_photos}
+                  data={jobDetails?.installation?.completion_photos}
                   horizontal
                   showsHorizontalScrollIndicator={false}
                   keyExtractor={(item, index) => index.toString()}
                   key={job.title}
-                 
                   renderItem={({ item }: { item: any }) => {
                     // Check if item.image already contains a full URL
-                    const imageUrl = item.image?.startsWith('http') 
-                      ? item.image 
+                    const imageUrl = item.image?.startsWith("http")
+                      ? item.image
                       : `${IMAGE_URL}${item.image}`;
-                    
+
                     return (
-                      <Image 
-                        source={{ uri: imageUrl || 'https://placehold.co/600x400' }} 
+                      <Image
+                        source={{
+                          uri: imageUrl || "https://placehold.co/600x400",
+                        }}
                         style={styles.photo}
                         contentFit="cover"
-                        onError={() => console.warn("Failed to load image:", imageUrl)}
+                        onError={() =>
+                          console.warn("Failed to load image:", imageUrl)
+                        }
                       />
                     );
                   }}
@@ -736,27 +917,38 @@ export default function JobDetailScreen() {
               </View>
             </View>
           ) : (
-              <Text style={styles.noPhotosText}>{t("jobDetails.noPhotosUploaded")}</Text>
+            <Text style={styles.noPhotosText}>
+              {t("jobDetails.noPhotosUploaded")}
+            </Text>
           )}
 
-          <Pressable 
-            style={styles.uploadButton} 
+          <Pressable
+            style={styles.uploadButton}
             onPress={() => {
               console.log("Upload button pressed");
               handleTakePhoto();
             }}
           >
             <Camera size={20} color={Colors.light.primary} />
-            <Text style={styles.uploadButtonText}>{t("jobDetails.addPhoto")}</Text>
+            <Text style={styles.uploadButtonText}>
+              {t("jobDetails.addPhoto")}
+            </Text>
           </Pressable>
         </View>
 
         {/* Mark as Complete Button */}
-        {jobDetails?.data?.completion_photos && jobDetails?.data?.completion_photos.length > 0 && (
-          <Pressable style={styles.completeButton} onPress={handleMarkComplete}>
-              <Text style={styles.completeButtonText}>{t("jobDetails.markAsComplete")}</Text>
-          </Pressable>
-        )}
+        {jobDetails?.installation?.completion_photos &&
+          jobDetails?.installation?.completion_photos.length > 0 && 
+          jobDetails?.installation?.status?.includes("job_completed") === false && (  
+            <Pressable
+              style={styles.completeButton}
+              onPress={handleMarkComplete}
+            >
+              <Text style={styles.completeButtonText}>
+                {t("jobDetails.markAsComplete")}
+              </Text>
+            </Pressable>
+          )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -765,7 +957,7 @@ export default function JobDetailScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
     backgroundColor: Colors.light.background,
   },
   container: {
@@ -864,8 +1056,8 @@ const styles = StyleSheet.create({
   },
   detailValueMultiline: {
     flexShrink: 1,
-    maxWidth: '70%',
-    alignItems: 'flex-end',
+    maxWidth: "70%",
+    alignItems: "flex-end",
   },
   priorityBadge: {
     backgroundColor: "#FFEBEE",
