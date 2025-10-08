@@ -104,19 +104,19 @@ const CollectProductItem = ({
   const { t } = useTranslation();
   // Use a stable identifier preferring inventoryItemId, then item, inventorycode, then sku
   const rawItemId = (product as any)?.inventoryItemId ?? product?.item ?? (product as any)?.inventorycode ?? product?.sku ?? "";
-  console.log("identifier candidates:", {
+  // console.log("identifier candidates:", {
    
-    inventorycode: (product as any)?.inventorycode,
-  });
+  //   inventorycode: (product as any)?.inventorycode,
+  // });
   const itemId = String(rawItemId).trim();
   if (!itemId) {
-    console.log("CollectProductItem: missing itemId for product", product);
-  } else {
-    console.log("CollectProductItem: using itemId", itemId);
+  //   console.log("CollectProductItem: missing itemId for product", product);
+  // } else {
+    // console.log("CollectProductItem: using itemId", itemId);
   }
   const { data: productData } = useGetProduct(itemId);
   const { data: stockData } = useGetStock(itemId);
-  console.log(`Product Data for ${itemId}:`, productData);
+  // console.log(`Product Data for ${itemId}:`, productData);
 
 
   return (
@@ -204,13 +204,13 @@ export default function CollectStockScreen() {
   // Parse products from params
   useEffect(() => {
 
-    console.log("products:", products);
+    // console.log("products:", products);
   
     if (products) {
       try {
         const productsData = JSON.parse(products);
-        console.log("Parsed products:", productsData);
-        console.log("Parsed products length:", productsData?.length);
+        // console.log("Parsed products:", productsData);
+        // console.log("Parsed products length:", productsData?.length);
         setParsedProducts(productsData);
       } catch (error) {
         console.error("Failed to parse products:", error);
@@ -224,16 +224,16 @@ export default function CollectStockScreen() {
   // productId is passed from the CollectProductItem component when the user presses the "Upload Photo & Collect" button.
   // It is derived from the product's stable identifier (item or inventoryItemId) that was originally passed into CollectProductItem.
   const handleCollectProduct = async (productId: string) => {
-    console.log("handleCollectProduct called with productId:", productId);
-    console.log("jobId:", jobId);
-    console.log("Platform:", Platform.OS);
+    // console.log("handleCollectProduct called with productId:", productId);
+    // console.log("jobId:", jobId);
+    // console.log("Platform:", Platform.OS);
 
     // Use fallback jobId if not available from params
     const currentJobId = jobId || "fallback-job-id";
-    console.log("Using jobId:", currentJobId);
+    // console.log("Using jobId:", currentJobId);
 
     if (!currentJobId || currentJobId === "fallback-job-id") {
-      console.log("No valid jobId, returning early");
+      // console.log("No valid jobId, returning early");
       Alert.alert(t("collectStock.error"), t("collectStock.jobIdNotFound"));
       return;
     }
@@ -476,10 +476,10 @@ export default function CollectStockScreen() {
         status: "stock_collected",
       }, {
         onSuccess: () => {
-          // Invalidate and refetch job details to update UI
-          queryClient.invalidateQueries({ queryKey: ["get-jobs", currentJobId] });
-          queryClient.refetchQueries({ queryKey: ["get-jobs", currentJobId] });
-          
+          // Invalidate and refetch job details to update UI immediately
+          queryClient.refetchQueries({ queryKey: ["get-jobs", currentJobId], type: "active", exact: true });
+          queryClient.invalidateQueries({ queryKey: ["get-jobs"] });
+          queryClient.invalidateQueries({ queryKey: ["get-pending-jobs"] });
           if (Platform.OS !== "web") {
             Haptics.notificationAsync(
               Haptics.NotificationFeedbackType.Success
@@ -542,10 +542,10 @@ export default function CollectStockScreen() {
           contentContainerStyle={styles.content}
         >
           {parsedProducts.map((product: Product, index: number) => {
-            console.log(
-              `Rendering product ${index + 1}/${parsedProducts.length}:`,
-              product
-            );
+            // console.log(
+            //   `Rendering product ${index + 1}/${parsedProducts.length}:`,
+            //   product
+            // );
             // Default to 1 required if not specified
             const requiredQuantity = 1;
             const isInsufficient = false; // We'll handle this based on actual stock data if needed

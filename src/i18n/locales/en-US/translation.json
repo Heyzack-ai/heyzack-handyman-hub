@@ -330,7 +330,9 @@
     "galleryPermissionNeeded": "Gallery permission is needed to select photos",
     "jobIdNotFound": "Job ID not found. Please try again.",
     "notSupported": "Not Supported",
-    "cameraNotAvailable": "Camera functionality is not available on web platform. Please use a mobile device."
+    "cameraNotAvailable": "Camera functionality is not available on web platform. Please use a mobile device.",
+    "success": "Success",
+    "cancel": "Cancel"
   },
   "payments": {
     "requestPayment": "Request Payment",
@@ -463,7 +465,11 @@
     "error": "Error",
     "failedToGetUserData": "Failed to get user data",
     "failedToJoinPartner": "Failed to join partner",
-    "youveSuccessfullyJoinedThePartner": "You've successfully joined the partner"
+    "youveSuccessfullyJoinedThePartner": "You've successfully joined the partner",
+    "code": "Code",
+    "email": "Email",
+    "phone": "Phone",
+    "address": "Address"
   },
   "addBank": {
     "addBank": "Add Bank",

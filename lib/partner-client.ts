@@ -2,16 +2,17 @@ import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 
 export interface Partner {
-	/** name is ID in ERP */
+	
 	name: string;
 	partner_name: string;
 	email: string;
 	phone: string;
+	id: string;
 }
 
 
 const serverClient = axios.create({
-	baseURL: `${process.env.EXPO_PUBLIC_API_URL}`,
+	baseURL: `${process.env.EXPO_PUBLIC_CHAT_API_URL}`,
 	headers: {
 		"Content-Type": "application/json",
 	},
@@ -45,7 +46,7 @@ export async function getPartners(partner_id: string): Promise<Partner[]> {
 
 	const response = await serverClient.get<{
 		data: Partner[];
-	}>("/erp/resource/Installation Partner", { params });
+	}>("/partners", { params });
 
 	return response.data.data;
 }
@@ -63,7 +64,7 @@ export async function getAssignedPartners(partner_id: string): Promise<Partner[]
 
 	const response = await serverClient.get<{
 		data: Partner[];
-	}>("/erp/resource/Installation Partner", { params });
+	}>("/partners", { params });
 
 	return response.data.data;
 }
@@ -71,7 +72,7 @@ export async function getAssignedPartners(partner_id: string): Promise<Partner[]
 export const getUnassignedPartners = async (): Promise<Partner[]> => {
 	const response = await serverClient.get<{
 		data: Partner[];
-	}>("/erp/resource/Installation Partner", {
+	}>("/partners", {
 		params: {
 			filters: JSON.stringify([["partner", "=", "None"]]),
 			fields: JSON.stringify([
@@ -89,7 +90,7 @@ export const getUnassignedPartners = async (): Promise<Partner[]> => {
 export const getPartner = async (id: string): Promise<Partner> => {
 	const response = await serverClient.get<{
 		data: Partner;
-	}>(`/erp/resource/Installation Partner/${id}`);
+	}>(`/partners/${id}`);
 
 	return {
 		...response.data.data,
@@ -99,7 +100,7 @@ export const getPartner = async (id: string): Promise<Partner> => {
 export const createPartner = async (
 	data: Partner,
 ): Promise<Partner> => {
-	const response = await serverClient.post("/erp/resource/Installation Partner", data);
+	const response = await serverClient.post("/partners", data);
 	return response.data.data;
 };
 
@@ -109,7 +110,7 @@ export const updatePartner = async (
 ): Promise<Partner> => {
 	const response = await serverClient.put<{
 		data: Partner;
-	}>(`/erp/resource/Installation Partner/${id}`, data);
+	}>(`/partners/${id}`, data);
 
 	return {
 		...response.data.data,
@@ -117,7 +118,7 @@ export const updatePartner = async (
 };
 
 export const deletePartner = async (id: string): Promise<void> => {
-	await serverClient.delete(`/erp/resource/Installation Partner/${id}`);
+	await serverClient.delete(`/partners/${id}`);
 };
 
 export default serverClient;

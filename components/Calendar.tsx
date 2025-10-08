@@ -96,6 +96,7 @@ export default function Calendar({ selectedDate, onDateSelect, jobs = [] }: Cale
   const getStatus = (job: any): string | undefined => {
     // Use top-level status, or installation.status; fall back to response === 'pending'
     const status = job?.status || job?.installation?.status;
+    
     if (status) return String(status).toLowerCase();
     if (job?.response === "pending") return "pending";
     return undefined;
@@ -104,15 +105,18 @@ export default function Calendar({ selectedDate, onDateSelect, jobs = [] }: Cale
   const getJobTypesForDate = (day: number) => {
     const dateString = formatDate(day);
     const dayJobs = (jobs ?? []).filter(job => getScheduledDate(job)?.startsWith(dateString));
+    
 
     return {
       hasBookedInstallation: dayJobs.some(job => {
         const status = getStatus(job);
         return !!status && status !== "pending";
       }),
-      hasJobRequest: dayJobs.some(job => getStatus(job) === "pending"),
+      hasJobRequest: dayJobs.some(job => getStatus(job) === "assigned"),
     };
   };
+
+  
 
   const isSelected = (day: number) => {
     const dateString = formatDate(day);

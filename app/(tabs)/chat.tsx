@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import ChatListShimmer from "@/components/ChatListShimmer";
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import { useChatStore } from "@/store/chat-store";
 import ConversationItem from "@/components/ConversationItem";
 import Colors from "@/constants/colors";
@@ -26,12 +27,13 @@ import { getAssignedPartners } from "@/lib/partner-client";
 import { useChat } from "@/hooks/use-chat";
 import { getChatRooms, getUnreadCount } from "@/lib/chat-client";
 import { authClient } from "@/lib/auth-client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "@/src/i18n/useTranslations";
 
 export default function ChatScreen() {
   const router = useRouter();
   const { data: session } = authClient.useSession();
+  const queryClient = useQueryClient();
   const [showPartnerList, setShowPartnerList] = useState(false);
   const [showMediaOptions, setShowMediaOptions] = useState(false);
   const { t } = useTranslations();
@@ -43,7 +45,7 @@ export default function ChatScreen() {
 
   // Get chat data for the current partner
   const { messages: partnerMessages, loadChatHistory } = useChat({
-    otherUserId: currentPartner?.name,
+    otherUserId: currentPartner?.id,
     userType: "partner",
   });
 
@@ -67,6 +69,18 @@ export default function ChatScreen() {
       loadChatHistory();
     }
   }, [currentPartner?.name, loadChatHistory]);
+
+  // Refresh chat history when screen comes into focus (e.g., returning from individual chat)
+  useFocusEffect(
+    React.useCallback(() => {
+      if (currentPartner?.name) {
+        loadChatHistory();
+      }
+      // Invalidate and refetch chat-related queries to get fresh data
+      queryClient.invalidateQueries({ queryKey: ["chat-rooms"] });
+      queryClient.invalidateQueries({ queryKey: ["unread-count"] });
+    }, [currentPartner?.name, loadChatHistory, queryClient])
+  );
 
   // Get unassigned partners for new chat creation
   const { data: unassignedPartners, isLoading: unassignedLoading } = useQuery({

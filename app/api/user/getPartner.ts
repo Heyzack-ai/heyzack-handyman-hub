@@ -8,6 +8,7 @@ import { getUnassignedPartners } from "@/lib/partner-client";
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
 type Partner = {
+  id: string;
   name: string;
   partner_name?: string;
   partner_code?: string;
@@ -60,10 +61,8 @@ export function useGetPartnerById(name: string) {
         if (!token) {
           throw new Error("Authentication token not found");
         }
-        const searchParams = new URLSearchParams();
-        searchParams.append('filter', `[["name", "=", "${name}"]]`);
-        searchParams.append('fields', JSON.stringify(['name', 'partner_name', 'partner_code', 'contact_person', 'email', 'phone', 'address']));
-        const response = await axios.get<{ data: Partner[] }>(`${BASE_URL}/erp/resource/Installation Partner?${searchParams.toString()}`, {
+       console.log("Fetching partner by ID:", name);
+        const response = await axios.get< Partner >(`${BASE_URL}/partners/${name}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -72,11 +71,9 @@ export function useGetPartnerById(name: string) {
 
         console.log(response.data);
 
-        if (!response.data?.data?.[0]) {
-          throw new Error("Partner not found");
-        }
+       
 
-        return response.data.data[0];
+        return response.data;
       } catch (error) {
         console.error("Failed to fetch partner:", error);
         throw error instanceof Error

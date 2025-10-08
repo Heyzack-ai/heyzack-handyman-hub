@@ -72,6 +72,7 @@ export const getChatHistory = async (
 	limit = 50,
 ): Promise<ChatHistory> => {
 	const queryParam = userType === "partner" ? "partnerId" : "handymanId";
+	console.log("queryParam", otherUserId);
 	const response = await serverClient.get<{ data: ChatHistory }>(
 		"/chat/history",
 		{
@@ -140,6 +141,37 @@ export const getUnreadCount = async (): Promise<number> => {
 	return response.data.data.count;
 };
 
+// export const sendImage = async (
+// 	imageFile: File | any,
+// 	partnerId: string,
+// ): Promise<SendMessageResponse> => {
+// 	const formData = new FormData();
+	
+// 	// Handle both web File objects and React Native file-like objects
+// 	if (imageFile.uri) {
+// 		// React Native file object
+// 		formData.append('image', imageFile as any);
+// 	} else {
+// 		// Web File object
+// 		formData.append('image', imageFile);
+// 	}
+	
+// 	formData.append('partnerId', partnerId);
+
+// 	console.log("formData", formData?.get('image'));
+
+// 	const response = await serverClient.post< SendMessageResponse >(
+// 		"/chat/upload-image",
+// 		formData,
+// 		{
+// 			headers: {
+// 				'Content-Type': undefined, // Let axios set the proper multipart/form-data with boundary
+// 			},
+// 		},
+// 	);
+
+// 	return response.data;
+// };
 export const sendImage = async (
 	imageFile: File | any,
 	partnerId: string,
@@ -149,7 +181,11 @@ export const sendImage = async (
 	// Handle both web File objects and React Native file-like objects
 	if (imageFile.uri) {
 		// React Native file object
-		formData.append('image', imageFile as any);
+		formData.append('image', {
+			uri: imageFile.uri,
+			type: imageFile.type || 'image/jpeg',
+			name: imageFile.name || 'image.jpg',
+		} as any);
 	} else {
 		// Web File object
 		formData.append('image', imageFile);
@@ -157,19 +193,34 @@ export const sendImage = async (
 	
 	formData.append('partnerId', partnerId);
 
-	const response = await serverClient.post<{ data: SendMessageResponse }>(
-		"/chat/upload-image",
-		formData,
-		{
-			headers: {
-				'Content-Type': undefined, // Let axios set the proper multipart/form-data with boundary
+	console.log("formData", formData?.get('image'));
+
+	try {
+		const response = await serverClient.post<{
+			message: string;
+			data: SendMessageResponse;
+		}>(
+			"/chat/upload-image",
+			formData,
+			{
+				headers: {
+					'Content-Type': 'multipart/form-data',
+				},
 			},
-		},
-	);
+		);
 
-	return response.data.data;
+		console.log("Server response:", response.data);
+
+		// Return the data with the missing 'message' property
+		return {
+			...response.data.data,
+			message: '', // Add empty message property for image messages
+		};
+	} catch (error) {
+		console.error("Error uploading image:", error);
+		throw error;
+	}
 };
-
 /**
  * Delete a message from a chat room
  */

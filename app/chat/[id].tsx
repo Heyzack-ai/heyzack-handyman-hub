@@ -35,18 +35,21 @@ export default function ChatConversationScreen() {
     partnerId?: string; 
     partnerName?: string; 
   }>();
+
   const router = useRouter();
   const scrollViewRef = useRef<ScrollView>(null);
   const [messageText, setMessageText] = useState("");
   const [showMediaOptions, setShowMediaOptions] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [isNearBottom, setIsNearBottom] = useState(true);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
   const { t } = useTranslation();
   const { data: session } = authClient.useSession();
   
   // Get partner details if partnerId is provided
-  const { data: partner } = useGetPartnerById(partnerId || "");
-  
+  const { data: partner, error: partnerError } = useGetPartnerById(partnerId || "");
+
   // Use the chat hook with partner information
   const {
     messages,
@@ -67,10 +70,12 @@ export default function ChatConversationScreen() {
     }
   }, [partnerId, loadChatHistory]);
 
-  // Scroll to bottom when new messages arrive
+  // Scroll to bottom when new messages arrive, but only if user is already near bottom
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (shouldAutoScroll && isNearBottom) {
+      scrollToBottom();
+    }
+  }, [messages, shouldAutoScroll, isNearBottom]);
 
   const scrollToBottom = () => {
     setTimeout(() => {
@@ -78,11 +83,27 @@ export default function ChatConversationScreen() {
     }, 100);
   };
 
+  const handleScroll = (event: any) => {
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    const paddingToBottom = 20;
+    const isAtBottom = layoutMeasurement.height + contentOffset.y >= 
+      contentSize.height - paddingToBottom;
+    
+    setIsNearBottom(isAtBottom);
+  };
+
   const handleSendMessage = async () => {
     if (messageText.trim() && partnerId) {
       try {
+        // Temporarily enable auto-scroll for user's own message
+        setShouldAutoScroll(true);
+        setIsNearBottom(true);
+        
         await sendChatMessage(messageText.trim());
         setMessageText("");
+        
+        // Scroll to bottom to show the sent message
+        scrollToBottom();
       } catch (error) {
         console.error("Failed to send message:", error);
         // Only show error alert, not success alert
@@ -264,6 +285,8 @@ export default function ChatConversationScreen() {
           style={styles.messagesContainer}
           contentContainerStyle={styles.messagesContent}
           showsVerticalScrollIndicator={false}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
         >
           {messages.length === 0 ? (
             <View style={styles.emptyContainer}>
@@ -271,13 +294,13 @@ export default function ChatConversationScreen() {
               <Text style={styles.emptySubtext}>{t("chat.startConversation", { displayName })}</Text>
             </View>
                     ) : (
-            messages.map((message) => {
+            messages.map((message, index) => {
               const extendedMessage = message as extendMessage;
               const isImage = extendedMessage.messageType === 'image';
               
               return (
                 <MessageBubble 
-                  key={message.id} 
+                  key={`${message.id}-${index}`} 
                   message={{
                     id: message.id,
                     content: isImage ? extendedMessage.imageUrl || '' : message.message,

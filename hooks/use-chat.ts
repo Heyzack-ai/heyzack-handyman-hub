@@ -102,6 +102,8 @@ export function useChat({ otherUserId, userType }: UseChatProps = {}) {
 	const loadChatHistory = useCallback(async () => {
 		if (!otherUserId || !userType || !session?.user.id) return;
 
+		console.log("Loading chat history for:", otherUserId, userType);
+
 		setIsLoading(true);
 		try {
 			const chatHistory = await getChatHistory(otherUserId, userType);
@@ -119,8 +121,8 @@ export function useChat({ otherUserId, userType }: UseChatProps = {}) {
 			if (chatHistory.messages && chatHistory.messages.length > 0) {
 				await syncInitialMessagesToFirebase(chatHistory.messages);
 			}
-		} catch (error) {
-			console.error("Failed to fetch chat history:", error);
+		} catch (error: any) {
+			console.error("Failed to fetch chat history:", error?.response?.data || error);
 			setMessages([]);
 		} finally {
 			setIsLoading(false);
@@ -172,7 +174,7 @@ export function useChat({ otherUserId, userType }: UseChatProps = {}) {
 	/**
 	 * Setup Firebase real-time listener with enhanced reliability
 	 */
-	const setupFirebaseListener = useCallback(() => {
+	const setupFirebaseListener = useCallback(async () => {
 		if (!firebaseRoomId) {
 			console.log("No firebaseRoomId, clearing messages");
 			setMessages([]);
@@ -215,8 +217,9 @@ export function useChat({ otherUserId, userType }: UseChatProps = {}) {
 		const presenceRef = ref(database, `chats/${firebaseRoomId}/presence/${session?.user.id}`);
 		onDisconnect(presenceRef).remove();
 		
-		// First, use onValue to get initial messages from Firebase
-		const initialUnsubscribe = onValue(messagesRef, (snapshot) => {
+		// Use get() to fetch initial messages from Firebase
+		try {
+			const snapshot = await get(messagesRef);
 			console.log("Initial Firebase snapshot received:", snapshot.exists());
 			setIsListenerActive(true);
 			
@@ -237,12 +240,14 @@ export function useChat({ otherUserId, userType }: UseChatProps = {}) {
 				setMessages(messageList);
 			} else {
 				console.log("No messages in Firebase initially");
+				setMessages([]);
 			}
-		}, (error) => {
-			console.error("Firebase initial listener error:", error);
-		});
+		} catch (error) {
+			console.error("Firebase initial fetch error:", error);
+			setMessages([]);
+		}
 
-		// Then, use onChildAdded to listen for new messages
+		// Then, use onChildAdded to listen for new messages only
 		const newMessageUnsubscribe = onChildAdded(messagesRef, (snapshot) => {
 			console.log("New message received from Firebase:", snapshot.key);
 			
@@ -284,9 +289,9 @@ export function useChat({ otherUserId, userType }: UseChatProps = {}) {
 			if (reconnectTimeoutRef.current) {
 				clearTimeout(reconnectTimeoutRef.current);
 			}
-			reconnectTimeoutRef.current = setTimeout(() => {
+			reconnectTimeoutRef.current = setTimeout(async () => {
 				console.log("Attempting to reconnect Firebase listener...");
-				setupFirebaseListener();
+				await setupFirebaseListener();
 			}, 2000);
 		});
 
@@ -294,14 +299,12 @@ export function useChat({ otherUserId, userType }: UseChatProps = {}) {
 		listenerRef.current = () => {
 			console.log("Cleaning up Firebase listener");
 			off(messagesRef);
-			initialUnsubscribe();
 			newMessageUnsubscribe();
 			setIsListenerActive(false);
 			currentRoomIdRef.current = null;
 		};
 
 		return () => {
-			initialUnsubscribe();
 			newMessageUnsubscribe();
 		};
 	}, [firebaseRoomId, session?.user.id, initializeFirebaseRoom]);
@@ -342,7 +345,10 @@ export function useChat({ otherUserId, userType }: UseChatProps = {}) {
 				const response = await sendMessage(messageData);
 				console.log("Message sent to backend:", response);
 
-				// Also store in Firebase for real-time updates
+				// Remove temporary message and let Firebase listener add the real message
+				setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
+
+				// Store in Firebase for real-time updates
 				if (firebaseRoomId) {
 					// Create clean message object without undefined values
 					const firebaseMessage: any = {
@@ -368,7 +374,7 @@ export function useChat({ otherUserId, userType }: UseChatProps = {}) {
 					console.log("Message stored in Firebase:", response.id);
 				}
 
-				// No success alert - messages appear in real-time
+
 			} catch (error) {
 				console.error("Failed to send message:", error);
 				// Remove the temporary message if sending failed
@@ -437,7 +443,7 @@ export function useChat({ otherUserId, userType }: UseChatProps = {}) {
 	 * Setup Firebase real-time listener
 	 */
 	useEffect(() => {
-		const unsubscribe = setupFirebaseListener();
+		setupFirebaseListener();
 
 		return () => {
 			if (listenerRef.current) {

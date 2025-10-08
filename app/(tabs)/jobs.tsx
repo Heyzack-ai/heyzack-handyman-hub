@@ -42,14 +42,14 @@ export default function JobsScreen() {
       (job.installationAddress || job.installation?.customer?.address || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const scheduledJobs = jobsData?.filter(
+  const scheduledJobs = filteredJobs?.filter(
     (job: any) => job.installation?.status === "scheduled" || job.response === "accepted"
   );
-  const inProgressJobs = jobsData?.filter(
+  const inProgressJobs = filteredJobs?.filter(
     (job: any) =>
       job.installation?.status === "started" || job.installation?.status === "in_progress"
   );
-  const completedJobs = jobsData?.filter(
+  const completedJobs = filteredJobs?.filter(
     (job: any) => job.installation?.status === "completed"
   );
 
@@ -76,7 +76,13 @@ export default function JobsScreen() {
     const id = getJobId(job);
     const isDuplicated = scheduledIds.has(id) || inProgressIds.has(id) || completedIds.has(id);
 
-    return (isPendingByStatus || isPendingByResponse) && !isActive && !isDuplicated;
+    // Apply search filter to pending job requests
+    const matchesSearch = searchQuery === "" || 
+      (job.installation?.title || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (job.installation?.customer?.customerName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (job.installation?.customer?.address || job.installationAddress || "").toLowerCase().includes(searchQuery.toLowerCase());
+
+    return (isPendingByStatus || isPendingByResponse) && !isActive && !isDuplicated && matchesSearch;
   });
 
   // Total jobs count for empty state check

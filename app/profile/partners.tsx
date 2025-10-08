@@ -153,7 +153,7 @@ export default function PartnersScreen() {
                     {initialPartner.phone && <Text style={styles.partnerCode}>{t("partners.phone")}: {initialPartner.phone}</Text>}
                     {initialPartner.address && <Text style={styles.partnerCode}>{t("partners.address")}: {initialPartner.address}</Text>}
                   </View>
-                  <Pressable
+                  {/* <Pressable
                     style={styles.removeButton}
                     onPress={() => {
                       setPartners([]); // Remove from UI
@@ -161,7 +161,7 @@ export default function PartnersScreen() {
                     }}
                   >
                     <X size={20} color={Colors.light.gray[500]} />
-                  </Pressable>
+                  </Pressable> */}
                 </View>
               </View>
             ) : (

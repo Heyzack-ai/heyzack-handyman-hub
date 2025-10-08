@@ -109,7 +109,7 @@ export default function JobDetailScreen() {
   const queryClient = useQueryClient();
 
   // console.log("Job details:", jobData?.installation);
-  console.log("JobDetails installation:", jobDetails);
+  console.log("JobDetails installation:", jobDetails?.installation?.status);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -289,16 +289,35 @@ export default function JobDetailScreen() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
       sendContractMutation({ jobId: robustJobId || "" });
+      
+      // Invalidate and refetch queries to ensure immediate UI update
+      
+      Alert.alert(
+        t("jobDetails.success"),
+        t("jobDetails.contractSentToCustomer")
+      );
       queryClient.invalidateQueries({ queryKey: ["get-jobs", robustJobId] });
       queryClient.refetchQueries({
         queryKey: ["get-jobs", robustJobId],
         type: "active",
         exact: true,
       });
-      Alert.alert(
-        t("jobDetails.success"),
-        t("jobDetails.contractSentToCustomer")
-      );
+      queryClient.invalidateQueries({ queryKey: ["get-jobs"] });
+      queryClient.refetchQueries({ queryKey: ["get-jobs"], type: "active", exact: true });
+      queryClient.invalidateQueries({ queryKey: ["get-pending-jobs"] });
+      queryClient.refetchQueries({ queryKey: ["get-pending-jobs"], type: "active", exact: true });
+      
+      // Delayed refetch to account for backend processing time
+      setTimeout(() => {
+        queryClient.refetchQueries({
+          queryKey: ["get-jobs", robustJobId],
+          type: "active",
+          exact: true,
+        });
+        queryClient.refetchQueries({ queryKey: ["get-jobs"], type: "active", exact: true });
+        queryClient.refetchQueries({ queryKey: ["get-pending-jobs"], type: "active", exact: true });
+      }, 3000); // Refetch after 3 seconds to ensure backend processing is complete
+      
       setIsLoading(false);
     }, 1000);
   };
@@ -567,6 +586,10 @@ export default function JobDetailScreen() {
                       type: "active",
                       exact: true,
                     });
+                      queryClient.invalidateQueries({ queryKey: ["get-jobs"] });
+                      queryClient.refetchQueries({ queryKey: ["get-jobs"] });
+                      queryClient.invalidateQueries({ queryKey: ["get-pending-jobs"] });
+                      queryClient.refetchQueries({ queryKey: ["get-pending-jobs"] });
                   } catch (e) {
                     console.warn(
                       "Failed to refresh job after status update",
@@ -791,7 +814,8 @@ export default function JobDetailScreen() {
                   ))
                 : null}
 
-              <View style={styles.productActions}>
+              {["scheduled", "pending", "assigned", "accepted", "completed"].includes(job.status) && (
+               <View style={styles.productActions}>
                 <Pressable
                   style={styles.outlineButton}
                   onPress={handleCollectStock}
@@ -802,6 +826,7 @@ export default function JobDetailScreen() {
                   </Text>
                 </Pressable>
               </View>
+              )}
             </>
           )}
         </View>
@@ -922,7 +947,8 @@ export default function JobDetailScreen() {
             </Text>
           )}
 
-          <Pressable
+          {["job_completed", "job_approved"].includes(job.status) === false && (
+            <Pressable
             style={styles.uploadButton}
             onPress={() => {
               console.log("Upload button pressed");
@@ -934,6 +960,7 @@ export default function JobDetailScreen() {
               {t("jobDetails.addPhoto")}
             </Text>
           </Pressable>
+          )}
         </View>
 
         {/* Mark as Complete Button */}
