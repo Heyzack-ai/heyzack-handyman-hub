@@ -7,6 +7,9 @@ import Header from "@/components/Header";
 import NotificationsSkeleton from "@/components/NotificationsSkeleton";
 import { useDeleteNotification, useGetNotifications, useGetNotificationCount, type NotificationsResponse } from "@/app/api/notifications/getNotifications";
 import { useMarkAllNotifications } from "@/app/api/notifications/markAll";
+import { useTranslation } from "react-i18next";
+
+
 
 type Notification = {
   id: string;
@@ -18,6 +21,7 @@ type Notification = {
 };
 
 export default function NotificationsScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { data: apiData, isLoading, error } = useGetNotifications();
   const { data: countData } = useGetNotificationCount();
@@ -107,7 +111,7 @@ export default function NotificationsScreen() {
                 console.error("Error marking all notifications as read:", error);
               }
             }}>
-              <Text style={styles.markAllText}>Mark all as read</Text>
+              <Text style={styles.markAllText}>{t("notifications.markAll")}</Text>
             </Pressable>
             )}
             {notificationsList.length > 0 && (
@@ -153,9 +157,9 @@ export default function NotificationsScreen() {
         ) : (
           <View style={styles.emptyState}>
             <Bell size={48} color={Colors.light.gray[400]} />
-            <Text style={styles.emptyTitle}>No Notifications</Text>
+            <Text style={styles.emptyTitle}>{t("notifications.noNewNotifications")}</Text>
             <Text style={styles.emptyText}>
-              You don't have any notifications at the moment
+              {t("notifications.emptyText")}
             </Text>
           </View>
         )}

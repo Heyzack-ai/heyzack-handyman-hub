@@ -5,9 +5,11 @@ import Colors from "@/constants/colors";
 import { getUnreadCount } from "@/lib/chat-client";
 import { useQuery } from "@tanstack/react-query";
 import { authClient } from "@/lib/auth-client";
+import { useTranslation } from "react-i18next";
 
 export default function TabLayout() {
   const { data: session } = authClient.useSession();
+  const { t } = useTranslation();
   
   // Get real unread count from API
   const { data: totalUnreadCount } = useQuery({
@@ -31,21 +33,21 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
+          title: t("tabs.home"),
           tabBarIcon: ({ color, size }) => <Home size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="jobs"
         options={{
-          title: "Jobs",
+          title: t("tabs.jobs"),
           tabBarIcon: ({ color, size }) => <Briefcase size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="chat"
         options={{
-          title: "Chat",
+          title: t("tabs.chat"),
           tabBarIcon: ({ color, size }) => <MessageCircle size={size} color={color} />,
           tabBarBadge: totalUnreadCount && totalUnreadCount > 0 ? totalUnreadCount : undefined,
         }}
@@ -53,7 +55,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: "Profile",
+          title: t("tabs.profile"),
           tabBarIcon: ({ color, size }) => <User size={size} color={color} />,
         }}
       />

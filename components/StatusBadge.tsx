@@ -2,6 +2,9 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { JobStatus } from "@/types/job";
 import Colors from "@/constants/colors";
+import { useTranslation } from "react-i18next";
+
+
 
 type StatusBadgeProps = {
   status?: JobStatus | string;
@@ -10,6 +13,7 @@ type StatusBadgeProps = {
 
 export default function StatusBadge({ status, size = "medium" }: StatusBadgeProps) {
   const normalizedStatus = typeof status === "string" ? status.toLowerCase().trim() : "";
+  const { t } = useTranslation();
   const getStatusColor = () => {
     switch (normalizedStatus) {
       case "scheduled":
@@ -38,8 +42,6 @@ export default function StatusBadge({ status, size = "medium" }: StatusBadgeProp
         return Colors.light.secondary;
       case "accepted":
         return Colors.light.success;
-      case "stock_collected":
-        return Colors.light.warning;
       case "job_completed":
         return Colors.light.success;
       default:
@@ -50,35 +52,35 @@ export default function StatusBadge({ status, size = "medium" }: StatusBadgeProp
   const getStatusText = () => {
     switch (normalizedStatus) {
       case "scheduled":
-        return "Scheduled";
+        return t("status.scheduled");
       case "pending":
-        return "Pending";
+        return t("status.pending");
       case "stock_collected":
-        return "Stock Collected";
+        return t("status.stock_collected");
       case "en_route":
-        return "En Route";
+        return t("status.en_route");
       case "started":
-        return "In Progress";
+        return t("status.started");
       case "completed":
-        return "Completed";
+        return t("status.completed");
       case "sent":
-        return "Sent";
+        return t("status.sent");
       case "not_sent":
-        return "Not Sent";
+        return t("status.not_sent");
       case "contract_sent":
-        return "Contract Sent";
+        return t("status.contract_sent");
       case "draft":
-        return "Draft";
+        return t("status.draft");
       case "contract_signed":
-        return "Contract Signed";
+        return t("status.contract_signed");
       case "assigned":
-        return "Assigned";
+        return t("status.assigned");
       case "accepted":
-        return "Accepted";
+        return t("status.accepted");
       case "job_completed":
-        return "Completed";
+        return t("status.job_completed");
       default:
-        return "Unknown";
+        return t("status.unknown");
     }
   };
 

@@ -19,10 +19,7 @@ import { z } from "zod";
 import { Image } from "expo-image";
 import { useTranslation } from "react-i18next";
 // Define the validation schema
-const signInSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-});
+
 
 // Type for form errors
 type FormErrors = {
@@ -39,6 +36,11 @@ export default function SignInScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
+
+  const signInSchema = z.object({
+  email: z.string().email(t("auth.invalidEmail")),
+  password: z.string().min(8, t("auth.passwordMinLength")),
+});
 
   const validateForm = (): boolean => {
     try {

@@ -15,6 +15,9 @@ import { Plus, X } from "lucide-react-native";
 import Colors from "@/constants/colors";
 import Header from "@/components/Header";
 import {useAddSkills, useGetSkills} from "@/app/api/user/addskills";
+import { useTranslation } from "react-i18next";
+
+
 
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -23,7 +26,7 @@ export default function SkillsScreen() {
   const queryClient = useQueryClient();
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
-  
+  const {t} = useTranslation();
   const { data: skillsData, isLoading, error: skillsError } = useGetSkills();
 
   useEffect(() => {
@@ -66,22 +69,22 @@ export default function SkillsScreen() {
   
 
   const availableSkills = [
-    "Electrical work",
-    "HVAC",
-    "Glass work",
-    "Heat Pump installation",
-    "Plumbing",
-    "Carpentry",
-    "Painting",
-    "Flooring",
-    "Roofing",
-    "Solar Panel Installation",
-    "Smart Home Setup",
-    "Security Systems"
+    { name: "Electrical work", label: t("addSkills.Electrical work") },
+    { name: "HVAC", label: t("addSkills.HVAC") },
+    { name: "Glass work", label: t("addSkills.Glass work") },
+    { name: "Heat Pump installation", label: t("addSkills.Heat Pump installation") },
+    { name: "Plumbing", label: t("addSkills.Plumbing") },
+    { name: "Carpentry", label: t("addSkills.Carpentry") },
+    { name: "Painting", label: t("addSkills.Painting") },
+    { name: "Flooring", label: t("addSkills.Flooring") },
+    { name: "Roofing", label: t("addSkills.Roofing") },
+    { name: "Solar Panel Installation", label: t("addSkills.Solar Panel Installation") },
+    { name: "Smart Home Setup", label: t("addSkills.Smart Home Setup") },
+    { name: "Security Systems", label: t("addSkills.Security Systems") },
   ];
   
   const unselectedSkills = availableSkills.filter(
-    skill => !selectedSkills.includes(skill)
+    skill => !selectedSkills.includes(skill.name)
   );
 
   const handleAddSkill = (skill: string) => {
@@ -96,7 +99,7 @@ export default function SkillsScreen() {
 
   const handleSave = () => {
     if (!selectedSkills || selectedSkills.length === 0) {
-      Alert.alert("Validation", "Please select at least one skill");
+      Alert.alert(t("addSkills.skills"), t("addSkills.selectSkill"));
       return;
     }
 
@@ -109,43 +112,43 @@ export default function SkillsScreen() {
         setIsSaving(false);
         queryClient.invalidateQueries({ queryKey: ["get-skills"] });
 
-        Alert.alert("Success", "Skills added successfully", [
+        Alert.alert(t("addSkills.success"), t("addSkills.successMessage"), [
           {
-            text: "OK",
+            text: t("addSkills.ok"),
             onPress: () => router.back()
           }
         ]);
       },
       onError: (error) => {
         setIsSaving(false);
-        Alert.alert("Error", error instanceof Error ? error.message : "Failed to add skills");
+        Alert.alert(t("addSkills.error"), error instanceof Error ? error.message : t("addSkills.failedToAddSkills"));
       },
     });
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-     <Header title="Skills & Expertise" onBack={() => router.back()} />
+     <Header title={t("addSkills.title")} onBack={() => router.back()} />
       
       <View style={styles.container}>
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
           <Text style={styles.description}>
-            Select skills that best represent your expertise. These will be visible to customers and partners.
+            {t("addSkills.description")}
           </Text>
           
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Your Skills</Text>
+            <Text style={styles.sectionTitle}>{t("addSkills.yourSkills")}</Text>
             {isLoading ? (
-              <Text style={styles.emptyText}>Loading your skills...</Text>
+              <Text style={styles.emptyText}>{t("addSkills.loadingSkills")}</Text>
             ) : skillsError ? (
               <Text style={[styles.emptyText, { color: 'red' }]}>
-                Error loading skills: {skillsError instanceof Error ? skillsError.message : 'Unknown error'}
+                {t("addSkills.errorLoadingSkills", { error: skillsError instanceof Error ? skillsError.message : 'Unknown error' })}
               </Text>
             ) : selectedSkills.length > 0 ? (
               <View style={styles.skillTags}>
                 {selectedSkills.map((skill) => (
                   <View key={skill} style={styles.selectedSkillTag}>
-                    <Text style={styles.selectedSkillText}>{skill}</Text>
+                    <Text style={styles.selectedSkillText}>{t(`addSkills.${skill}`)}</Text>
                     <Pressable
                       style={styles.removeButton}
                       onPress={() => handleRemoveSkill(skill)}
@@ -157,22 +160,22 @@ export default function SkillsScreen() {
               </View>
             ) : (
               <Text style={styles.emptyText}>
-                You haven't added any skills yet. Add skills from the list below.
+                {t("addSkills.emptyText")}
               </Text>
             )}
           </View>
           
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Available Skills</Text>
+            <Text style={styles.sectionTitle}>{t("addSkills.availableSkills")}</Text>
             <View style={styles.skillTags}>
               {unselectedSkills.map((skill) => (
                 <Pressable
-                  key={skill}
+                  key={skill.name}
                   style={styles.unselectedSkillTag}
-                  onPress={() => handleAddSkill(skill)}
+                  onPress={() => handleAddSkill(skill.name)}
                 >
                   <Plus size={16} color={Colors.light.gray[600]} />
-                  <Text style={styles.unselectedSkillText}>{skill}</Text>
+                  <Text style={styles.unselectedSkillText}>{skill.label}</Text>
                 </Pressable>
               ))}
             </View>
@@ -186,7 +189,7 @@ export default function SkillsScreen() {
             disabled={isSaving}
           >
             <Text style={styles.saveButtonText}>
-              {isSaving ? "Saving..." : "Save Changes"}
+              {isSaving ? t("addSkills.saving") : t("addSkills.saveChanges")}
             </Text>
           </Pressable>
         </View>

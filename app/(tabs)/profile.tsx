@@ -41,10 +41,15 @@ import { authClient } from "@/lib/auth-client";
 export default function ProfileScreen() {
   const router = useRouter();
   const { signOut, deleteAccount } = useAuth();
-  const { t } = useTranslations();
+  const { t, currentLanguage } = useTranslations();
   const { data: user, isLoading } = useGetUser();
   const { data: skillsData, isLoading: skillsLoading, error: skillsError } = useGetSkills();
   const BASE_URL = process.env.EXPO_PUBLIC_ASSET_URL;
+  
+  // Determine selected language label based on currentLanguage
+  const selectedLanguageLabel = (currentLanguage || "fr-FR").startsWith("fr")
+    ? t("language.french")
+    : t("language.english");
   
 
   // Show skeleton while loading
@@ -211,7 +216,7 @@ export default function ProfileScreen() {
             ) : technician.skills.skills.length > 0 ? (
               technician.skills.skills.map((skill, index) => (
                 <View key={index} style={styles.skillTag}>
-                  <Text style={styles.skillText}>{skill.name}</Text>
+                  <Text style={styles.skillText}>{t(`addSkills.${skill.name}`)}</Text>
                 </View>
               ))
             ) : (
@@ -302,7 +307,7 @@ export default function ProfileScreen() {
           {renderMenuItem(
             <Languages size={20} color={Colors.light.gray[600]} />,
             t("profile.language"),
-            t("profile.english"),
+            selectedLanguageLabel,
             () => router.push("/profile/language")
           )}
           {/* {renderMenuItem(

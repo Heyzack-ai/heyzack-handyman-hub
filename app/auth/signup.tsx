@@ -20,23 +20,8 @@ import { useAuth } from "@/lib/auth-context";
 import { z } from "zod";
 import { useTranslation } from "react-i18next";
 
-const { t } = useTranslation();
 
 // Define the validation schema
-const signUpSchema = z.object({
-  fullName: z.string().min(1, t("auth.fullNameIsRequired")),
-  email: z.string().email(t("auth.pleaseEnterAValidEmailAddress")),
-  phone: z.string()
-    .regex(/^\+33\d{9}$/, "Phone number must be 9 digits after +33"),
-  password: z.string()
-    .min(8, t("auth.passwordMustBeAtLeast8Characters"))
-    .regex(/[A-Z]/, t("auth.passwordMustContainAtLeastOneUppercaseLetter"))
-    .regex(/[0-9]/, t("auth.passwordMustContainAtLeastOneNumber")),
-  confirmPassword: z.string().min(1, "Please confirm your password"),
-}).refine(data => data.password === data.confirmPassword, {
-  message: t("auth.passwordsDoNotMatch"),
-  path: ["confirmPassword"],
-});
 
 // Type for form errors
 type FormErrors = {
@@ -60,6 +45,22 @@ export default function SignUpScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
+
+  const signUpSchema = z.object({
+  fullName: z.string().min(1, t("auth.fullNameIsRequired")),
+  email: z.string().email(t("auth.pleaseEnterAValidEmailAddress")),
+  phone: z.string()
+    .regex(/^\+33\d{9}$/, t("auth.phoneNumberMustBe9DigitsAfterCountryCode")),
+  password: z.string()
+    .min(8, t("auth.passwordMustBeAtLeast8Characters"))
+    .regex(/[A-Z]/, t("auth.passwordMustContainAtLeastOneUppercaseLetter"))
+    .regex(/[0-9]/, t("auth.passwordMustContainAtLeastOneNumber")),
+  confirmPassword: z.string().min(1, t("auth.pleaseConfirmYourPassword")),
+}).refine(data => data.password === data.confirmPassword, {
+  message: t("auth.passwordsDoNotMatch"),
+  path: ["confirmPassword"],
+});
+
 
   const validateForm = (): boolean => {
     try {

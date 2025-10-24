@@ -164,17 +164,28 @@ export default function HomeScreen() {
       partner: job.installation?.partner?.partnerName || job.partner?.partnerName || job.partner || "",
     } as JobType;
   };
-  const completedJobsCount =
-    (jobsData || [])?.filter((job: any) => job.status === "completed").length ||
-    0;
-  const pendingJobsCount =
-    (jobsData || [])?.filter(
-      (job: any) => job.status !== "completed" && job.status !== "on_hold"
-    ).length || 0;
+
+  const COMPLETED_STATUSES = ['job_approved', 'job_completed'] as const;
+  const PENDING_STATUSES = [
+  'scheduled',
+  'pending',
+  'stock_collected',
+  'en_route',
+  'started',
+  'assigned',
+  'accepted',
+  'contract_sent' // Added this as it seems to be a pre-completion step
+] as const;
+  const completedJobsCount = (jobsData || []).filter((job: any) => 
+  COMPLETED_STATUSES.includes(job.installation?.status)
+).length;
+  const pendingJobsCount = (jobsData || []).filter((job: any) => 
+  PENDING_STATUSES.includes(job.installation?.status)
+).length;
   const earnings =
     (jobsData || [])
-      ?.filter((job: any) => job.status === "completed")
-      .reduce((acc: number, job: any) => acc + (job.installation_fare || 0), 0) || 0;
+      ?.filter((job: any) => COMPLETED_STATUSES.includes(job.installation?.status))
+      .reduce((acc: number, job: any) => acc + (job?.installation?.installation_fare || 0), 0) || 0;
 
   // Only try to access SecureStore on native platforms
   useEffect(() => {
@@ -236,7 +247,7 @@ export default function HomeScreen() {
           }}
         >
           <View style={styles.header}>
-            <Text style={styles.greeting}>Hello, Technician</Text>
+            <Text style={styles.greeting}>{t("home.hello")}</Text>
             <Text style={styles.subtitle}>
               {isToday
                 ? t("home.headerSubtitle")

@@ -26,6 +26,7 @@ import { useUploadKycDocument } from "@/app/api/user/addDocument";
 import { useUploadProfileImage } from "@/app/api/user/addProfileImage";
 import axios from "axios";
 import * as DocumentPicker from "expo-document-picker";
+import { t } from "i18next";
 
 export default function EditProfileScreen() {
   const router = useRouter();
@@ -79,7 +80,7 @@ export default function EditProfileScreen() {
       const file = result.assets[0];
       // Check file size - limit to 5MB
       if (file.size && file.size > 5 * 1024 * 1024) {
-        Alert.alert("File Too Large", "Please select a file smaller than 5MB.");
+        Alert.alert(t("editProfile.fileTooLarge"), t("editProfile.pleaseSelectSmallerFile"));
         return;
       }
 
@@ -91,8 +92,8 @@ export default function EditProfileScreen() {
         if (uploadStatus === "pending") {
           setIsSaving(false);
           Alert.alert(
-            "Upload Timeout",
-            "The upload is taking longer than expected. Please try again with a smaller file or check your connection."
+            t("editProfile.uploadTimeout"),
+            t("editProfile.uploadTimeoutDescription")
           );
         }
       }, 30000); // 30 second timeout
@@ -104,7 +105,7 @@ export default function EditProfileScreen() {
             clearTimeout(uploadTimeout);
             setIsVerified(true);
             queryClient.invalidateQueries({ queryKey: ["user"] });
-            Alert.alert("Success", "Document uploaded successfully");
+            Alert.alert(t("editProfile.success"), t("editProfile.documentUploadedSuccessfully"));
             setIsSaving(false);
           },
           onError: (error: any) => {
@@ -112,10 +113,10 @@ export default function EditProfileScreen() {
             setIsSaving(false);
             console.log("Upload error:", error?.response.data);
             Alert.alert(
-              "Error",
+              t("editProfile.error"),
               error instanceof Error
                 ? error.message
-                : "Failed to upload document. Please try again with a smaller file or check your connection."
+                : t("editProfile.failedToUploadDocument")
             );
           },
         }
@@ -149,12 +150,12 @@ export default function EditProfileScreen() {
         onSuccess: () => {
           setIsSaving(false);
           queryClient.invalidateQueries({ queryKey: ["user"] });
-          Alert.alert("Success", "Profile updated successfully");
+          Alert.alert(t("editProfile.success"), t("editProfile.profileUpdatedSuccessfully"));
           router.back();
         },
         onError: (error) => {
           setIsSaving(false);
-          Alert.alert("Error", "Failed to update profile");
+          Alert.alert(t("editProfile.error"), t("editProfile.failedToUpdateProfile"));
         },
       }
     );
@@ -172,8 +173,8 @@ export default function EditProfileScreen() {
 
     if (status !== "granted") {
       Alert.alert(
-        "Permission Required",
-        "Please grant camera roll permissions to change your profile photo."
+        t("editProfile.permissionRequired"),
+        t("editProfile.grantCameraRollPermissions")
       );
       return;
     }
@@ -191,8 +192,8 @@ export default function EditProfileScreen() {
         const fileInfo = await FileSystem.getInfoAsync(result.assets[0].uri);
         if (fileInfo.exists && fileInfo.size > 5 * 1024 * 1024) {
           Alert.alert(
-            "File Too Large",
-            "Please select a file smaller than 5MB."
+            t("editProfile.fileTooLarge"),
+            t("editProfile.pleaseSelectSmallerFile")
           );
           return;
         }
@@ -204,8 +205,8 @@ export default function EditProfileScreen() {
           if (uploadProfileImageStatus === "pending") {
             setIsSaving(false);
             Alert.alert(
-              "Upload Timeout",
-              "The upload is taking longer than expected. Please try again with a smaller file or check your connection."
+              t("editProfile.uploadTimeout"),
+              t("editProfile.uploadTimeoutDescription")
             );
           }
         }, 50000); // 50 second timeout (slightly longer than API timeout)
@@ -225,8 +226,8 @@ export default function EditProfileScreen() {
                 console.error("Invalid response structure:", response);
                 setIsSaving(false);
                 Alert.alert(
-                  "Error",
-                  "Invalid response from server. Profile image path not found."
+                  t("editProfile.error"),
+                  t("editProfile.invalidResponseFromServer")
                 );
                 return;
               }
@@ -240,7 +241,7 @@ export default function EditProfileScreen() {
 
               // Refresh user data
               queryClient.invalidateQueries({ queryKey: ["user"] });
-              Alert.alert("Success", "Profile image updated successfully");
+              Alert.alert(t("editProfile.success"), t("editProfile.profilePhotoUpdatedSuccessfully"));
             },
             onError: (error) => {
               clearTimeout(uploadTimeout);
@@ -249,15 +250,15 @@ export default function EditProfileScreen() {
               // Provide more specific error messages
               if (axios.isAxiosError(error) && error.response?.status === 403) {
                 Alert.alert(
-                  "Permission Error",
-                  "You don't have permission to update your profile image. Please contact support."
+                  t("editProfile.permissionError"),
+                  t("editProfile.contactSupportForPermission")
                 );
               } else {
                 Alert.alert(
-                  "Error",
+                  t("editProfile.error"),
                   error instanceof Error
                     ? error.message
-                    : "Failed to upload image. Please try again."
+                    : t("editProfile.failedToUploadImage")
                 );
               }
             },
@@ -268,8 +269,8 @@ export default function EditProfileScreen() {
       console.error("Image selection error:", error);
       setIsSaving(false);
       Alert.alert(
-        "Error",
-        "There was a problem selecting the image. Please try again."
+        t("editProfile.error"),
+        t("editProfile.imageSelectionProblem")
       );
     }
   };
@@ -279,8 +280,8 @@ export default function EditProfileScreen() {
 
     if (status !== "granted") {
       Alert.alert(
-        "Permission Required",
-        "Please grant camera permissions to take a profile photo."
+        t("editProfile.permissionRequired"),
+        t("editProfile.grantCameraPermissions")
       );
       return;
     }
@@ -297,8 +298,8 @@ export default function EditProfileScreen() {
         const fileInfo = await FileSystem.getInfoAsync(result.assets[0].uri);
         if (fileInfo.exists && fileInfo.size > 5 * 1024 * 1024) {
           Alert.alert(
-            "File Too Large",
-            "Please select a file smaller than 5MB."
+            t("editProfile.fileTooLarge"),
+            t("editProfile.pleaseSelectSmallerFile")
           );
           return;
         }
@@ -310,8 +311,8 @@ export default function EditProfileScreen() {
           if (uploadProfileImageStatus === "pending") {
             setIsSaving(false);
             Alert.alert(
-              "Upload Timeout",
-              "The upload is taking longer than expected. Please try again with a smaller file or check your connection."
+              t("editProfile.uploadTimeout"),
+              t("editProfile.uploadTimeoutDescription")
             );
           }
         }, 30000); // 30 second timeout
@@ -331,8 +332,8 @@ export default function EditProfileScreen() {
                 console.error("Invalid response structure:", response);
                 setIsSaving(false);
                 Alert.alert(
-                  "Error",
-                  "Invalid response from server. Profile image path not found."
+                  t("editProfile.error"),
+                  t("editProfile.invalidResponseFromServer")
                 );
                 return;
               }
@@ -346,7 +347,10 @@ export default function EditProfileScreen() {
 
               // Refresh user data
               queryClient.invalidateQueries({ queryKey: ["user"] });
-              Alert.alert("Success", "Profile image updated successfully");
+              Alert.alert(
+                t("editProfile.success"),
+                t("editProfile.profilePhotoUpdatedSuccessfully")
+              );
             },
             onError: (error) => {
               clearTimeout(uploadTimeout);
@@ -355,15 +359,15 @@ export default function EditProfileScreen() {
               // Provide more specific error messages
               if (axios.isAxiosError(error) && error.response?.status === 403) {
                 Alert.alert(
-                  "Permission Error",
-                  "You don't have permission to update your profile image. Please contact support."
+                  t("editProfile.permissionError"),
+                  t("editProfile.contactSupportForPermission")
                 );
               } else {
                 Alert.alert(
                   "Error",
                   error instanceof Error
                     ? error.message
-                    : "Failed to upload image. Please try again."
+                    : t("editProfile.failedToUploadImage")
                 );
               }
             },
@@ -374,8 +378,8 @@ export default function EditProfileScreen() {
       console.error("Camera error:", error);
       setIsSaving(false);
       Alert.alert(
-        "Error",
-        "There was a problem taking the photo. Please try again."
+        t("editProfile.error"),
+        t("editProfile.photoTakingProblem")
       );
     }
   };
@@ -386,7 +390,7 @@ export default function EditProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <Header title="Edit Profile" onBack={() => router.back()} />
+      <Header title={t("editProfile.editProfile")} onBack={() => router.back()} />
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
@@ -409,34 +413,34 @@ export default function EditProfileScreen() {
           <View style={styles.photoButtons}>
             <Pressable style={styles.photoButton} onPress={takePhoto}>
               <Camera size={20} color={Colors.light.primary} />
-              <Text style={styles.photoButtonText}>Camera</Text>
+              <Text style={styles.photoButtonText}>{t("editProfile.camera")}</Text>
             </Pressable>
 
             <Pressable style={styles.photoButton} onPress={pickImage}>
               <Upload size={20} color={Colors.light.primary} />
-              <Text style={styles.photoButtonText}>Gallery</Text>
+              <Text style={styles.photoButtonText}>{t("editProfile.gallery")}</Text>
             </Pressable>
           </View>
         </View>
 
         <View style={styles.formSection}>
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Full Name</Text>
+            <Text style={styles.label}>{t("editProfile.fullName")}</Text>
             <TextInput
               style={styles.input}
               value={fullName}
               onChangeText={setFullName}
-              placeholder="Enter your full name"
+              placeholder={t("editProfile.fullNamePlaceholder")}
             />
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email</Text>
+            <Text style={styles.label}>{t("editProfile.email")}</Text>
             <TextInput
               style={styles.input}
               value={email}
               onChangeText={setEmail}
-              placeholder="Enter your email"
+              placeholder={t("editProfile.emailPlaceholder")}
               keyboardType="email-address"
               autoCapitalize="none"
               editable={false}
@@ -444,22 +448,21 @@ export default function EditProfileScreen() {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Phone Number</Text>
+            <Text style={styles.label}>{t("editProfile.phoneNumber")}</Text>
             <TextInput
               style={styles.input}
               value={phone}
               onChangeText={setPhone}
-              placeholder="Enter your phone number"
+              placeholder={t("editProfile.phoneNumberPlaceholder")}
               keyboardType="phone-pad"
             />
           </View>
         </View>
 
         <View style={styles.kycSection}>
-          <Text style={styles.sectionTitle}>Identity Verification</Text>
+          <Text style={styles.sectionTitle}>{t("editProfile.identityVerification")}</Text>
           <Text style={styles.kycDescription}>
-            Upload a government-issued ID to verify your identity and get a
-            verified badge. Maximum file size: 5MB.
+            {t("editProfile.kycDescription")} Maximum file size: 5MB.
           </Text>
 
           <Pressable
@@ -471,14 +474,14 @@ export default function EditProfileScreen() {
               <View style={styles.uploadingContainer}>
                 <ActivityIndicator size="small" color={Colors.light.primary} />
                 <Text style={styles.kycButtonText}>
-                  Uploading... Please wait
+                  {t("editProfile.uploadingPleaseWait")}
                 </Text>
               </View>
             ) : (
               <>
                 <Upload size={20} color={Colors.light.primary} />
                 <Text style={styles.kycButtonText}>
-                  {kycDocument ? "Change Document" : "Upload Document"}
+                  {kycDocument ? t("editProfile.changeDocument") : t("editProfile.uploadDocument")}
                 </Text>
               </>
             )}
@@ -494,10 +497,10 @@ export default function EditProfileScreen() {
               <View style={styles.documentStatus}>
                 <Text style={styles.documentStatusText}>
                   {isVerified
-                    ? "Verified"
+                    ? t("editProfile.verified")
                     : isUploading
-                    ? "Uploading..."
-                    : "Pending Verification"}
+                    ? t("editProfile.uploading...")
+                    : t("editProfile.pendingVerification")}
                 </Text>
               </View>
             </View>
@@ -510,7 +513,7 @@ export default function EditProfileScreen() {
           disabled={isSaving}
         >
           <Text style={styles.saveButtonText}>
-            {isSaving ? "Saving..." : "Save Changes"}
+            {isSaving ? t("editProfile.saving...") : t("editProfile.saveChanges")}
           </Text>
         </Pressable>
       </ScrollView>

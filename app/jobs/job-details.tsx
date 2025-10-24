@@ -11,6 +11,7 @@ import {
   Linking,
   StatusBar,
   FlatList,
+  TextInput,
 } from "react-native";
 import { Image } from "expo-image";
 import { Stack, useRouter, useLocalSearchParams } from "expo-router";
@@ -49,12 +50,15 @@ import { useGetProduct } from "@/app/api/products/getProduct";
 import { useTranslations } from "@/src/i18n/useTranslations";
 import { useSendContract } from "@/app/api/jobs/sendContract";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
+import { useCompleteJob } from "@/app/api/jobs/completeJob";
 
 // Product Item Component that fetches its own data
 const ProductItem = ({ product }: { product: any }) => {
+  const { t } = useTranslation();
   const status = (product?.status || "").toString().toLowerCase();
   const collected = status === "collected" || product?.isCollected === true;
-  const label = collected ? "Collected" : "To Collect";
+  const label = collected ? t("status.collected") : t("status.toCollect");
   return (
     <View
       key={
@@ -107,9 +111,11 @@ export default function JobDetailScreen() {
   const { t } = useTranslations();
   const { mutate: sendContractMutation } = useSendContract();
   const queryClient = useQueryClient();
+  const { mutate: completeJobMutation } = useCompleteJob();
+  const [customerTuyaEmail, setCustomerTuyaEmail] = useState("");
 
   // console.log("Job details:", jobData?.installation);
-  console.log("JobDetails installation:", jobDetails?.installation?.status);
+  console.log("JobDetails installation:", jobDetails);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -289,9 +295,9 @@ export default function JobDetailScreen() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
       sendContractMutation({ jobId: robustJobId || "" });
-      
+
       // Invalidate and refetch queries to ensure immediate UI update
-      
+
       Alert.alert(
         t("jobDetails.success"),
         t("jobDetails.contractSentToCustomer")
@@ -303,10 +309,18 @@ export default function JobDetailScreen() {
         exact: true,
       });
       queryClient.invalidateQueries({ queryKey: ["get-jobs"] });
-      queryClient.refetchQueries({ queryKey: ["get-jobs"], type: "active", exact: true });
+      queryClient.refetchQueries({
+        queryKey: ["get-jobs"],
+        type: "active",
+        exact: true,
+      });
       queryClient.invalidateQueries({ queryKey: ["get-pending-jobs"] });
-      queryClient.refetchQueries({ queryKey: ["get-pending-jobs"], type: "active", exact: true });
-      
+      queryClient.refetchQueries({
+        queryKey: ["get-pending-jobs"],
+        type: "active",
+        exact: true,
+      });
+
       // Delayed refetch to account for backend processing time
       setTimeout(() => {
         queryClient.refetchQueries({
@@ -314,10 +328,18 @@ export default function JobDetailScreen() {
           type: "active",
           exact: true,
         });
-        queryClient.refetchQueries({ queryKey: ["get-jobs"], type: "active", exact: true });
-        queryClient.refetchQueries({ queryKey: ["get-pending-jobs"], type: "active", exact: true });
+        queryClient.refetchQueries({
+          queryKey: ["get-jobs"],
+          type: "active",
+          exact: true,
+        });
+        queryClient.refetchQueries({
+          queryKey: ["get-pending-jobs"],
+          type: "active",
+          exact: true,
+        });
       }, 3000); // Refetch after 3 seconds to ensure backend processing is complete
-      
+
       setIsLoading(false);
     }, 1000);
   };
@@ -461,7 +483,7 @@ export default function JobDetailScreen() {
               updateCompletionPhotoMutation(
                 {
                   jobId: robustJobId,
-                  
+
                   fileUri: imageUri,
                 },
                 {
@@ -565,6 +587,11 @@ export default function JobDetailScreen() {
   };
 
   const handleMarkComplete = () => {
+    if (!customerTuyaEmail?.trim()) {
+      Alert.alert(t("jobDetails.error"), t("jobDetails.enterCustomerTuyaEmail"));
+      return;
+    }
+
     Alert.alert(
       t("jobDetails.completeJob"),
       t("jobDetails.completeJobConfirmation"),
@@ -573,8 +600,11 @@ export default function JobDetailScreen() {
         {
           text: t("jobDetails.complete"),
           onPress: () => {
-            updateJobStatusMutation(
-              { jobId: robustJobId, status: "job_completed" },
+            completeJobMutation(
+              {
+                jobId: robustJobId,
+                customer_tuya_email: customerTuyaEmail,
+              },
               {
                 onSuccess: () => {
                   try {
@@ -586,22 +616,28 @@ export default function JobDetailScreen() {
                       type: "active",
                       exact: true,
                     });
-                      queryClient.invalidateQueries({ queryKey: ["get-jobs"] });
-                      queryClient.refetchQueries({ queryKey: ["get-jobs"] });
-                      queryClient.invalidateQueries({ queryKey: ["get-pending-jobs"] });
-                      queryClient.refetchQueries({ queryKey: ["get-pending-jobs"] });
+                    queryClient.invalidateQueries({ queryKey: ["get-jobs"] });
+                    queryClient.refetchQueries({ queryKey: ["get-jobs"] });
+                    queryClient.invalidateQueries({
+                      queryKey: ["get-pending-jobs"],
+                    });
+                    queryClient.refetchQueries({
+                      queryKey: ["get-pending-jobs"],
+                      type: "active",
+                      exact: true,
+                    });
                   } catch (e) {
                     console.warn(
                       "Failed to refresh job after status update",
                       e
                     );
-                  }
-                  if (Platform.OS !== "web") {
+                    }
+                    if (Platform.OS !== "web") {
                     Haptics.notificationAsync(
                       Haptics.NotificationFeedbackType.Success
                     );
-                  }
-                },
+                    }
+                 },
               }
             );
           },
@@ -680,8 +716,8 @@ export default function JobDetailScreen() {
           </View>
 
           <Text style={styles.workflowText}>
-            Job Request → Accepted → Stock Collected → En Route → Contract Sent
-            → Contract Signed → Job Started → Job Marked as Done → Job Ended
+           {t("jobDetails.jobRequest")} → {t("jobDetails.accepted")} → {t("jobDetails.stockCollected")} → {t("jobDetails.enRoute")} → {t("jobDetails.contractSent")}
+            → {t("jobDetails.contractSigned")} → {t("jobDetails.jobStarted")} → {t("jobDetails.jobMarked")} → {t("jobDetails.jobEnded")}
           </Text>
 
           {job.status === "scheduled" && (
@@ -773,7 +809,7 @@ export default function JobDetailScreen() {
         </View>
 
         {/* Products (Bill Of Materials) */}
-        <View style={styles.card}>
+        {/* <View style={styles.card}>
           <Pressable
             style={styles.expandableHeader}
             onPress={() => setProductsExpanded(!productsExpanded)}
@@ -814,22 +850,28 @@ export default function JobDetailScreen() {
                   ))
                 : null}
 
-              {["scheduled", "pending", "assigned", "accepted", "completed"].includes(job.status) && (
-               <View style={styles.productActions}>
-                <Pressable
-                  style={styles.outlineButton}
-                  onPress={handleCollectStock}
-                >
-                  <Package size={16} color={Colors.light.text} />
-                  <Text style={styles.outlineButtonText}>
-                    {t("jobDetails.collectStock")}
-                  </Text>
-                </Pressable>
-              </View>
+              {[
+                "scheduled",
+                "pending",
+                "assigned",
+                "accepted",
+                "completed",
+              ].includes(job.status) && (
+                <View style={styles.productActions}>
+                  <Pressable
+                    style={styles.outlineButton}
+                    onPress={handleCollectStock}
+                  >
+                    <Package size={16} color={Colors.light.text} />
+                    <Text style={styles.outlineButtonText}>
+                      {t("jobDetails.collectStock")}
+                    </Text>
+                  </Pressable>
+                </View>
               )}
             </>
           )}
-        </View>
+        </View> */}
 
         {/* Customer Information */}
         <View style={styles.card}>
@@ -868,8 +910,11 @@ export default function JobDetailScreen() {
             <Text style={styles.detailLabel}>{t("jobDetails.status")}:</Text>
             <StatusBadge
               status={
-                ["contract_sent", "contract_signed", "job_completed"].some((s) =>
-                  (jobDetails?.installation?.status || job.status)?.includes(s)
+                ["contract_sent", "contract_signed", "job_completed"].some(
+                  (s) =>
+                    (jobDetails?.installation?.status || job.status)?.includes(
+                      s
+                    )
                 )
                   ? "sent"
                   : "not_sent"
@@ -878,10 +923,8 @@ export default function JobDetailScreen() {
             />
           </View>
 
-          {!(
-            ["contract_sent", "contract_signed", "job_completed"].some((s) =>
-              (jobDetails?.installation?.status || job.status)?.includes(s)
-            )
+          {!["contract_sent", "contract_signed", "job_completed"].some((s) =>
+            (jobDetails?.installation?.status || job.status)?.includes(s)
           ) && (
             <Pressable
               style={styles.contractButton}
@@ -949,32 +992,68 @@ export default function JobDetailScreen() {
 
           {["job_completed", "job_approved"].includes(job.status) === false && (
             <Pressable
-            style={styles.uploadButton}
-            onPress={() => {
-              console.log("Upload button pressed");
-              handleTakePhoto();
-            }}
-          >
-            <Camera size={20} color={Colors.light.primary} />
-            <Text style={styles.uploadButtonText}>
-              {t("jobDetails.addPhoto")}
-            </Text>
-          </Pressable>
+              style={styles.uploadButton}
+              onPress={() => {
+                console.log("Upload button pressed");
+                handleTakePhoto();
+              }}
+            >
+              <Camera size={20} color={Colors.light.primary} />
+              <Text style={styles.uploadButtonText}>
+                {t("jobDetails.addPhoto")}
+              </Text>
+            </Pressable>
           )}
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>{t("jobDetails.enterTuyaEmail")}</Text>
+          <TextInput
+            placeholder={t("jobDetails.tuyaPlaceholder")}
+            value={customerTuyaEmail || jobDetails?.installation?.customer?.tuyaEmail || ""}
+            onChangeText={setCustomerTuyaEmail}
+            style={[
+              styles.input,
+              !(
+                jobDetails?.installation?.completion_photos &&
+                jobDetails?.installation?.completion_photos.length > 0 &&
+                !jobDetails?.installation?.status?.includes("job_completed") === true
+              ) && styles.inputDisabled,
+            ]}
+            placeholderTextColor={
+              !(
+                jobDetails?.installation?.completion_photos &&
+                jobDetails?.installation?.completion_photos.length > 0 &&
+                !jobDetails?.installation?.status?.includes("job_completed") === true
+              )
+                ? Colors.light.gray[400]
+                : Colors.light.gray[600]
+            }
+            editable={
+              (
+                jobDetails?.installation?.completion_photos &&
+                jobDetails?.installation?.completion_photos.length > 0 &&
+                !jobDetails?.installation?.status?.includes("job_completed") === true
+              )
+            }
+          />
         </View>
 
         {/* Mark as Complete Button */}
         {jobDetails?.installation?.completion_photos &&
-          jobDetails?.installation?.completion_photos.length > 0 && 
-          jobDetails?.installation?.status?.includes("job_completed") === false && (  
-            <Pressable
-              style={styles.completeButton}
-              onPress={handleMarkComplete}
-            >
-              <Text style={styles.completeButtonText}>
-                {t("jobDetails.markAsComplete")}
-              </Text>
-            </Pressable>
+          jobDetails?.installation?.completion_photos.length > 0 &&
+          jobDetails?.installation?.status?.includes("job_completed") ===
+            false && (
+            <>
+              <Pressable
+                style={styles.completeButton}
+                onPress={handleMarkComplete}
+              >
+                <Text style={styles.completeButtonText}>
+                  {t("jobDetails.markAsComplete")}
+                </Text>
+              </Pressable>
+            </>
           )}
       </ScrollView>
     </SafeAreaView>
@@ -995,6 +1074,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 32,
     marginTop: 16,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    color: Colors.light.text,
+  },
+  inputDisabled: {
+    backgroundColor: Colors.light.gray[100],
+    borderColor: Colors.light.gray[300],
+    color: Colors.light.gray[500],
   },
   headerButton: {
     padding: 8,

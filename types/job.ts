@@ -53,6 +53,7 @@ export type Customer = {
   email: string;
   address: string;
   customer_name: string;
+  tuyaEmail?: string;
   coordinates?: {
     latitude: number;
     longitude: number;
