@@ -70,8 +70,8 @@ export default function SignInScreen() {
     try {
       const res = await signIn(email, password);
       console.log("signIn response:", res);
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      console.error(error.response?.data || error);
       Alert.alert(
         t("auth.error"),
         error instanceof Error ? error.message : t("auth.anUnknownErrorOccurred")

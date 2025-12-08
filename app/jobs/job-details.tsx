@@ -910,7 +910,7 @@ export default function JobDetailScreen() {
             <Text style={styles.detailLabel}>{t("jobDetails.status")}:</Text>
             <StatusBadge
               status={
-                ["contract_sent", "contract_signed", "job_completed"].some(
+                ["contract_sent", "contract_signed", "job_completed", "job_approved"].some(
                   (s) =>
                     (jobDetails?.installation?.status || job.status)?.includes(
                       s
@@ -923,7 +923,7 @@ export default function JobDetailScreen() {
             />
           </View>
 
-          {!["contract_sent", "contract_signed", "job_completed"].some((s) =>
+          {!["contract_sent", "contract_signed", "job_completed", "job_approved"].some((s) =>
             (jobDetails?.installation?.status || job.status)?.includes(s)
           ) && (
             <Pressable
@@ -1017,15 +1017,15 @@ export default function JobDetailScreen() {
               !(
                 jobDetails?.installation?.completion_photos &&
                 jobDetails?.installation?.completion_photos.length > 0 &&
-                !jobDetails?.installation?.status?.includes("job_completed") === true
-              ) && styles.inputDisabled,
+                !jobDetails?.installation?.status?.includes("job_completed") && !jobDetails?.installation?.status?.includes("job_approved") === true
+              ) === true && styles.inputDisabled,
             ]}
             placeholderTextColor={
               !(
                 jobDetails?.installation?.completion_photos &&
                 jobDetails?.installation?.completion_photos.length > 0 &&
-                !jobDetails?.installation?.status?.includes("job_completed") === true
-              )
+                !jobDetails?.installation?.status?.includes("job_completed") && !jobDetails?.installation?.status?.includes("job_approved") === true
+              ) === true
                 ? Colors.light.gray[400]
                 : Colors.light.gray[600]
             }
@@ -1033,8 +1033,8 @@ export default function JobDetailScreen() {
               (
                 jobDetails?.installation?.completion_photos &&
                 jobDetails?.installation?.completion_photos.length > 0 &&
-                !jobDetails?.installation?.status?.includes("job_completed") === true
-              )
+                !jobDetails?.installation?.status?.includes("job_completed") && !jobDetails?.installation?.status?.includes("job_approved") === true
+              ) === true
             }
           />
         </View>
@@ -1042,9 +1042,10 @@ export default function JobDetailScreen() {
         {/* Mark as Complete Button */}
         {jobDetails?.installation?.completion_photos &&
           jobDetails?.installation?.completion_photos.length > 0 &&
-          jobDetails?.installation?.status?.includes("job_completed") ===
-            false && (
-            <>
+          jobDetails?.installation?.status?.includes("job_completed") && !jobDetails?.installation?.status?.includes("job_approved")
+            ? true : false && (
+            true && (
+              <>
               <Pressable
                 style={styles.completeButton}
                 onPress={handleMarkComplete}
@@ -1054,6 +1055,7 @@ export default function JobDetailScreen() {
                 </Text>
               </Pressable>
             </>
+            )
           )}
       </ScrollView>
     </SafeAreaView>

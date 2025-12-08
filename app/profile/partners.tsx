@@ -129,7 +129,9 @@ export default function PartnersScreen() {
       
       <View style={styles.container}>
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          <Text style={styles.description}>
+          {!initialPartner && (
+            <>
+             <Text style={styles.description}>
             {t("partners.connectWithPartnerCompaniesToReceiveJobAssignmentsAndCollaborateOnProjects")}
           </Text>
           
@@ -137,6 +139,9 @@ export default function PartnersScreen() {
             <Plus size={20} color="white" />
             <Text style={styles.addButtonText}>{t("partners.addPartner")}</Text>
           </Pressable>
+            </>
+          )}
+         
           
           <View style={styles.partnersContainer}>
             {initialPartner ? (

@@ -4,7 +4,10 @@ import React from 'react'
 const Splash = () => {
   return (
     <SafeAreaView style={styles.container}>
-      <Image source={require('@/assets/logo/logo.png')} style={styles.logo} />
+     <View style={styles.logoContainer}>
+     <Image source={require('@/assets/logo/logo.png')} style={styles.logo} />
+     <Text style={styles.text}>PARTNERS</Text>
+     </View>
     </SafeAreaView>
   )
 }
@@ -18,9 +21,22 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: 'white'
     },
+    logoContainer: {
+        alignItems: 'flex-end',
+        justifyContent: 'flex-start',
+        backgroundColor: 'white',
+    },
     logo: {
-        width: 100,
-        height: 100,
-        resizeMode: 'contain'
+        width: 200,
+        height: 200,
+        resizeMode: 'contain',
+    },
+    text: {
+        fontSize: 20,
+        fontWeight: '600',
+        color: 'black',
+        letterSpacing: 4,
+        textAlign: 'right',
+        bottom: 60,
     }
 })

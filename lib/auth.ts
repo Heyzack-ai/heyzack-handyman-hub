@@ -6,20 +6,29 @@ export const auth = betterAuth({
     emailAndPassword: {
         enabled: true, // Enable authentication using email and password.
     },
+    advanced: { disableCSRFCheck: true },
     user: {
         deleteUser: {
             enabled: true // Enable user deletion
         }
     },
     trustedOrigins: [
-         // Basic scheme
-         "myapp://", 
-        
-         // Production & staging schemes
-         "myapp-prod://",
-         "myapp-staging://",
-         
-         // Wildcard support for all paths following the scheme
-         "myapp://*"
+        // Basic scheme
+        "heyzack://",
+        "http://localhost:3000",
+        "https://api.dev.heyzack.ai",
+
+        "null",
+        "exp://*",
+
+        //  // Production & staging schemes
+        "heyzack-prod://",
+        "heyzack-staging://",
+
+        //  // Wildcard support for all paths following the scheme
+        "heyzack://*"
     ],
+    //     csrf: {
+    //   enabled: false, // also REQUIRED for mobile
+    // }
 });

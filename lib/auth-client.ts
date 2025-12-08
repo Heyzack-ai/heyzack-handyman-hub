@@ -4,10 +4,11 @@ import * as SecureStore from "expo-secure-store";
  
 export const authClient = createAuthClient({
     baseURL: "https://api.dev.heyzack.ai", // Base URL of your Better Auth backend
+    basePath: "/api/auth",
     plugins: [
         expoClient({
-            scheme: "myapp",
-            storagePrefix: "myapp",
+            scheme: "heyzack",
+            storagePrefix: "heyzack",
             storage: SecureStore,
         })
     ],

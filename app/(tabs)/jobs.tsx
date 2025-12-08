@@ -34,6 +34,7 @@ export default function JobsScreen() {
   const { data: requestedJobs } = useGetPendingJobs()
   const queryClient = useQueryClient();
   const { mutate: acceptJob } = useAcceptJob();
+  console.log("Jobs data:", jobsData);
 
   const filteredJobs = (jobsData || []).filter(
     (job: any) =>

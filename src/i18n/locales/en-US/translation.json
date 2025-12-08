@@ -87,7 +87,8 @@
     "passwordMinLength": "Password must be at least 8 characters",
     "phoneNumberMustBe9DigitsAfterCountryCode": "Phone number must be 9 digits after +33",
     "pleaseConfirmYourPassword": "Please confirm your password",
-    "creatingAccount": "Creating Account..."
+    "creatingAccount": "Creating Account...",
+    "error": "Error"
   },
   "navigation": {
     "home": "Home",
@@ -672,6 +673,7 @@
     "job_completed": "Job Completed",
     "unknown": "Unknown",
     "collected": "Collected",
-    "toCollect": "To Collect"
+    "toCollect": "To Collect",
+    "job_approved": "Job Approved"
   }
 }
