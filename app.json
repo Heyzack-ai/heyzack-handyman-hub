@@ -2,7 +2,7 @@
   "expo": {
     "name": "HeyZack",
     "slug": "smarthome-service-hub",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/logo/icon.png",
     "scheme": "heyzack",
@@ -28,7 +28,7 @@
         "foregroundImage": "./assets/logo/icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.heyzack.handyman",
+      "package": "com.handyman.heyzack",
       "intentFilters": [
         {
           "action": "VIEW",
@@ -58,8 +58,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "The app accesses your photos to let you share them with your friends.",
-          "cameraPermission": "The app accesses your camera to let you take photos."
+          "photosPermission": "Photo access allows you to pick images to share in chat and set your profile photo.",
+          "cameraPermission": "Camera access is needed so you can take photos to share in chat and set your profile photo."
         }
       ],
       "expo-font",
