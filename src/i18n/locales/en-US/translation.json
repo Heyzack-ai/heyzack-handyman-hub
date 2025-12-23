@@ -14,7 +14,9 @@
     "delete": "Delete",
     "confirm": "Confirm",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "decline": "Decline",
+    "accept": "Accept"
   },
   "auth": {
     "signIn": "Sign In",
@@ -167,7 +169,13 @@
     "jobRequest": "Job Request",
     "noJobsForDate": "No jobs scheduled for this date",
     "upcomingJobs": "Upcoming Jobs",
-    "hello": "Hello, Technician"
+    "hello": "Hello, Technician",
+    "declineJob": "Decline Job",
+    "declineJobConfirmation": "Are you sure you want to decline this job?",
+    "acceptJob": "Accept Job",
+    "acceptJobConfirmation": "Are you sure you want to accept this job?",
+    "jobDeclined": "Job declined successfully",
+    "jobAccepted": "Job accepted successfully"
   },
   "jobs": {
     "searchJobs": "Search jobs, customers, or addresses",
@@ -492,7 +500,8 @@
     "code": "Code",
     "email": "Email",
     "phone": "Phone",
-    "address": "Address"
+    "address": "Address",
+    "success": "Success"
   },
   "addBank": {
     "addBank": "Add Bank",
@@ -617,7 +626,8 @@
     "photoTakingProblem": "There was a problem taking the photo. Please try again.",
     "documentSelectionProblem": "There was a problem selecting the document. Please try again.",
     "camera": "Camera",
-    "gallery": "Gallery"
+    "gallery": "Gallery",
+    "viewDocument": "View Document"
   },
   "addSkills": {
     "title": "Add Skills & Expertise",
@@ -674,6 +684,7 @@
     "unknown": "Unknown",
     "collected": "Collected",
     "toCollect": "To Collect",
-    "job_approved": "Job Approved"
+    "job_approved": "Job Approved",
+    "customer_approved": "Customer Approved"
   }
 }

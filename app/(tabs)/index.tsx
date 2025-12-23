@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   StatusBar,
   Platform,
+  Alert,
+  RefreshControl,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Calendar as CalendarIcon, Briefcase, Euro } from "lucide-react-native";
@@ -19,7 +21,7 @@ import Colors from "@/constants/colors";
 import { Job as JobType } from "@/types/job";
 import { Bell } from "lucide-react-native";
 import * as SecureStore from "expo-secure-store";
-import { useQuery, useQueries } from "@tanstack/react-query";
+import { useQuery, useQueries, useQueryClient } from "@tanstack/react-query";
 import { useGetJobs } from "@/app/api/jobs/getJobs";
 import { useGetCustomer } from "@/app/api/customer/getCustomer";
 import ShimmerSkeleton from "@/components/ShimmerSkeleton";
@@ -28,6 +30,7 @@ import { useTranslations } from "@/src/i18n/useTranslations";
 import { useGetNotificationCount } from "@/app/api/notifications/getNotifications";
 
 import Job from "@/components/Job";
+import { useAcceptJob } from "../api/jobs/acceptJob";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -36,9 +39,12 @@ export default function HomeScreen() {
     new Date().toISOString().split("T")[0]
   );
   const [token, setToken] = useState<string | null>(null);
-  const { data: jobsData, isLoading } = useGetJobs();
-  const { data: pendingJobs } = useGetPendingJobs();
-  const { data: notificationCount } = useGetNotificationCount();
+  const [refreshing, setRefreshing] = useState(false);
+  const { data: jobsData, isLoading, refetch: refetchJobs } = useGetJobs();
+  const { data: pendingJobs, refetch: refetchPendingJobs } = useGetPendingJobs();
+  const { data: notificationCount, refetch: refetchNotifications } = useGetNotificationCount();
+  const queryClient = useQueryClient();
+  const { mutate: acceptJob } = useAcceptJob();
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -78,6 +84,8 @@ export default function HomeScreen() {
       enabled: !!customerCode,
     })),
   });
+
+  const getJobId = (job: any) => job?.jobId || job?.id || job?.name || "";
 
   // Create a map of customer codes to customer data
   const customersMap = useMemo(() => {
@@ -165,9 +173,9 @@ export default function HomeScreen() {
     } as JobType;
   };
 
-  const COMPLETED_STATUSES = ['job_approved', 'job_completed'] as const;
+  const COMPLETED_STATUSES = ['job_approved', 'job_completed', 'customer_approved'] as const;
   const PENDING_STATUSES = [
-  'scheduled',
+  "scheduled",
   'pending',
   'stock_collected',
   'en_route',
@@ -196,12 +204,25 @@ export default function HomeScreen() {
     }
   }, []);
 
+  const JOB_REQUEST_STATUSES = ['assigned'] as const;
+
+  // const selectedDateJobs = (jobsData || [])?.filter((job: any) => {
+  //   const dateStr =
+  //     job?.scheduled_date?.slice(0, 10) ||
+  //     job?.scheduledDate?.slice(0, 10) ||
+  //     job?.installation?.scheduledDate?.slice(0, 10);
+  //   return dateStr === selectedDate;
+  // }) || [];
+
   const selectedDateJobs = (jobsData || [])?.filter((job: any) => {
+    const status = job?.installation?.status || job?.status;
     const dateStr =
       job?.scheduled_date?.slice(0, 10) ||
       job?.scheduledDate?.slice(0, 10) ||
       job?.installation?.scheduledDate?.slice(0, 10);
-    return dateStr === selectedDate;
+    
+    // Show only if date matches AND status is NOT a job request status
+    return dateStr === selectedDate && !JOB_REQUEST_STATUSES.includes(status);
   }) || [];
 
   const todayJobs = (jobsData || [])?.filter((job: any) => {
@@ -213,14 +234,83 @@ export default function HomeScreen() {
   });
 
   const upcomingJobs = (jobsData || [])
-    .filter((job: any) => {
-      const dateStr =
-        job?.scheduled_date?.slice(0, 10) ||
-        job?.scheduledDate?.slice(0, 10) ||
-        job?.installation?.scheduledDate?.slice(0, 10) || "";
-      return dateStr > today;
-    })
-    .slice(0, 3);
+  .filter((job: any) => {
+    const status = job?.installation?.status || job?.status;
+    const dateStr =
+      job?.scheduled_date?.slice(0, 10) ||
+      job?.scheduledDate?.slice(0, 10) ||
+      job?.installation?.scheduledDate?.slice(0, 10) || "";
+    
+    // Show only if date is in future AND status is NOT a job request status
+    return dateStr > today && !JOB_REQUEST_STATUSES.includes(status);
+  })
+  .slice(0, 3);
+
+  
+
+  const handleAcceptJob = (jobId: string) => {
+    Alert.alert(t("home.acceptJob"), t("home.acceptJobConfirmation"), [
+      { text: t("common.cancel"), style: "cancel" },
+      {
+        text: t("common.accept"),
+        onPress: () => {
+          acceptJob(
+            { jobId, status: "accepted" },
+            {
+              onSuccess: () => {
+                // Invalidate queries to refetch data
+                queryClient.invalidateQueries({ queryKey: ["get-jobs"] });
+                queryClient.invalidateQueries({ queryKey: ["get-pending-jobs"] });
+                Alert.alert(t("common.success"), t("home.jobAccepted"));
+              },
+              onError: (error) => {
+                Alert.alert(t("common.error"), t("home.failedToAcceptJob"));
+                console.error("Accept job error:", error);
+              },
+            }
+          );
+        },
+      },
+    ]);
+  };
+  
+  const handleDeclineJob = (jobId: string) => {
+    Alert.alert(t("home.declineJob"), t("home.declineJobConfirmation"), [
+      { text: t("common.cancel"), style: "cancel" },
+      {
+        text: t("common.decline"),
+        onPress: () => {
+          acceptJob(
+            { jobId, status: "rejected" },
+            {
+              onSuccess: () => {
+                // Invalidate queries to refetch data
+                queryClient.invalidateQueries({ queryKey: ["get-jobs"] });
+                queryClient.invalidateQueries({ queryKey: ["get-pending-jobs"] });
+                Alert.alert(t("common.success"), t("home.jobDeclined"));
+              },
+              onError: (error) => {
+                Alert.alert(t("common.error"), t("home.failedToDeclineJob"));
+                console.error("Decline job error:", error);
+              },
+            }
+          );
+        },
+      },
+    ]);
+  };
+
+  const jobRequests = (pendingJobs || []).filter((job: any) => {
+    const status = job?.installation?.status || job?.status;
+    const dateStr =
+      job?.scheduled_date?.slice(0, 10) ||
+      job?.scheduledDate?.slice(0, 10) ||
+      job?.installation?.scheduledDate?.slice(0, 10) || "";
+    
+    // Show if status is 'assigned' and matches the selected date
+    return JOB_REQUEST_STATUSES.includes(status) && dateStr === selectedDate;
+  });
+  
 
   // Calculate stats
   // const completedJobs = jobs.filter((j) => j.status === "completed").length;
@@ -229,6 +319,24 @@ export default function HomeScreen() {
 
   const handleDateSelect = (date: string) => {
     setSelectedDate(date);
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        refetchJobs(),
+        refetchPendingJobs(),
+        refetchNotifications(),
+      ]);
+      queryClient.invalidateQueries({ queryKey: ["get-jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["get-pending-jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["get-notification-count"] });
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const isToday = selectedDate === today;
@@ -311,6 +419,14 @@ export default function HomeScreen() {
         style={styles.container}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={Colors.light.primary}
+            colors={[Colors.light.primary]}
+          />
+        }
       >
         <View style={{ width: "100%", marginBottom: 16 }}>
           <View style={{ flexDirection: "row", gap: 12 }}>
@@ -368,6 +484,46 @@ export default function HomeScreen() {
             </View>
           )}
         </View>
+
+        {jobRequests.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Job Requests</Text>
+            </View>
+
+            {jobRequests.map((job: any) => {
+              const id = getJobId(job);
+              return (
+                <View key={id} style={styles.jobRequestCard}>
+                  <JobCard job={normalizeJob(job)} disableNavigation={true} />
+                  <View style={styles.jobRequestActions}>
+                    <ActionButton
+                      title={t("jobs.decline")}
+                      variant="outline"
+                      onPress={() => handleDeclineJob(id)}
+                      style={styles.declineButton}
+                    />
+                    <ActionButton
+                      title={t("jobs.accept")}
+                      variant="primary"
+                      onPress={() => handleAcceptJob(id)}
+                      style={styles.acceptButton}
+                    />
+                  </View>
+                </View>
+              );
+            })}
+
+            <ActionButton
+              title="View All Jobs"
+              variant="outline"
+              onPress={() => router.push("/jobs")}
+              style={styles.viewAllButton}
+            />
+          </View>
+        )}
+        
+        
 
         {upcomingJobs.length > 0 && (
           <View style={styles.section}>
@@ -487,6 +643,21 @@ const styles = StyleSheet.create({
   },
   viewAllButton: {
     marginTop: 12,
+  },
+  jobRequestCard: {
+    marginBottom: 16,
+  },
+  jobRequestActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: 8,
+    gap: 12,
+  },
+  declineButton: {
+    flex: 1,
+  },
+  acceptButton: {
+    flex: 1,
   },
   notificationButton: {
     borderWidth: 1,

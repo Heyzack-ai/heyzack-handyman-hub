@@ -176,7 +176,9 @@ export default function JobDetailScreen() {
 
   // Use the parsed job data
   const job = jobData;
-  // console.log("Job:", job);
+  const jobTitle =
+  (jobDetails?.installation?.title || job?.title)
+    ?.replace(/^installation for\s*/i, '');
 
   // Redirect if job is not found or is pending
   useEffect(() => {
@@ -345,11 +347,11 @@ export default function JobDetailScreen() {
   };
 
   const handleCollectStock = () => {
-    console.log("handleCollectStock called");
-    console.log("job.id:", job.id);
-    console.log("job.name:", job.name);
-    console.log("jobData?.status:", jobData?.status);
-    console.log("jobDetails?.data?.name:", jobDetails?.data?.name);
+    // console.log("handleCollectStock called");
+    // console.log("job.id:", job.id);
+    // console.log("job.name:", job.name);
+    // console.log("jobData?.status:", jobData?.status);
+    // console.log("jobDetails?.data?.name:", jobDetails?.data?.name);
 
     router.push({
       pathname: "/jobs/collect-stock/collect",
@@ -368,8 +370,8 @@ export default function JobDetailScreen() {
   };
 
   const handleTakePhoto = async () => {
-    console.log("handleTakePhoto called");
-    console.log("Platform:", Platform.OS);
+    // console.log("handleTakePhoto called");
+    // console.log("Platform:", Platform.OS);
 
     // Check if we're on web platform
     if (Platform.OS === "web") {
@@ -404,7 +406,7 @@ export default function JobDetailScreen() {
   const handleCameraCapture = async () => {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      console.log("Camera permission status:", status);
+      // console.log("Camera permission status:", status);
 
       if (status !== "granted") {
         Alert.alert(
@@ -414,13 +416,13 @@ export default function JobDetailScreen() {
         return;
       }
 
-      console.log("Launching camera...");
+      // console.log("Launching camera...");
       const result = await ImagePicker.launchCameraAsync({
         quality: 0.8,
         allowsEditing: true,
       });
 
-      console.log("Camera result:", result);
+      // console.log("Camera result:", result);
       handleImageResult(result);
     } catch (error) {
       console.error("Error in handleCameraCapture:", error);
@@ -432,7 +434,7 @@ export default function JobDetailScreen() {
     try {
       const { status } =
         await ImagePicker.requestMediaLibraryPermissionsAsync();
-      console.log("Gallery permission status:", status);
+      // console.log("Gallery permission status:", status);
 
       if (status !== "granted") {
         Alert.alert(
@@ -442,7 +444,7 @@ export default function JobDetailScreen() {
         return;
       }
 
-      console.log("Launching gallery...");
+      // console.log("Launching gallery...");
       const result = await ImagePicker.launchImageLibraryAsync({
         quality: 0.8,
         allowsEditing: false,
@@ -450,7 +452,7 @@ export default function JobDetailScreen() {
         selectionLimit: 10, // Allow up to 10 images
       });
 
-      console.log("Gallery result:", result);
+      // console.log("Gallery result:", result);
       handleImageResult(result);
     } catch (error) {
       console.error("Error in handleGalleryPick:", error);
@@ -460,7 +462,7 @@ export default function JobDetailScreen() {
 
   const handleImageResult = async (result: any) => {
     if (!result.canceled && result.assets && result.assets.length > 0) {
-      console.log(`Processing ${result.assets.length} images`);
+      // console.log(`Processing ${result.assets.length} images`);
 
       try {
         // Get current completion photos from job data
@@ -473,10 +475,10 @@ export default function JobDetailScreen() {
         for (let i = 0; i < result.assets.length; i++) {
           const asset = result.assets[i];
           const imageUri = asset.uri;
-          console.log(
-            `Processing image ${i + 1}/${result.assets.length}:`,
-            imageUri
-          );
+          // console.log(
+          //   `Processing image ${i + 1}/${result.assets.length}:`,
+          //   imageUri
+          // );
 
           try {
             await new Promise((resolve, reject) => {
@@ -488,14 +490,14 @@ export default function JobDetailScreen() {
                 },
                 {
                   onSuccess: (updatedJob: any) => {
-                    console.log(`Successfully uploaded image ${i + 1}`);
+                    // console.log(`Successfully uploaded image ${i + 1}`);
                     successCount++;
                     // Update the current completion photos with the new data from the response
                     if (updatedJob?.completion_photos) {
                       currentCompletionPhotos = updatedJob.completion_photos;
-                      console.log(
-                        `Updated completion_photos array now has ${currentCompletionPhotos.length} items`
-                      );
+                      // console.log(
+                      //   `Updated completion_photos array now has ${currentCompletionPhotos.length} items`
+                      // );
                     }
                     // After final image upload, refresh job details cache
                     if (i === result.assets.length - 1) {
@@ -588,7 +590,10 @@ export default function JobDetailScreen() {
 
   const handleMarkComplete = () => {
     if (!customerTuyaEmail?.trim()) {
-      Alert.alert(t("jobDetails.error"), t("jobDetails.enterCustomerTuyaEmail"));
+      Alert.alert(
+        t("jobDetails.error"),
+        t("jobDetails.enterCustomerTuyaEmail")
+      );
       return;
     }
 
@@ -631,13 +636,13 @@ export default function JobDetailScreen() {
                       "Failed to refresh job after status update",
                       e
                     );
-                    }
-                    if (Platform.OS !== "web") {
+                  }
+                  if (Platform.OS !== "web") {
                     Haptics.notificationAsync(
                       Haptics.NotificationFeedbackType.Success
                     );
-                    }
-                 },
+                  }
+                },
               }
             );
           },
@@ -687,7 +692,7 @@ export default function JobDetailScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <Header title={job.title} onBack={() => router.back()} />
+      <Header title={jobTitle} onBack={() => router.back()} />
 
       <ScrollView
         style={styles.container}
@@ -716,11 +721,14 @@ export default function JobDetailScreen() {
           </View>
 
           <Text style={styles.workflowText}>
-           {t("jobDetails.jobRequest")} → {t("jobDetails.accepted")} → {t("jobDetails.stockCollected")} → {t("jobDetails.enRoute")} → {t("jobDetails.contractSent")}
-            → {t("jobDetails.contractSigned")} → {t("jobDetails.jobStarted")} → {t("jobDetails.jobMarked")} → {t("jobDetails.jobEnded")}
+            {t("jobDetails.jobRequest")} → {t("jobDetails.accepted")} →{" "}
+            {t("jobDetails.stockCollected")} → {t("jobDetails.enRoute")} →{" "}
+            {t("jobDetails.contractSent")}→ {t("jobDetails.contractSigned")} →{" "}
+            {t("jobDetails.jobStarted")} → {t("jobDetails.jobMarked")} →{" "}
+            {t("jobDetails.jobEnded")}
           </Text>
 
-          {job.status === "scheduled" && (
+          {/* {job.status === "scheduled" && (
             <Pressable
               style={styles.primaryButton}
               onPress={handleCollectStock}
@@ -729,7 +737,7 @@ export default function JobDetailScreen() {
                 {t("jobDetails.collectStock")}
               </Text>
             </Pressable>
-          )}
+          )} */}
         </View>
 
         {/* Schedule Details */}
@@ -910,11 +918,13 @@ export default function JobDetailScreen() {
             <Text style={styles.detailLabel}>{t("jobDetails.status")}:</Text>
             <StatusBadge
               status={
-                ["contract_sent", "contract_signed", "job_completed", "job_approved"].some(
-                  (s) =>
-                    (jobDetails?.installation?.status || job.status)?.includes(
-                      s
-                    )
+                [
+                  "contract_sent",
+                  "contract_signed",
+                  "job_completed",
+                  "job_approved",
+                ].some((s) =>
+                  (jobDetails?.installation?.status || job.status)?.includes(s)
                 )
                   ? "sent"
                   : "not_sent"
@@ -923,7 +933,12 @@ export default function JobDetailScreen() {
             />
           </View>
 
-          {!["contract_sent", "contract_signed", "job_completed", "job_approved"].some((s) =>
+          {![
+            "contract_sent",
+            "contract_signed",
+            "job_completed",
+            "job_approved",
+          ].some((s) =>
             (jobDetails?.installation?.status || job.status)?.includes(s)
           ) && (
             <Pressable
@@ -994,7 +1009,7 @@ export default function JobDetailScreen() {
             <Pressable
               style={styles.uploadButton}
               onPress={() => {
-                console.log("Upload button pressed");
+                // console.log("Upload button pressed");
                 handleTakePhoto();
               }}
             >
@@ -1010,37 +1025,45 @@ export default function JobDetailScreen() {
           <Text style={styles.cardTitle}>{t("jobDetails.enterTuyaEmail")}</Text>
           <TextInput
             placeholder={t("jobDetails.tuyaPlaceholder")}
-            value={customerTuyaEmail || jobDetails?.installation?.customer?.tuyaEmail || ""}
+            value={
+              customerTuyaEmail ||
+              jobDetails?.installation?.customer?.tuyaEmail ||
+              ""
+            }
             onChangeText={setCustomerTuyaEmail}
             style={[
               styles.input,
               !(
                 jobDetails?.installation?.completion_photos &&
                 jobDetails?.installation?.completion_photos.length > 0 &&
-                !jobDetails?.installation?.status?.includes("job_completed") && !jobDetails?.installation?.status?.includes("job_approved") === true
+                !jobDetails?.installation?.status?.includes("job_completed") &&
+                !jobDetails?.installation?.status?.includes("job_approved") ===
+                  true
               ) === true && styles.inputDisabled,
             ]}
             placeholderTextColor={
               !(
                 jobDetails?.installation?.completion_photos &&
                 jobDetails?.installation?.completion_photos.length > 0 &&
-                !jobDetails?.installation?.status?.includes("job_completed") && !jobDetails?.installation?.status?.includes("job_approved") === true
+                !jobDetails?.installation?.status?.includes("job_completed") &&
+                !jobDetails?.installation?.status?.includes("job_approved") ===
+                  true
               ) === true
                 ? Colors.light.gray[400]
                 : Colors.light.gray[600]
             }
             editable={
-              (
-                jobDetails?.installation?.completion_photos &&
+              (jobDetails?.installation?.completion_photos &&
                 jobDetails?.installation?.completion_photos.length > 0 &&
-                !jobDetails?.installation?.status?.includes("job_completed") && !jobDetails?.installation?.status?.includes("job_approved") === true
-              ) === true
+                !jobDetails?.installation?.status?.includes("job_completed") &&
+                !jobDetails?.installation?.status?.includes("job_approved") ===
+                  true) === true
             }
           />
         </View>
 
         {/* Mark as Complete Button */}
-        {jobDetails?.installation?.completion_photos &&
+        {/* {jobDetails?.installation?.completion_photos &&
           jobDetails?.installation?.completion_photos.length > 0 &&
           jobDetails?.installation?.status?.includes("job_completed") && !jobDetails?.installation?.status?.includes("job_approved")
             ? true : false && (
@@ -1056,7 +1079,22 @@ export default function JobDetailScreen() {
               </Pressable>
             </>
             )
-          )}
+          )} */}
+
+        {jobDetails?.installation?.completion_photos &&
+  jobDetails?.installation?.completion_photos.length > 0 &&
+  !jobDetails?.installation?.status?.includes("job_completed") &&
+  !jobDetails?.installation?.status?.includes("job_approved") && (
+    <Pressable
+      style={styles.completeButton}
+      onPress={handleMarkComplete}
+    >
+      <Text style={styles.completeButtonText}>
+        {t("jobDetails.markAsComplete")}
+      </Text>
+    </Pressable>
+  )}
+
       </ScrollView>
     </SafeAreaView>
   );

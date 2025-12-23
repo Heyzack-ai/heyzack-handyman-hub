@@ -14,7 +14,9 @@
     "delete": "Supprimer",
     "confirm": "Confirmer",
     "yes": "Oui",
-    "no": "Non"
+    "no": "Non",
+    "decline": "Refuser",
+    "accept": "Accepter"
   },
   "auth": {
     "signIn": "Se connecter",
@@ -167,7 +169,13 @@
   "jobRequest": "Demande de travail",
   "noJobsForDate": "Aucun travail prévu pour cette date",
   "upcomingJobs": "Travaux à venir",
-  "hello": "Bonjour, Technicien"
+  "hello": "Bonjour, Technicien",
+  "declineJob": "Refuser le travail",
+  "declineJobConfirmation": "Êtes-vous sûr de vouloir refuser ce travail ?",
+  "acceptJob": "Accepter le travail",
+  "acceptJobConfirmation": "Êtes-vous sûr de vouloir accepter ce travail ?",
+  "jobDeclined": "Travail refusé avec succès",
+  "jobAccepted": "Travail accepté avec succès"
 },
   "jobs": {
   "searchJobs": "Rechercher des travaux, des clients ou des adresses",
@@ -492,7 +500,8 @@
   "code": "Code",
   "email": "E-mail",
   "phone": "Téléphone",
-  "address": "Adresse"
+  "address": "Adresse",
+  "success": "Succès"
 },
 "addBank": {
   "addBank": "Ajouter une banque",
@@ -617,7 +626,8 @@
   "photoTakingProblem": "Problème lors de la prise de la photo. Veuillez réessayer.",
   "documentSelectionProblem": "Problème lors de la sélection du document. Veuillez réessayer.",
   "camera": "Caméra",
-  "gallery": "Galerie"
+  "gallery": "Galerie",
+  "viewDocument": "Voir le document"
 },
 "addSkills": {
   "title": "Ajouter des compétences",
@@ -674,6 +684,7 @@
     "unknown": "Inconnu",
     "collected": "Collecté",
     "toCollect": "À Collecter",
-    "job_approved": "Job Approuvé"
+    "job_approved": "Job Approuvé",
+    "customer_approved": "Client Approuvé"
   }
 }

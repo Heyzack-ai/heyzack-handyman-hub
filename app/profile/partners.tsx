@@ -84,6 +84,7 @@ export default function PartnersScreen() {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ["user"] });
           Alert.alert(t("partners.success"), t("partners.youveSuccessfullyJoinedThePartner"));
+          refetchInitialPartner();
           setModalVisible(false);
         },
         onError: () => {

@@ -26,7 +26,7 @@ export function useLinkPartner(partner_code: string) {
                     throw new Error("Authentication token not found");
                 }
 
-                const response = await axios.post(`${BASE_URL}/user/link-handyman-to-partner`, {
+                const response = await axios.post(`${BASE_URL}/partners/link`, {
                     partner_code,
                 }, {
                     headers: {
@@ -35,10 +35,12 @@ export function useLinkPartner(partner_code: string) {
                     },
                 });
 
+                console.log("Link Partner Response:", response.data);
+
                 return response.data;
             } catch (error) {
-                console.error("Failed to add area:", error);
-                throw error instanceof Error ? error : new Error("Failed to add area");
+                console.error("Failed to link partner:", error);
+                throw error instanceof Error ? error : new Error("Failed to link partner");
             }
         },
     });

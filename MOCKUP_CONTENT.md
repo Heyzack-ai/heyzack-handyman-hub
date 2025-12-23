@@ -158,3 +158,6 @@ This document provides the exact content for each screen based on the design moc
 - Use translation keys from `translation.json` files
 - Maintain consistency across English and French translations
 
+
+
+

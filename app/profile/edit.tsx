@@ -16,7 +16,7 @@ import { Image } from "expo-image";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
-import { Camera, Upload, Check } from "lucide-react-native";
+import { Camera, Upload, Check, FileText } from "lucide-react-native";
 import Colors from "@/constants/colors";
 import Header from "@/components/Header";
 import { Handyman } from "@/types/handyman";
@@ -27,6 +27,7 @@ import { useUploadProfileImage } from "@/app/api/user/addProfileImage";
 import axios from "axios";
 import * as DocumentPicker from "expo-document-picker";
 import { t } from "i18next";
+import * as Linking from "expo-linking";
 
 export default function EditProfileScreen() {
   const router = useRouter();
@@ -40,6 +41,9 @@ export default function EditProfileScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const { user } = useLocalSearchParams<{ user: string }>();
   const parsedUser = user ? (JSON.parse(user) as Handyman) : null;
+  const [documentType, setDocumentType] = useState<"image" | "pdf" | null>(
+    null
+  );
   const queryClient = useQueryClient();
   const BASE_URL = process.env.EXPO_PUBLIC_ASSET_URL;
 
@@ -48,13 +52,21 @@ export default function EditProfileScreen() {
       setFullName(parsedUser.name || "");
       setEmail(parsedUser.email || "");
       setPhone(parsedUser.phone || "");
+      const url = `https://ui-avatars.com/api/?name=${parsedUser?.name?.replace(/ /g, "+")}&background=random&color=fff`;
       setAvatar(
         parsedUser?.profile_image
           ? `${parsedUser.profile_image}`
-          : `https://avatar.iran.liara.run/username?username=${parsedUser?.name}`
+          : url
       );
       if (parsedUser?.kyc_document) {
-        setKycDocument(`${parsedUser.kyc_document}`);
+        const docUrl = `${parsedUser.kyc_document}`;
+
+        setKycDocument(docUrl);
+
+        // Detect if it's a PDF based on URL
+        const isPdf = docUrl.toLowerCase().endsWith(".pdf");
+        setDocumentType(isPdf ? "pdf" : "image");
+
         setIsVerified(
           String(parsedUser?.is_verified) === "1" ||
             String(parsedUser?.is_verified) === "true"
@@ -78,9 +90,18 @@ export default function EditProfileScreen() {
       if (result.canceled) return;
 
       const file = result.assets[0];
+
+      const isPdf =
+        file.mimeType === "application/pdf" ||
+        file.name?.toLowerCase().endsWith(".pdf");
+      setDocumentType(isPdf ? "pdf" : "image");
+
       // Check file size - limit to 5MB
       if (file.size && file.size > 5 * 1024 * 1024) {
-        Alert.alert(t("editProfile.fileTooLarge"), t("editProfile.pleaseSelectSmallerFile"));
+        Alert.alert(
+          t("editProfile.fileTooLarge"),
+          t("editProfile.pleaseSelectSmallerFile")
+        );
         return;
       }
 
@@ -105,7 +126,10 @@ export default function EditProfileScreen() {
             clearTimeout(uploadTimeout);
             setIsVerified(true);
             queryClient.invalidateQueries({ queryKey: ["user"] });
-            Alert.alert(t("editProfile.success"), t("editProfile.documentUploadedSuccessfully"));
+            Alert.alert(
+              t("editProfile.success"),
+              t("editProfile.documentUploadedSuccessfully")
+            );
             setIsSaving(false);
           },
           onError: (error: any) => {
@@ -131,6 +155,35 @@ export default function EditProfileScreen() {
     }
   };
 
+  const openDocument = async () => {
+    if (!kycDocument) return;
+
+    try {
+      // Check if it's a remote URL or local file
+      const isRemoteUrl =
+        kycDocument.startsWith("http://") || kycDocument.startsWith("https://");
+
+      if (isRemoteUrl) {
+        // Open remote URL in browser/viewer
+        const supported = await Linking.canOpenURL(kycDocument);
+        if (supported) {
+          await Linking.openURL(kycDocument);
+        } else {
+          Alert.alert(t("editProfile.error"), "Cannot open this document");
+        }
+      } else {
+        // For local files (newly picked but not yet uploaded)
+        Alert.alert(
+          t("editProfile.info"),
+          "Document preview will be available after saving"
+        );
+      }
+    } catch (error) {
+      console.error("Error opening document:", error);
+      Alert.alert(t("editProfile.error"), "Failed to open document");
+    }
+  };
+
   const { mutate: updateUser } = useUpdateUser();
 
   const handleSave = () => {
@@ -150,12 +203,18 @@ export default function EditProfileScreen() {
         onSuccess: () => {
           setIsSaving(false);
           queryClient.invalidateQueries({ queryKey: ["user"] });
-          Alert.alert(t("editProfile.success"), t("editProfile.profileUpdatedSuccessfully"));
+          Alert.alert(
+            t("editProfile.success"),
+            t("editProfile.profileUpdatedSuccessfully")
+          );
           router.back();
         },
         onError: (error) => {
           setIsSaving(false);
-          Alert.alert(t("editProfile.error"), t("editProfile.failedToUpdateProfile"));
+          Alert.alert(
+            t("editProfile.error"),
+            t("editProfile.failedToUpdateProfile")
+          );
         },
       }
     );
@@ -219,7 +278,10 @@ export default function EditProfileScreen() {
               queryClient.invalidateQueries({ queryKey: ["user"] });
 
               console.log("Camera upload success response:", response);
-              console.log("Camera upload success response.data:", response?.data);
+              console.log(
+                "Camera upload success response.data:",
+                response?.data
+              );
 
               // Check if response has the expected structure
               if (!response?.data?.image_url) {
@@ -241,7 +303,10 @@ export default function EditProfileScreen() {
 
               // Refresh user data
               queryClient.invalidateQueries({ queryKey: ["user"] });
-              Alert.alert(t("editProfile.success"), t("editProfile.profilePhotoUpdatedSuccessfully"));
+              Alert.alert(
+                t("editProfile.success"),
+                t("editProfile.profilePhotoUpdatedSuccessfully")
+              );
             },
             onError: (error) => {
               clearTimeout(uploadTimeout);
@@ -377,10 +442,7 @@ export default function EditProfileScreen() {
     } catch (error) {
       console.error("Camera error:", error);
       setIsSaving(false);
-      Alert.alert(
-        t("editProfile.error"),
-        t("editProfile.photoTakingProblem")
-      );
+      Alert.alert(t("editProfile.error"), t("editProfile.photoTakingProblem"));
     }
   };
 
@@ -390,7 +452,10 @@ export default function EditProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <Header title={t("editProfile.editProfile")} onBack={() => router.back()} />
+      <Header
+        title={t("editProfile.editProfile")}
+        onBack={() => router.back()}
+      />
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
@@ -413,12 +478,16 @@ export default function EditProfileScreen() {
           <View style={styles.photoButtons}>
             <Pressable style={styles.photoButton} onPress={takePhoto}>
               <Camera size={20} color={Colors.light.primary} />
-              <Text style={styles.photoButtonText}>{t("editProfile.camera")}</Text>
+              <Text style={styles.photoButtonText}>
+                {t("editProfile.camera")}
+              </Text>
             </Pressable>
 
             <Pressable style={styles.photoButton} onPress={pickImage}>
               <Upload size={20} color={Colors.light.primary} />
-              <Text style={styles.photoButtonText}>{t("editProfile.gallery")}</Text>
+              <Text style={styles.photoButtonText}>
+                {t("editProfile.gallery")}
+              </Text>
             </Pressable>
           </View>
         </View>
@@ -460,34 +529,39 @@ export default function EditProfileScreen() {
         </View>
 
         <View style={styles.kycSection}>
-          <Text style={styles.sectionTitle}>{t("editProfile.identityVerification")}</Text>
+          <Text style={styles.sectionTitle}>
+            {t("editProfile.identityVerification")}
+          </Text>
           <Text style={styles.kycDescription}>
             {t("editProfile.kycDescription")} Maximum file size: 5MB.
           </Text>
+        </View>
 
-          <Pressable
-            style={[styles.kycButton, isUploading && styles.kycButtonDisabled]}
-            onPress={uploadKycDocument}
-            disabled={isUploading}
-          >
-            {isUploading ? (
-              <View style={styles.uploadingContainer}>
-                <ActivityIndicator size="small" color={Colors.light.primary} />
-                <Text style={styles.kycButtonText}>
-                  {t("editProfile.uploadingPleaseWait")}
-                </Text>
-              </View>
-            ) : (
-              <>
-                <Upload size={20} color={Colors.light.primary} />
-                <Text style={styles.kycButtonText}>
-                  {kycDocument ? t("editProfile.changeDocument") : t("editProfile.uploadDocument")}
-                </Text>
-              </>
-            )}
-          </Pressable>
+        <Pressable
+          style={[styles.kycButton, isUploading && styles.kycButtonDisabled]}
+          onPress={uploadKycDocument}
+          disabled={isUploading}
+        >
+          {isUploading ? (
+            <View style={styles.uploadingContainer}>
+              <ActivityIndicator size="small" color={Colors.light.primary} />
+              <Text style={styles.kycButtonText}>
+                {t("editProfile.uploadingPleaseWait")}
+              </Text>
+            </View>
+          ) : (
+            <>
+              <Upload size={20} color={Colors.light.primary} />
+              <Text style={styles.kycButtonText}>
+                {kycDocument
+                  ? t("editProfile.changeDocument")
+                  : t("editProfile.uploadDocument")}
+              </Text>
+            </>
+          )}
+        </Pressable>
 
-          {kycDocument && (
+        {/* {kycDocument && (
             <View style={styles.documentPreview}>
               <Image
                 source={{ uri: kycDocument }}
@@ -505,7 +579,44 @@ export default function EditProfileScreen() {
               </View>
             </View>
           )}
-        </View>
+        </View> */}
+
+        {kycDocument && (
+          <View style={styles.documentPreview}>
+            {documentType === "pdf" ? (
+              <View style={styles.pdfPreview}>
+                <FileText size={48} color={Colors.light.primary} />
+                <Text style={styles.pdfText}>PDF Document</Text>
+                <Text style={styles.pdfSubtext} numberOfLines={1}>
+                  {kycDocument.split("/").pop()}
+                </Text>
+              </View>
+            ) : (
+              <Image
+                source={{ uri: kycDocument }}
+                style={styles.documentImage}
+                contentFit="cover"
+              />
+            )}
+
+            {/* View Document Button */}
+            <Pressable style={styles.viewDocumentButton} onPress={openDocument}>
+              <Text style={styles.viewDocumentText}>
+                {t("editProfile.viewDocument")}
+              </Text>
+            </Pressable>
+
+            <View style={styles.documentStatus}>
+              <Text style={styles.documentStatusText}>
+                {isVerified
+                  ? t("editProfile.verified")
+                  : isUploading
+                  ? t("editProfile.uploading...")
+                  : t("editProfile.pendingVerification")}
+              </Text>
+            </View>
+          </View>
+        )}
 
         <Pressable
           style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
@@ -513,7 +624,9 @@ export default function EditProfileScreen() {
           disabled={isSaving}
         >
           <Text style={styles.saveButtonText}>
-            {isSaving ? t("editProfile.saving...") : t("editProfile.saveChanges")}
+            {isSaving
+              ? t("editProfile.saving...")
+              : t("editProfile.saveChanges")}
           </Text>
         </Pressable>
       </ScrollView>
@@ -524,7 +637,7 @@ export default function EditProfileScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
     backgroundColor: Colors.light.background,
   },
   container: {
@@ -593,6 +706,25 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
     marginBottom: 8,
   },
+  pdfPreview: {
+    width: "100%",
+    height: 150,
+    // backgroundColor: Colors.light.gray[100],
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  pdfText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: Colors.light.text,
+    marginTop: 8,
+  },
+  pdfSubtext: {
+    fontSize: 12,
+    color: Colors.light.gray[600],
+    maxWidth: "80%",
+  },
   input: {
     height: 50,
     borderWidth: 1,
@@ -654,6 +786,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     borderWidth: 1,
     borderColor: Colors.light.border,
+    padding: 16,
   },
   documentImage: {
     width: "100%",
@@ -662,13 +795,29 @@ const styles = StyleSheet.create({
   },
   documentStatus: {
     padding: 8,
-    backgroundColor: "white",
+    backgroundColor: Colors.light.primary,
     alignItems: "center",
+    marginTop: 16,
+    borderRadius: 8,
+  },
+  viewDocumentButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.light.primary,
+  },
+  viewDocumentText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: Colors.light.primary,
   },
   documentStatusText: {
     fontSize: 14,
     fontWeight: "500",
-    color: Colors.light.primary,
+    color: Colors.light.white,
   },
   saveButton: {
     backgroundColor: Colors.light.primary,
@@ -676,6 +825,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: "center",
     marginBottom: 16,
+    marginTop: 16,
   },
   saveButtonDisabled: {
     backgroundColor: Colors.light.gray[400],

@@ -9,6 +9,7 @@ import {
   SafeAreaView,
   Platform,
   StatusBar,
+  RefreshControl,
 } from "react-native";
 import { Search } from "lucide-react-native";
 import { useJobStore } from "@/store/job-store";
@@ -27,14 +28,14 @@ export default function JobsScreen() {
   const { t } = useTranslations();
   const jobs = useJobStore((state) => state.jobs);
   const [searchQuery, setSearchQuery] = useState("");
-  const { data: jobsData, isLoading } = useGetJobs();
+  const [refreshing, setRefreshing] = useState(false);
+  const { data: jobsData, isLoading, refetch: refetchJobs } = useGetJobs();
 
  
 
-  const { data: requestedJobs } = useGetPendingJobs()
+  const { data: requestedJobs, refetch: refetchPendingJobs } = useGetPendingJobs()
   const queryClient = useQueryClient();
   const { mutate: acceptJob } = useAcceptJob();
-  console.log("Jobs data:", jobsData);
 
   const filteredJobs = (jobsData || []).filter(
     (job: any) =>
@@ -44,14 +45,15 @@ export default function JobsScreen() {
   );
 
   const scheduledJobs = filteredJobs?.filter(
-    (job: any) => job.installation?.status === "scheduled" || job.response === "accepted"
+    (job: any) => job.installation?.status === "accepted" || job.response === "accepted"
   );
   const inProgressJobs = filteredJobs?.filter(
     (job: any) =>
-      job.installation?.status === "started" || job.installation?.status === "in_progress"
+    ["started", "in_progress", "contract_sent", "contract_signed"].includes(job?.installation?.status)
   );
   const completedJobs = filteredJobs?.filter(
-    (job: any) => job.installation?.status === "completed"
+    (job: any) =>
+    ["job_completed", "job_approved"].includes(job?.installation?.status)
   );
 
   // Helper to normalize job identifier across different shapes
@@ -68,7 +70,7 @@ export default function JobsScreen() {
     const response = (job.response || "").toLowerCase();
 
     // Treat only truly active statuses as non-pending (exclude 'assigned' from active)
-    const activeStatuses = new Set(["scheduled", "started", "in_progress", "completed", "accepted"]);
+    const activeStatuses = new Set(["started", "in_progress", "completed", "accepted", "contract_sent"]);
 
     const isPendingByStatus = status === "draft" || status === "pending" || status === "request" || status === "assigned";
     const isPendingByResponse = response === "pending" || response === "assigned";
@@ -92,33 +94,49 @@ export default function JobsScreen() {
 
 
   const handleAcceptJob = (jobId: string) => {
-    Alert.alert("Accept Job", "Are you sure you want to accept this job?", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t("home.acceptJob"), t("home.acceptJobConfirmation"), [
+      { text: t("common.cancel"), style: "cancel" },
       {
-        text: "Accept",
+        text: t("common.accept"),
         onPress: () => {
           acceptJob({ jobId, status: "accepted" });
           queryClient.invalidateQueries({ queryKey: ["get-jobs"] });
           queryClient.invalidateQueries({ queryKey: ["get-pending-jobs"] });
-          Alert.alert("Success", "Job has been accepted");
+          Alert.alert(t("common.success"), t("home.jobAccepted"));
         },
       },
     ]);
   };
 
   const handleDeclineJob = (jobId: string) => {
-    Alert.alert("Decline Job", "Are you sure you want to decline this job?", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t("home.declineJob"), t("home.declineJobConfirmation"), [
+      { text: t("common.cancel"), style: "cancel" },
       {
-        text: "Decline",
+        text: t("common.decline"),
         onPress: () => {
           acceptJob({ jobId, status: "rejected" });
           queryClient.invalidateQueries({ queryKey: ["get-jobs"] });
           queryClient.invalidateQueries({ queryKey: ["get-pending-jobs"] });
-          Alert.alert("Success", "Job has been declined");
+          Alert.alert(t("common.success"), t("home.jobDeclined"));
         },
       },
     ]);
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        refetchJobs(),
+        refetchPendingJobs(),
+      ]);
+      queryClient.invalidateQueries({ queryKey: ["get-jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["get-pending-jobs"] });
+    } catch (error) {
+      console.error("Error refreshing jobs:", error);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   return (
@@ -130,6 +148,14 @@ export default function JobsScreen() {
         style={styles.container}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={Colors.light.primary}
+            colors={[Colors.light.primary]}
+          />
+        }
       >
         <View style={styles.searchContainer}>
           <Search

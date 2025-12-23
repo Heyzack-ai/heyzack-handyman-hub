@@ -114,6 +114,8 @@ export default function ProfileScreen() {
 
   console.log("user", user)
 
+  const avatarUrl = `https://ui-avatars.com/api/?name=${user?.name?.replace(/ /g, "+")}&background=random&color=fff`;
+
   const technician = {
     name: user?.name,
     email: user?.email,
@@ -122,7 +124,7 @@ export default function ProfileScreen() {
     avatar:
       user?.profile_image
         ? `${user.profile_image}`
-        : `https://avatar.iran.liara.run/username?username=${user?.name}`,
+        : avatarUrl,
     completedJobs: user?.completedJobs || 0,
     rating: user?.rating || "0",
     isVerified: String(user?.is_verified) === "1" || String(user?.is_verified) === "true",

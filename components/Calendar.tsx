@@ -102,17 +102,34 @@ export default function Calendar({ selectedDate, onDateSelect, jobs = [] }: Cale
     return undefined;
   };
 
+  // const getJobTypesForDate = (day: number) => {
+  //   const dateString = formatDate(day);
+  //   const dayJobs = (jobs ?? []).filter(job => getScheduledDate(job)?.startsWith(dateString));
+    
+
+  //   return {
+  //     hasBookedInstallation: dayJobs.some(job => {
+  //       const status = getStatus(job);
+  //       return !!status && status !== "pending";
+  //     }),
+  //     hasJobRequest: dayJobs.some(job => getStatus(job) === "assigned"),
+  //   };
+  // };
+
   const getJobTypesForDate = (day: number) => {
     const dateString = formatDate(day);
     const dayJobs = (jobs ?? []).filter(job => getScheduledDate(job)?.startsWith(dateString));
     
-
     return {
       hasBookedInstallation: dayJobs.some(job => {
         const status = getStatus(job);
-        return !!status && status !== "pending";
+        // Exclude 'assigned' status from booked installations
+        return !!status && status !== "pending" && status !== "assigned";
       }),
-      hasJobRequest: dayJobs.some(job => getStatus(job) === "assigned"),
+      hasJobRequest: dayJobs.some(job => {
+        const status = getStatus(job);
+        return status === "assigned";
+      }),
     };
   };
 

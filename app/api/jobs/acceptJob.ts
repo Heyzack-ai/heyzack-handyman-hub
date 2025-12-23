@@ -35,8 +35,8 @@ export function useAcceptJob() {
         console.log("acceptJob", response.data);
 
         return response.data;
-      } catch (error) {
-        console.error("Failed to accept/decline job:", error);
+      } catch (error: any) {
+        console.error("Failed to accept/decline job:", error?.response?.data || error.message);
         throw error instanceof Error ? error : new Error("Failed to update job status");
       }
     },

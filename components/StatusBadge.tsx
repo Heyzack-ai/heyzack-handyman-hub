@@ -46,6 +46,8 @@ export default function StatusBadge({ status, size = "medium" }: StatusBadgeProp
         return Colors.light.success;
       case "job_approved":
         return Colors.light.info;
+      case "customer_approved":
+        return Colors.light.info;
       default:
         return Colors.light.gray[500];
     }
@@ -83,6 +85,8 @@ export default function StatusBadge({ status, size = "medium" }: StatusBadgeProp
         return t("status.job_completed");
       case "job_approved":
         return t("status.job_approved");
+      case "customer_approved":
+        return t("status.customer_approved");
       default:
         return t("status.unknown");
     }
