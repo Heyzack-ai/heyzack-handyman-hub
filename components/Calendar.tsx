@@ -11,6 +11,22 @@ type CalendarProps = {
   jobs?: Job[];
 };
 
+// Helper function to get local date string without timezone conversion
+const getLocalDateString = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+// Helper function to extract date from ISO string and convert to local date
+const extractLocalDate = (isoString: string | undefined): string => {
+  if (!isoString) return '';
+  // Parse the date string and get local date
+  const date = new Date(isoString);
+  return getLocalDateString(date);
+};
+
 export default function Calendar({ selectedDate, onDateSelect, jobs = [] }: CalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const { t } = useTranslations();
@@ -59,7 +75,7 @@ export default function Calendar({ selectedDate, onDateSelect, jobs = [] }: Cale
   const formatDate = (day: number) => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
-    return new Date(year, month, day).toISOString().split("T")[0];
+    return getLocalDateString(new Date(year, month, day));
   };
 
   const navigateMonth = (direction: "prev" | "next") => {
@@ -85,12 +101,14 @@ export default function Calendar({ selectedDate, onDateSelect, jobs = [] }: Cale
 
   const getScheduledDate = (job: any): string => {
     // Support multiple shapes: scheduled_date, scheduledDate, installation.scheduledDate
-    return (
+    // Convert to local date to avoid timezone issues
+    const isoDate = (
       job?.scheduled_date ||
       job?.scheduledDate ||
       job?.installation?.scheduledDate ||
       ""
     );
+    return extractLocalDate(isoDate);
   };
 
   const getStatus = (job: any): string | undefined => {
@@ -118,7 +136,7 @@ export default function Calendar({ selectedDate, onDateSelect, jobs = [] }: Cale
 
   const getJobTypesForDate = (day: number) => {
     const dateString = formatDate(day);
-    const dayJobs = (jobs ?? []).filter(job => getScheduledDate(job)?.startsWith(dateString));
+    const dayJobs = (jobs ?? []).filter(job => getScheduledDate(job) === dateString);
     
     return {
       hasBookedInstallation: dayJobs.some(job => {

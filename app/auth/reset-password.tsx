@@ -15,6 +15,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { Eye, EyeOff, ArrowLeft } from "lucide-react-native";
 import Colors from "@/constants/colors";
 import { authClient } from "@/lib/auth-client";
+import { useTranslation } from "react-i18next";
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
@@ -24,6 +25,8 @@ export default function ResetPasswordScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const { t } = useTranslation();
+  console.log(token, "token from params");
 
   const handleResetPassword = async () => {
     if (!password || !confirmPassword) {
@@ -39,10 +42,13 @@ export default function ResetPasswordScreen() {
     
     // Simulate API call
     try {
-      await authClient.resetPassword({
-        token: token,
-        password: password,
+      const response = await authClient.resetPassword({
+        newPassword: password,
+        token: token
       });
+      router.replace("/auth/reset-success");
+      console.log(token, "token");
+      console.log(response, "response");
     } catch (error) {
       console.error(error);
       Alert.alert("Error", error instanceof Error ? error.message : "An unknown error occurred");
@@ -67,18 +73,18 @@ export default function ResetPasswordScreen() {
         >
         
 
-          <Text style={styles.title}>Reset Password</Text>
+          <Text style={styles.title}>{t("auth.resetPassword")}</Text>
           <Text style={styles.subtitle}>
-            Create a new password for your account
+            {t("auth.createANewPasswordForYourAccount")}
           </Text>
 
           <View style={styles.form}>
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>New Password</Text>
+              <Text style={styles.label}>{t("auth.newPassword")}</Text>
               <View style={styles.passwordContainer}>
                 <TextInput
                   style={styles.passwordInput}
-                  placeholder="Enter new password"
+                  placeholder={t("auth.enterNewPassword")}
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
@@ -98,11 +104,11 @@ export default function ResetPasswordScreen() {
             </View>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Confirm New Password</Text>
+              <Text style={styles.label}>{t("auth.confirmNewPassword")}</Text>
               <View style={styles.passwordContainer}>
                 <TextInput
                   style={styles.passwordInput}
-                  placeholder="Confirm new password"
+                  placeholder={t("auth.confirmNewPassword")}
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   secureTextEntry={!showConfirmPassword}
@@ -122,7 +128,7 @@ export default function ResetPasswordScreen() {
             </View>
 
             <Text style={styles.passwordRequirements}>
-              Password must be at least 8 characters and include a mix of letters, numbers, and symbols.
+              {t("auth.passwordRequirements")}
             </Text>
 
             <Pressable
@@ -131,7 +137,7 @@ export default function ResetPasswordScreen() {
               disabled={isLoading}
             >
               <Text style={styles.buttonText}>
-                {isLoading ? "Resetting..." : "Reset Password"}
+                {isLoading ? t("auth.resettingPassword") : t("auth.resetPassword")}
               </Text>
             </Pressable>
           </View>
@@ -156,7 +162,8 @@ const styles = StyleSheet.create({
   },
   backButton: {
     marginBottom: 24,
-    paddingHorizontal: 16
+    paddingHorizontal: 16,
+    marginTop: Platform.OS === "ios" ? 0 : 50,
   },
   title: {
     fontSize: 28,

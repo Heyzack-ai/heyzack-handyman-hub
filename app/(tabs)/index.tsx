@@ -36,11 +36,27 @@ import { useAcceptJob } from "../api/jobs/acceptJob";
 // Global flag that persists across component unmounts/remounts
 let hasCheckedKYCGlobal = false;
 
+// Helper function to get local date string without timezone conversion
+const getLocalDateString = (date: Date = new Date()): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+// Helper function to extract date from ISO string and convert to local date
+const extractLocalDate = (isoString: string | undefined): string => {
+  if (!isoString) return '';
+  // Parse the date string and get local date
+  const date = new Date(isoString);
+  return getLocalDateString(date);
+};
+
 export default function HomeScreen() {
   const router = useRouter();
   const { t } = useTranslations();
   const [selectedDate, setSelectedDate] = useState<string>(
-    new Date().toISOString().split("T")[0]
+    getLocalDateString()
   );
   const [token, setToken] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -51,7 +67,7 @@ export default function HomeScreen() {
   const { mutate: acceptJob } = useAcceptJob();
   const { data: user, isLoading: isUserLoading } = useGetUser();
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = getLocalDateString();
 
   // Get unique customer codes that need to be fetched
   const customerCodes = useMemo(() => {
@@ -239,30 +255,33 @@ export default function HomeScreen() {
 
   const selectedDateJobs = (jobsData || [])?.filter((job: any) => {
     const status = job?.installation?.status || job?.status;
-    const dateStr =
-      job?.scheduled_date?.slice(0, 10) ||
-      job?.scheduledDate?.slice(0, 10) ||
-      job?.installation?.scheduledDate?.slice(0, 10);
+    const dateStr = extractLocalDate(
+      job?.scheduled_date ||
+      job?.scheduledDate ||
+      job?.installation?.scheduledDate
+    );
     
     // Show only if date matches AND status is NOT a job request status
     return dateStr === selectedDate && !JOB_REQUEST_STATUSES.includes(status);
   }) || [];
 
   const todayJobs = (jobsData || [])?.filter((job: any) => {
-    const dateStr =
-      job?.scheduled_date?.slice(0, 10) ||
-      job?.scheduledDate?.slice(0, 10) ||
-      job?.installation?.scheduledDate?.slice(0, 10);
+    const dateStr = extractLocalDate(
+      job?.scheduled_date ||
+      job?.scheduledDate ||
+      job?.installation?.scheduledDate
+    );
     return dateStr === today;
   });
 
   const upcomingJobs = (jobsData || [])
   .filter((job: any) => {
     const status = job?.installation?.status || job?.status;
-    const dateStr =
-      job?.scheduled_date?.slice(0, 10) ||
-      job?.scheduledDate?.slice(0, 10) ||
-      job?.installation?.scheduledDate?.slice(0, 10) || "";
+    const dateStr = extractLocalDate(
+      job?.scheduled_date ||
+      job?.scheduledDate ||
+      job?.installation?.scheduledDate
+    );
     
     // Show only if date is in future AND status is NOT a job request status
     return dateStr > today && !JOB_REQUEST_STATUSES.includes(status);
@@ -280,11 +299,26 @@ export default function HomeScreen() {
           acceptJob(
             { jobId, status: "accepted" },
             {
-              onSuccess: () => {
-                // Invalidate queries to refetch data
-                queryClient.invalidateQueries({ queryKey: ["get-jobs"] });
-                queryClient.invalidateQueries({ queryKey: ["get-pending-jobs"] });
-                Alert.alert(t("common.success"), t("home.jobAccepted"));
+              onSuccess: async () => {
+                try {
+                  // Invalidate and refetch queries to ensure immediate UI update
+                  await queryClient.invalidateQueries({ queryKey: ["get-jobs"] });
+                  await queryClient.refetchQueries({ 
+                    queryKey: ["get-jobs"],
+                    type: "active",
+                    exact: true 
+                  });
+                  await queryClient.invalidateQueries({ queryKey: ["get-pending-jobs"] });
+                  await queryClient.refetchQueries({ 
+                    queryKey: ["get-pending-jobs"],
+                    type: "active",
+                    exact: true 
+                  });
+                  Alert.alert(t("common.success"), t("home.jobAccepted"));
+                } catch (error) {
+                  console.error("Error refreshing after accept:", error);
+                  Alert.alert(t("common.success"), t("home.jobAccepted"));
+                }
               },
               onError: (error) => {
                 Alert.alert(t("common.error"), t("home.failedToAcceptJob"));
@@ -306,11 +340,26 @@ export default function HomeScreen() {
           acceptJob(
             { jobId, status: "rejected" },
             {
-              onSuccess: () => {
-                // Invalidate queries to refetch data
-                queryClient.invalidateQueries({ queryKey: ["get-jobs"] });
-                queryClient.invalidateQueries({ queryKey: ["get-pending-jobs"] });
-                Alert.alert(t("common.success"), t("home.jobDeclined"));
+              onSuccess: async () => {
+                try {
+                  // Invalidate and refetch queries to ensure immediate UI update
+                  await queryClient.invalidateQueries({ queryKey: ["get-jobs"] });
+                  await queryClient.refetchQueries({ 
+                    queryKey: ["get-jobs"],
+                    type: "active",
+                    exact: true 
+                  });
+                  await queryClient.invalidateQueries({ queryKey: ["get-pending-jobs"] });
+                  await queryClient.refetchQueries({ 
+                    queryKey: ["get-pending-jobs"],
+                    type: "active",
+                    exact: true 
+                  });
+                  Alert.alert(t("common.success"), t("home.jobDeclined"));
+                } catch (error) {
+                  console.error("Error refreshing after decline:", error);
+                  Alert.alert(t("common.success"), t("home.jobDeclined"));
+                }
               },
               onError: (error) => {
                 Alert.alert(t("common.error"), t("home.failedToDeclineJob"));
@@ -324,14 +373,27 @@ export default function HomeScreen() {
   };
 
   const jobRequests = (pendingJobs || []).filter((job: any) => {
-    const status = job?.installation?.status || job?.status;
-    const dateStr =
-      job?.scheduled_date?.slice(0, 10) ||
-      job?.scheduledDate?.slice(0, 10) ||
-      job?.installation?.scheduledDate?.slice(0, 10) || "";
+    const status = (job?.installation?.status || job?.status || "").toLowerCase();
+    const response = (job?.response || "").toLowerCase();
+    const dateStr = extractLocalDate(
+      job?.scheduled_date ||
+      job?.scheduledDate ||
+      job?.installation?.scheduledDate
+    );
     
-    // Show if status is 'assigned' and matches the selected date
-    return JOB_REQUEST_STATUSES.includes(status) && dateStr === selectedDate;
+    // Treat only truly active statuses as non-pending (exclude 'assigned' from active)
+    const activeStatuses = new Set(["started", "in_progress", "completed", "accepted", "contract_sent"]);
+    
+    const isPendingByStatus = status === "draft" || status === "pending" || status === "request" || status === "assigned";
+    const isPendingByResponse = response === "pending" || response === "assigned";
+    const isActive = activeStatuses.has(status) || response === "accepted" || response === "rejected";
+    
+    // Show only if status is 'assigned', matches date, is pending, and NOT active
+    return (
+      dateStr === selectedDate &&
+      (isPendingByStatus || isPendingByResponse) && 
+      !isActive
+    );
   });
   
 

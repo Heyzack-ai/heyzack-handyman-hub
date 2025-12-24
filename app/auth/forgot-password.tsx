@@ -63,9 +63,12 @@ export default function ForgotPasswordScreen() {
     setIsLoading(true);
     
     try {
-      const response = await authClient.forgetPassword({
+      const response = await authClient.requestPasswordReset({
         email: email,
+        redirectTo: "heyzack://auth/reset-password",
       });
+
+      console.log(response, "response");
 
       Alert.alert(
         t("auth.resetLinkSent"),
@@ -164,7 +167,8 @@ const styles = StyleSheet.create({
   },
   backButton: {
     marginBottom: 24,
-    paddingHorizontal: 16
+    paddingHorizontal: 16,
+    marginTop: Platform.OS === "ios" ? 0 : 50,
   },
   title: {
     fontSize: 28,

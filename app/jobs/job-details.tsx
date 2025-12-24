@@ -12,6 +12,9 @@ import {
   StatusBar,
   FlatList,
   TextInput,
+  KeyboardAvoidingView,
+  ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { Image } from "expo-image";
 import { Stack, useRouter, useLocalSearchParams } from "expo-router";
@@ -95,6 +98,9 @@ export default function JobDetailScreen() {
   const params = useLocalSearchParams<{ job: string }>();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
   const [productsExpanded, setProductsExpanded] = useState(true);
   const [completionExpanded, setCompletionExpanded] = useState(false);
   const [jobData, setJobData] = useState<Job | undefined>(undefined);
@@ -232,6 +238,7 @@ export default function JobDetailScreen() {
       "job_started",
       "job_completed",
       "job_approved",
+      "customer_approved",
     ];
     const currentStatus = jobDetails?.installation?.status || job.status;
     const currentIndex = statusOrder.indexOf(currentStatus);
@@ -291,59 +298,61 @@ export default function JobDetailScreen() {
 
   const handleSendContract = async () => {
     setIsLoading(true);
-    setTimeout(() => {
-      sendContract(job.id);
-      if (Platform.OS !== "web") {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    
+    sendContractMutation(
+      { jobId: robustJobId || "" },
+      {
+        onSuccess: async () => {
+          // Update local store
+          sendContract(job.id);
+          
+          // Haptic feedback
+          if (Platform.OS !== "web") {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          }
+
+          // Invalidate and refetch queries to ensure immediate UI update
+          try {
+            await queryClient.invalidateQueries({ queryKey: ["get-jobs", robustJobId] });
+            await queryClient.refetchQueries({
+              queryKey: ["get-jobs", robustJobId],
+              type: "active",
+              exact: true,
+            });
+            await queryClient.invalidateQueries({ queryKey: ["get-jobs"] });
+            await queryClient.refetchQueries({
+              queryKey: ["get-jobs"],
+              type: "active",
+              exact: true,
+            });
+            await queryClient.invalidateQueries({ queryKey: ["get-pending-jobs"] });
+            await queryClient.refetchQueries({
+              queryKey: ["get-pending-jobs"],
+              type: "active",
+              exact: true,
+            });
+          } catch (e) {
+            console.warn("Failed to refresh after contract sent", e);
+          }
+
+          // Show success message
+          Alert.alert(
+            t("jobDetails.success"),
+            t("jobDetails.contractSentToCustomer")
+          );
+          
+          setIsLoading(false);
+        },
+        onError: (error) => {
+          console.error("Failed to send contract:", error);
+          Alert.alert(
+            t("jobDetails.error"),
+            t("jobDetails.failedToSendContract")
+          );
+          setIsLoading(false);
+        },
       }
-      sendContractMutation({ jobId: robustJobId || "" });
-
-      // Invalidate and refetch queries to ensure immediate UI update
-
-      Alert.alert(
-        t("jobDetails.success"),
-        t("jobDetails.contractSentToCustomer")
-      );
-      queryClient.invalidateQueries({ queryKey: ["get-jobs", robustJobId] });
-      queryClient.refetchQueries({
-        queryKey: ["get-jobs", robustJobId],
-        type: "active",
-        exact: true,
-      });
-      queryClient.invalidateQueries({ queryKey: ["get-jobs"] });
-      queryClient.refetchQueries({
-        queryKey: ["get-jobs"],
-        type: "active",
-        exact: true,
-      });
-      queryClient.invalidateQueries({ queryKey: ["get-pending-jobs"] });
-      queryClient.refetchQueries({
-        queryKey: ["get-pending-jobs"],
-        type: "active",
-        exact: true,
-      });
-
-      // Delayed refetch to account for backend processing time
-      setTimeout(() => {
-        queryClient.refetchQueries({
-          queryKey: ["get-jobs", robustJobId],
-          type: "active",
-          exact: true,
-        });
-        queryClient.refetchQueries({
-          queryKey: ["get-jobs"],
-          type: "active",
-          exact: true,
-        });
-        queryClient.refetchQueries({
-          queryKey: ["get-pending-jobs"],
-          type: "active",
-          exact: true,
-        });
-      }, 3000); // Refetch after 3 seconds to ensure backend processing is complete
-
-      setIsLoading(false);
-    }, 1000);
+    );
   };
 
   const handleCollectStock = () => {
@@ -463,6 +472,10 @@ export default function JobDetailScreen() {
   const handleImageResult = async (result: any) => {
     if (!result.canceled && result.assets && result.assets.length > 0) {
       // console.log(`Processing ${result.assets.length} images`);
+      
+      // Set uploading state and initialize progress
+      setIsUploadingImages(true);
+      setUploadProgress({ current: 0, total: result.assets.length });
 
       try {
         // Get current completion photos from job data
@@ -473,6 +486,8 @@ export default function JobDetailScreen() {
         let errorCount = 0;
 
         for (let i = 0; i < result.assets.length; i++) {
+          // Update progress
+          setUploadProgress({ current: i + 1, total: result.assets.length });
           const asset = result.assets[i];
           const imageUri = asset.uri;
           // console.log(
@@ -582,6 +597,10 @@ export default function JobDetailScreen() {
           t("jobDetails.error"),
           t("jobDetails.failedToProcessImages")
         );
+      } finally {
+        // Reset uploading state
+        setIsUploadingImages(false);
+        setUploadProgress({ current: 0, total: 0 });
       }
     } else {
       console.log("Image selection was canceled or no assets");
@@ -655,6 +674,26 @@ export default function JobDetailScreen() {
     router.back();
   };
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      // Invalidate and refetch the job details
+      await queryClient.invalidateQueries({ queryKey: ["get-jobs", robustJobId] });
+      await queryClient.refetchQueries({
+        queryKey: ["get-jobs", robustJobId],
+        type: "active",
+        exact: true,
+      });
+      // Also refetch general jobs lists
+      await queryClient.invalidateQueries({ queryKey: ["get-jobs"] });
+      await queryClient.invalidateQueries({ queryKey: ["get-pending-jobs"] });
+    } catch (error) {
+      console.error("Error refreshing job details:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const ContactRow = ({
     icon,
     text,
@@ -694,11 +733,24 @@ export default function JobDetailScreen() {
     <SafeAreaView style={styles.safeArea}>
       <Header title={jobTitle} onBack={() => router.back()} />
 
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
       >
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={Colors.light.primary}
+              colors={[Colors.light.primary]}
+            />
+          }
+        >
         {/* Job Progress Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t("jobDetails.jobProgress")}</Text>
@@ -923,6 +975,7 @@ export default function JobDetailScreen() {
                   "contract_signed",
                   "job_completed",
                   "job_approved",
+                  "customer_approved",
                 ].some((s) =>
                   (jobDetails?.installation?.status || job.status)?.includes(s)
                 )
@@ -938,6 +991,7 @@ export default function JobDetailScreen() {
             "contract_signed",
             "job_completed",
             "job_approved",
+            "customer_approved",
           ].some((s) =>
             (jobDetails?.installation?.status || job.status)?.includes(s)
           ) && (
@@ -1005,18 +1059,37 @@ export default function JobDetailScreen() {
             </Text>
           )}
 
-          {["job_completed", "job_approved"].includes(job.status) === false && (
+          {/* Only show upload button if status includes contract_sent or contract_signed AND not completed/approved */}
+          {(["contract_sent", "contract_signed"].some(s => 
+              (jobDetails?.installation?.status || job.status)?.includes(s)
+            ) && 
+            !["job_completed", "job_approved", "customer_approved"].some(s => 
+              (jobDetails?.installation?.status || job.status)?.includes(s)
+            )) && (
             <Pressable
-              style={styles.uploadButton}
+              style={[styles.uploadButton, isUploadingImages && styles.uploadButtonDisabled]}
               onPress={() => {
-                // console.log("Upload button pressed");
-                handleTakePhoto();
+                if (!isUploadingImages) {
+                  handleTakePhoto();
+                }
               }}
+              disabled={isUploadingImages}
             >
-              <Camera size={20} color={Colors.light.primary} />
-              <Text style={styles.uploadButtonText}>
-                {t("jobDetails.addPhoto")}
-              </Text>
+              {isUploadingImages ? (
+                <>
+                  <ActivityIndicator size="small" color={Colors.light.primary} />
+                  <Text style={styles.uploadButtonText}>
+                    {t("jobDetails.uploadingPhotos")} ({uploadProgress.current}/{uploadProgress.total})
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Camera size={20} color={Colors.light.primary} />
+                  <Text style={styles.uploadButtonText}>
+                    {t("jobDetails.addPhoto")}
+                  </Text>
+                </>
+              )}
             </Pressable>
           )}
         </View>
@@ -1037,7 +1110,8 @@ export default function JobDetailScreen() {
                 jobDetails?.installation?.completion_photos &&
                 jobDetails?.installation?.completion_photos.length > 0 &&
                 !jobDetails?.installation?.status?.includes("job_completed") &&
-                !jobDetails?.installation?.status?.includes("job_approved") ===
+                !jobDetails?.installation?.status?.includes("job_approved") &&
+                !jobDetails?.installation?.status?.includes("customer_approved") ===
                   true
               ) === true && styles.inputDisabled,
             ]}
@@ -1046,7 +1120,8 @@ export default function JobDetailScreen() {
                 jobDetails?.installation?.completion_photos &&
                 jobDetails?.installation?.completion_photos.length > 0 &&
                 !jobDetails?.installation?.status?.includes("job_completed") &&
-                !jobDetails?.installation?.status?.includes("job_approved") ===
+                !jobDetails?.installation?.status?.includes("job_approved") &&
+                !jobDetails?.installation?.status?.includes("customer_approved") ===
                   true
               ) === true
                 ? Colors.light.gray[400]
@@ -1056,7 +1131,8 @@ export default function JobDetailScreen() {
               (jobDetails?.installation?.completion_photos &&
                 jobDetails?.installation?.completion_photos.length > 0 &&
                 !jobDetails?.installation?.status?.includes("job_completed") &&
-                !jobDetails?.installation?.status?.includes("job_approved") ===
+                !jobDetails?.installation?.status?.includes("job_approved") &&
+                !jobDetails?.installation?.status?.includes("customer_approved") ===
                   true) === true
             }
           />
@@ -1084,7 +1160,8 @@ export default function JobDetailScreen() {
         {jobDetails?.installation?.completion_photos &&
   jobDetails?.installation?.completion_photos.length > 0 &&
   !jobDetails?.installation?.status?.includes("job_completed") &&
-  !jobDetails?.installation?.status?.includes("job_approved") && (
+  !jobDetails?.installation?.status?.includes("job_approved") &&
+  !jobDetails?.installation?.status?.includes("customer_approved") && (
     <Pressable
       style={styles.completeButton}
       onPress={handleMarkComplete}
@@ -1095,7 +1172,8 @@ export default function JobDetailScreen() {
     </Pressable>
   )}
 
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -1372,6 +1450,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 12,
     marginTop: 8,
+  },
+  uploadButtonDisabled: {
+    backgroundColor: Colors.light.gray[100],
+    borderColor: Colors.light.gray[300],
+    opacity: 0.7,
   },
   uploadButtonText: {
     fontSize: 16,

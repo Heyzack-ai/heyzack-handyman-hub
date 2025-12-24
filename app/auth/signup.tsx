@@ -311,10 +311,12 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 16,
+    paddingBottom: 30,
   },
   backButton: {
     marginBottom: 16,
     paddingHorizontal: 16,
+    marginTop: Platform.OS === "ios" ? 0 : 50,
   },
   logoContainer: {
     alignItems: "center",

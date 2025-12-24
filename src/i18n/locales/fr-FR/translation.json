@@ -90,7 +90,15 @@
    "phoneNumberMustBe9DigitsAfterCountryCode": "Numéro de téléphone doit être 9 chiffres après +33",
     "pleaseConfirmYourPassword": "Veuillez confirmer votre mot de passe",
     "creatingAccount": "Création de compte en cours...",
-    "error": "Erreur"
+    "error": "Erreur",
+    "createANewPasswordForYourAccount": "Créer un nouveau mot de passe pour votre compte",
+    "enterNewPassword": "Entrer un nouveau mot de passe",
+    "confirmNewPassword": "Confirmer le nouveau mot de passe",
+    "passwordRequirements": "Le mot de passe doit comporter au moins 8 caractères et inclure une mix de lettres, chiffres et symboles.",
+    "resettingPassword": "Réinitialisation en cours...",
+    "newPassword": "Nouveau mot de passe",
+    "passwordResetSuccessful": "Réinitialisation du mot de passe avec succès",
+    "yourPasswordHasBeenResetSuccessfullyYouCanNowSignInWithYourNewPassword": "Votre mot de passe a été réinitialisé avec succès. Vous pouvez maintenant vous connecter avec votre nouveau mot de passe."
   },
   "navigation": {
     "home": "Accueil",
@@ -279,6 +287,7 @@
   "call": "Appeler {{phone}}",
   "success": "Succès",
   "contractSentToCustomer": "Contrat envoyé au client",
+  "failedToSendContract": "Échec de l'envoi du contrat. Veuillez réessayer.",
   "selectPhoto": "Sélectionner une photo",
   "chooseHowToAddPhotos": "Choisissez comment ajouter des photos",
   "permissionRequired": "Autorisation requise",
@@ -320,6 +329,7 @@
   "photoCount": "{{count}} photo(s)",
   "sendContractToCustomer": "Envoyer le contrat au client",
   "addPhoto": "Ajouter une photo",
+  "uploadingPhotos": "Téléchargement de photos",
   "markAsComplete": "Marquer comme terminé",
   "enterCustomerTuyaEmail": "Veuillez saisir l'identifiant e-mail Tuya du client",
   "noPhotosUploaded": "Aucune photo téléchargée pour le moment",

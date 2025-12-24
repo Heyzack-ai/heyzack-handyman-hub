@@ -53,7 +53,7 @@ export default function JobsScreen() {
   );
   const completedJobs = filteredJobs?.filter(
     (job: any) =>
-    ["job_completed", "job_approved"].includes(job?.installation?.status)
+    ["job_completed", "job_approved", "customer_approved"].includes(job?.installation?.status)
   );
 
   // Helper to normalize job identifier across different shapes
@@ -99,10 +99,21 @@ export default function JobsScreen() {
       {
         text: t("common.accept"),
         onPress: () => {
-          acceptJob({ jobId, status: "accepted" });
-          queryClient.invalidateQueries({ queryKey: ["get-jobs"] });
-          queryClient.invalidateQueries({ queryKey: ["get-pending-jobs"] });
-          Alert.alert(t("common.success"), t("home.jobAccepted"));
+          acceptJob(
+            { jobId, status: "accepted" },
+            {
+              onSuccess: () => {
+                // Invalidate queries to refetch data AFTER mutation succeeds
+                queryClient.invalidateQueries({ queryKey: ["get-jobs"] });
+                queryClient.invalidateQueries({ queryKey: ["get-pending-jobs"] });
+                Alert.alert(t("common.success"), t("home.jobAccepted"));
+              },
+              onError: (error) => {
+                Alert.alert(t("common.error"), t("home.failedToAcceptJob"));
+                console.error("Accept job error:", error);
+              },
+            }
+          );
         },
       },
     ]);
@@ -114,10 +125,21 @@ export default function JobsScreen() {
       {
         text: t("common.decline"),
         onPress: () => {
-          acceptJob({ jobId, status: "rejected" });
-          queryClient.invalidateQueries({ queryKey: ["get-jobs"] });
-          queryClient.invalidateQueries({ queryKey: ["get-pending-jobs"] });
-          Alert.alert(t("common.success"), t("home.jobDeclined"));
+          acceptJob(
+            { jobId, status: "rejected" },
+            {
+              onSuccess: () => {
+                // Invalidate queries to refetch data AFTER mutation succeeds
+                queryClient.invalidateQueries({ queryKey: ["get-jobs"] });
+                queryClient.invalidateQueries({ queryKey: ["get-pending-jobs"] });
+                Alert.alert(t("common.success"), t("home.jobDeclined"));
+              },
+              onError: (error) => {
+                Alert.alert(t("common.error"), t("home.failedToDeclineJob"));
+                console.error("Decline job error:", error);
+              },
+            }
+          );
         },
       },
     ]);

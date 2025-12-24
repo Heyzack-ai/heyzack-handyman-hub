@@ -3,10 +3,11 @@ import { StyleSheet, Text, View, Pressable, SafeAreaView } from "react-native";
 import { useRouter } from "expo-router";
 import { CheckCircle } from "lucide-react-native";
 import Colors from "@/constants/colors";
+import { useTranslation } from "react-i18next";
 
 export default function ResetSuccessScreen() {
   const router = useRouter();
-
+  const { t } = useTranslation();
   const handleSignIn = () => {
     router.push("/auth/signin");
   };
@@ -19,13 +20,13 @@ export default function ResetSuccessScreen() {
             <CheckCircle size={80} color={Colors.light.success} />
           </View>
           
-          <Text style={styles.title}>Password Reset Successful</Text>
+          <Text style={styles.title}>{t("auth.passwordResetSuccessful")}</Text>
           <Text style={styles.message}>
-            Your password has been reset successfully. You can now sign in with your new password.
+            {t("auth.yourPasswordHasBeenResetSuccessfullyYouCanNowSignInWithYourNewPassword")}
           </Text>
           
           <Pressable style={styles.button} onPress={handleSignIn}>
-            <Text style={styles.buttonText}>Sign In</Text>
+            <Text style={styles.buttonText}>{t("auth.signIn")}</Text>
           </Pressable>
         </View>
       </View>

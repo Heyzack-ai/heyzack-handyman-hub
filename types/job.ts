@@ -16,6 +16,7 @@ export type JobStatus =
   | "job_started"
   | "job_completed"
   | "job_approved"
+  | "customer_approved"
   | "assigned";
 
 
