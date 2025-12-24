@@ -413,7 +413,8 @@
     "ibanNumber": "IBAN Number",
     "enterIban": "Enter IBAN Number",
     "bicSwiftCode": "BIC/Swift Code",
-    "enterBicSwiftCode": "Enter BIC/Swift Code"
+    "enterBicSwiftCode": "Enter BIC/Swift Code",
+    "defaultBankAccountUpdated": "Bank Account Updated Successfully"
   },
   "availability": {
     "setAvailability": "Set Availability",

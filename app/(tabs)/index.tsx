@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   StyleSheet,
   Text,
@@ -10,6 +10,7 @@ import {
   Platform,
   Alert,
   RefreshControl,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Calendar as CalendarIcon, Briefcase, Euro } from "lucide-react-native";
@@ -28,9 +29,12 @@ import ShimmerSkeleton from "@/components/ShimmerSkeleton";
 import { useGetPendingJobs } from "@/app/api/jobs/getJobs";
 import { useTranslations } from "@/src/i18n/useTranslations";
 import { useGetNotificationCount } from "@/app/api/notifications/getNotifications";
-
+import { useGetUser } from "@/app/api/user/getUser";
 import Job from "@/components/Job";
 import { useAcceptJob } from "../api/jobs/acceptJob";
+
+// Global flag that persists across component unmounts/remounts
+let hasCheckedKYCGlobal = false;
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -45,6 +49,7 @@ export default function HomeScreen() {
   const { data: notificationCount, refetch: refetchNotifications } = useGetNotificationCount();
   const queryClient = useQueryClient();
   const { mutate: acceptJob } = useAcceptJob();
+  const { data: user, isLoading: isUserLoading } = useGetUser();
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -197,12 +202,30 @@ export default function HomeScreen() {
 
   // Only try to access SecureStore on native platforms
   useEffect(() => {
-    if (Platform.OS !== "web") {
-      SecureStore.getItemAsync("auth_token").then((value) => {
-        setToken(value);
-      });
+    // Only check once when user data is initially loaded (transition from loading to loaded)
+    if (!isUserLoading && user && !hasCheckedKYCGlobal) {
+      // Mark as checked first to prevent re-entry (using global flag that persists across unmounts)
+      hasCheckedKYCGlobal = true;
+      
+      // Check if KYC document is missing
+      if (!user.kyc_document) {
+        router.push({
+          pathname: "/profile/upload-document",
+        });
+      }
     }
-  }, []);
+  }, [isUserLoading]); // Only depend on loading state, not user object
+  
+  // Show loading screen while user data loads
+  // if (isUserLoading || (user && !user.kyc_document)) {
+  //   return (
+  //     <SafeAreaView style={styles.safeArea}>
+  //       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+  //         <ActivityIndicator size="large" color={Colors.light.primary} />
+  //       </View>
+  //     </SafeAreaView>
+  //   );
+  // }
 
   const JOB_REQUEST_STATUSES = ['assigned'] as const;
 
