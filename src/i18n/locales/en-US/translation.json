@@ -183,7 +183,8 @@
     "acceptJob": "Accept Job",
     "acceptJobConfirmation": "Are you sure you want to accept this job?",
     "jobDeclined": "Job declined successfully",
-    "jobAccepted": "Job accepted successfully"
+    "jobAccepted": "Job accepted successfully",
+    "jobRequests": "Job Requests"
   },
   "jobs": {
     "searchJobs": "Search jobs, customers, or addresses",

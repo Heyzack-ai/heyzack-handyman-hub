@@ -382,7 +382,7 @@ export default function HomeScreen() {
     );
     
     // Treat only truly active statuses as non-pending (exclude 'assigned' from active)
-    const activeStatuses = new Set(["started", "in_progress", "completed", "accepted", "contract_sent"]);
+    const activeStatuses = new Set(["started", "in_progress", "completed", "accepted", "contract_sent", "customer_approved", "job_completed", "job_approved"]);
     
     const isPendingByStatus = status === "draft" || status === "pending" || status === "request" || status === "assigned";
     const isPendingByResponse = response === "pending" || response === "assigned";
@@ -573,7 +573,7 @@ export default function HomeScreen() {
         {jobRequests.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Job Requests</Text>
+              <Text style={styles.sectionTitle}>{t("home.jobRequests")}</Text>
             </View>
 
             {jobRequests.map((job: any) => {

@@ -183,7 +183,8 @@
   "acceptJob": "Accepter le travail",
   "acceptJobConfirmation": "Êtes-vous sûr de vouloir accepter ce travail ?",
   "jobDeclined": "Travail refusé avec succès",
-  "jobAccepted": "Travail accepté avec succès"
+  "jobAccepted": "Travail accepté avec succès",
+  "jobRequests": "Demandes de travail"
 },
   "jobs": {
   "searchJobs": "Rechercher des travaux, des clients ou des adresses",
