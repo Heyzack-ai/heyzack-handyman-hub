@@ -65,7 +65,15 @@
       "expo-font",
       "expo-web-browser",
       "expo-localization",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "heyzack-handyman",
+          "organization": "heyzack"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

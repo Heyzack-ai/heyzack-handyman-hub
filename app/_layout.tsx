@@ -109,6 +109,26 @@ import { AppState, Platform } from "react-native";
 import * as Network from 'expo-network';
 import type { AppStateStatus } from 'react-native';
 import Splash from "@/components/Splash";
+import * as Sentry from '@sentry/react-native';
+
+Sentry.init({
+  dsn: 'https://9e71c71cafc5b979edaf19c8aa3aa067@o4509322028908544.ingest.de.sentry.io/4510703467036752',
+
+  // Adds more context data to events (IP address, cookies, user, etc.)
+  // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
+  sendDefaultPii: true,
+
+  // Enable Logs
+  enableLogs: true,
+
+  // Configure Session Replay
+  replaysSessionSampleRate: 0.1,
+  replaysOnErrorSampleRate: 1,
+  integrations: [Sentry.mobileReplayIntegration(), Sentry.feedbackIntegration()],
+
+  // uncomment the line below to enable Spotlight (https://spotlightjs.com)
+  // spotlight: __DEV__,
+});
 
 export const unstable_settings = {
   initialRouteName: "(tabs)",
@@ -155,7 +175,7 @@ const queryClient = new QueryClient({
   },
 });
 
-export default function RootLayout() {
+export default Sentry.wrap(function RootLayout() {
   const [loaded, error] = useFonts({
     ...FontAwesome.font,
   });
@@ -190,7 +210,7 @@ export default function RootLayout() {
       <RootLayoutNav />
     </AuthProvider>
   );
-}
+});
 
 function RootLayoutNav() {
   const { isLoading } = useAuth();
