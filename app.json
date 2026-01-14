@@ -71,7 +71,9 @@
         {
           "url": "https://sentry.io/",
           "project": "heyzack-handyman",
-          "organization": "heyzack"
+          "organization": "heyzack",
+          "uploadNativeSymbols": false,
+          "uploadSourceMaps": false
         }
       ]
     ],
