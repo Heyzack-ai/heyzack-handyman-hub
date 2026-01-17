@@ -184,6 +184,8 @@
   "acceptJobConfirmation": "Êtes-vous sûr de vouloir accepter ce travail ?",
   "jobDeclined": "Travail refusé avec succès",
   "jobAccepted": "Travail accepté avec succès",
+  "failedToAcceptJob": "Échec de l'acceptation du travail. Veuillez réessayer.",
+  "failedToDeclineJob": "Échec du refus du travail. Veuillez réessayer.",
   "jobRequests": "Demandes de travail"
 },
   "jobs": {
@@ -238,7 +240,10 @@
   "invalidFileType": "Type de fichier invalide",
   "onlyImagesAllowed": "Seules les images sont autorisées. Veuillez sélectionner un fichier image.",
   "camera": "Caméra",
-  "gallery": "Galerie"
+  "gallery": "Galerie",
+  "heyzackAdmin": "Administrateur Heyzack",
+  "partner": "Partenaire",
+  "photo": "Photo"
 },
  "profile": {
   "profile": "Profil",
@@ -342,8 +347,16 @@
     "enRoute": "En Route",
     "contractSigned": "Contrat Signé",
     "jobStarted": "Travail démarré",
+    "jobCompleted": "Travail terminé",
+    "jobApproved": "Travail approuvé",
     "jobMarked": "Travail marqué comme terminé",
-    "jobEnded": "Travail terminé"
+    "jobEnded": "Travail terminé",
+    "cancelJob": "Annuler le travail",
+    "confirmCancel": "Confirmer",
+    "cancelJobDescription": "Veuillez fournir une raison pour annuler ce travail.",
+    "cancelReasonPlaceholder": "Entrez la raison de l'annulation (ex. : Impossible d'accéder à la propriété, Client indisponible)",
+    "pleaseProvideCancelReason": "Veuillez fournir une raison pour annuler le travail",
+    "failedToCancelJob": "Échec de l'annulation du travail. Veuillez réessayer."
 },
 "collectStock": {
   "collectStock": "Collecte de stock",

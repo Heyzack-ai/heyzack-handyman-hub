@@ -32,6 +32,7 @@ export interface SendMessageRequest {
 	message: string;
 	partnerId?: string;
 	handymanId?: string;
+	adminId?: string;
 }
 
 export interface SendMessageResponse {
@@ -50,7 +51,7 @@ export interface ChatRoom {
 		id: string;
 		name: string;
 		email: string;
-		type: "partner" | "handyman";
+		type: "partner" | "handyman" | "admin";
 	};
 	lastMessage?: Message;
 	lastActivity: string;
@@ -67,11 +68,18 @@ export interface FirebaseTokenResponse {
  */
 export const getChatHistory = async (
 	otherUserId: string,
-	userType: "partner" | "handyman",
+	userType: "partner" | "handyman" | "admin",
 	page = 1,
 	limit = 50,
 ): Promise<ChatHistory> => {
-	const queryParam = userType === "partner" ? "partnerId" : "handymanId";
+	let queryParam: string;
+	if (userType === "partner") {
+		queryParam = "partnerId";
+	} else if (userType === "admin") {
+		queryParam = "adminId";
+	} else {
+		queryParam = "handymanId";
+	}
 	console.log("queryParam", otherUserId);
 	const response = await serverClient.get<{ data: ChatHistory }>(
 		"/chat/history",
@@ -103,10 +111,33 @@ export const sendMessage = async (
  * Get all chat rooms for the current user
  */
 export const getChatRooms = async (): Promise<ChatRoom[]> => {
-	const response = await serverClient.get<{ data: { rooms: ChatRoom[] } }>(
+	const response = await serverClient.get<{ data: { rooms: ChatRoom[] } } | { data: ChatRoom[] }>(
 		"/chat/rooms",
 	);
-	return response.data.data.rooms;
+	console.log("Chat Rooms API Response:", JSON.stringify(response.data, null, 2));
+	
+	// Handle different response structures
+	let rooms: ChatRoom[] = [];
+	if (response.data) {
+		if (Array.isArray(response.data)) {
+			rooms = response.data;
+		} else if ((response.data as any).rooms && Array.isArray((response.data as any).rooms)) {
+			rooms = (response.data as any).rooms;
+		} else if ((response.data as any).data?.rooms && Array.isArray((response.data as any).data.rooms)) {
+			rooms = (response.data as any).data.rooms;
+		}
+	}
+	
+	console.log("Parsed Chat Rooms:", rooms.length, "rooms");
+	rooms.forEach((room, index) => {
+		console.log(`Room ${index + 1}:`, {
+			roomId: room.roomId,
+			otherUserId: room.otherUser?.id,
+			otherUserName: room.otherUser?.name,
+			unreadCount: room.unreadCount,
+		});
+	});
+	return rooms;
 };
 
 /**
@@ -135,10 +166,29 @@ export const markMessagesAsRead = async (
  * Get unread message count for all chat rooms
  */
 export const getUnreadCount = async (): Promise<number> => {
-	const response = await serverClient.get<{ data: { count: number } }>(
+	const response = await serverClient.get<{ data: { count: number } } | { data: number } | { count: number }>(
 		"/chat/unread-count",
 	);
-	return response.data.data.count;
+	console.log("Unread Count API Response:", JSON.stringify(response.data, null, 2));
+	
+	// Handle different response structures
+	let count = 0;
+	if (response.data) {
+		if (typeof response.data === 'number') {
+			count = response.data;
+		} else if ((response.data as any).count !== undefined) {
+			count = (response.data as any).count;
+		} else if ((response.data as any).data) {
+			if (typeof (response.data as any).data === 'number') {
+				count = (response.data as any).data;
+			} else if ((response.data as any).data?.count !== undefined) {
+				count = (response.data as any).data.count;
+			}
+		}
+	}
+	
+	console.log("Parsed Unread Count:", count);
+	return count;
 };
 
 // export const sendImage = async (
@@ -174,7 +224,8 @@ export const getUnreadCount = async (): Promise<number> => {
 // };
 export const sendImage = async (
 	imageFile: File | any,
-	partnerId: string,
+	recipientId: string,
+	recipientType: "partner" | "admin" = "partner",
 ): Promise<SendMessageResponse> => {
 	const formData = new FormData();
 	
@@ -191,7 +242,12 @@ export const sendImage = async (
 		formData.append('image', imageFile);
 	}
 	
-	formData.append('partnerId', partnerId);
+	// Append the appropriate ID parameter based on recipient type
+	if (recipientType === "admin") {
+		formData.append('adminId', recipientId);
+	} else {
+		formData.append('partnerId', recipientId);
+	}
 
 	console.log("formData", formData?.get('image'));
 
@@ -236,4 +292,29 @@ export const deleteMessage = async (
  */
 export const updateLastSeen = async (roomId: string): Promise<void> => {
 	await serverClient.post(`/chat/last-seen/${roomId}`);
+};
+
+/**
+ * Get chat connections (partners, handymen, admin)
+ */
+export interface ChatConnection {
+	id: string;
+	name: string;
+	email: string;
+	image?: string | null;
+	phone?: string | null;
+	availability_status?: string;
+	rating?: string;
+}
+
+export interface ChatConnectionsResponse {
+	connections: ChatConnection[];
+	role: "handyman" | "partner" | "admin";
+}
+
+export const getChatConnections = async (): Promise<ChatConnectionsResponse> => {
+	const response = await serverClient.get<{ data: ChatConnectionsResponse }>(
+		"/chat/connections",
+	);
+	return response.data.data;
 };

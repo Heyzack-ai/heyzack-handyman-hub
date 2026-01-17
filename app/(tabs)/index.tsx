@@ -320,9 +320,9 @@ export default function HomeScreen() {
                   Alert.alert(t("common.success"), t("home.jobAccepted"));
                 }
               },
-              onError: (error) => {
+              onError: (error: any) => {
                 Alert.alert(t("common.error"), t("home.failedToAcceptJob"));
-                console.error("Accept job error:", error);
+                // console.error("Accept job error:", error?.response?.data?.message || error?.message);
               },
             }
           );

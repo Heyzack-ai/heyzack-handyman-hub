@@ -8,7 +8,7 @@ import { Alert } from "react-native";
 
 export interface UseChatProps {
 	otherUserId?: string;
-	userType?: "partner" | "handyman";
+	userType?: "partner" | "handyman" | "admin";
 }
 
 export interface UseChatReturn {
@@ -334,12 +334,14 @@ export function useChat({ otherUserId, userType }: UseChatProps = {}) {
 
 			try {
 				// Prepare message data based on user type
-				const messageData = {
-					message: messageText,
-					...(userType === "handyman"
-						? { handymanId: otherUserId }
-						: { partnerId: otherUserId }),
-				};
+				let messageData: any = { message: messageText };
+				if (userType === "handyman") {
+					messageData.handymanId = otherUserId;
+				} else if (userType === "admin") {
+					messageData.adminId = otherUserId;
+				} else {
+					messageData.partnerId = otherUserId;
+				}
 
 				// Send to backend for persistence
 				const response = await sendMessage(messageData);
@@ -392,14 +394,18 @@ export function useChat({ otherUserId, userType }: UseChatProps = {}) {
 	 * Send an image message
 	 */
 	const sendImageMessage = useCallback(
-		async (imageFile: File | any, partnerId: string) => {
-			if (!partnerId || !session?.user) {
+		async (imageFile: File | any, recipientId: string) => {
+			if (!recipientId || !session?.user || !userType) {
 				return;
 			}
 
 			try {
 				// Send image to backend
-				const response = await sendImage(imageFile, partnerId);
+				const response = await sendImage(
+					imageFile, 
+					recipientId, 
+					userType === "admin" ? "admin" : "partner"
+				);
 				console.log("Image sent to backend:", response);
 
 				// Store in Firebase for real-time updates
@@ -436,7 +442,7 @@ export function useChat({ otherUserId, userType }: UseChatProps = {}) {
 				throw error;
 			}
 		},
-		[firebaseRoomId, session?.user, loadChatHistory],
+		[firebaseRoomId, session?.user, loadChatHistory, userType],
 	);
 
 	/**

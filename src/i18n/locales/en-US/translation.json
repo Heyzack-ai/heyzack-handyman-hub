@@ -184,6 +184,8 @@
     "acceptJobConfirmation": "Are you sure you want to accept this job?",
     "jobDeclined": "Job declined successfully",
     "jobAccepted": "Job accepted successfully",
+    "failedToAcceptJob": "Failed to accept job. Please try again.",
+    "failedToDeclineJob": "Failed to decline job. Please try again.",
     "jobRequests": "Job Requests"
   },
   "jobs": {
@@ -238,7 +240,10 @@
     "invalidFileType": "Invalid File Type",
     "onlyImagesAllowed": "Only images are allowed. Please select an image file.",
     "camera": "Camera",
-    "gallery": "Gallery"
+    "gallery": "Gallery",
+    "heyzackAdmin": "Heyzack Admin",
+    "partner": "Partner",
+    "photo": "Photo"
   },
   "profile": {
     "profile": "Profile",
@@ -342,8 +347,16 @@
     "enRoute": "En Route",
     "contractSigned": "Contract Signed",
     "jobStarted": "Job Started",
+    "jobCompleted": "Job Completed",
+    "jobApproved": "Job Approved",
     "jobMarked": "Job Marked as Done",
-    "jobEnded": "Job Ended"
+    "jobEnded": "Job Ended",
+    "cancelJob": "Cancel Job",
+    "confirmCancel": "Confirm Cancel",
+    "cancelJobDescription": "Please provide a reason for canceling this job.",
+    "cancelReasonPlaceholder": "Enter reason for cancellation (e.g., Unable to access property, Customer unavailable)",
+    "pleaseProvideCancelReason": "Please provide a reason for canceling the job",
+    "failedToCancelJob": "Failed to cancel job. Please try again."
   },
   "collectStock": {
     "collectStock": "Collect Stock",

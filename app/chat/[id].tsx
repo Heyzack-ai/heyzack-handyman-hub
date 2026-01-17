@@ -30,10 +30,12 @@ import { sendImage, Message } from "@/lib/chat-client";
 import { useTranslation } from "react-i18next";
 
 export default function ChatConversationScreen() {
-  const { id, partnerId, partnerName } = useLocalSearchParams<{ 
+  const { id, partnerId, partnerName, adminId, adminName } = useLocalSearchParams<{ 
     id: string; 
     partnerId?: string; 
-    partnerName?: string; 
+    partnerName?: string;
+    adminId?: string;
+    adminName?: string;
   }>();
 
   const router = useRouter();
@@ -47,10 +49,17 @@ export default function ChatConversationScreen() {
   const { t } = useTranslation();
   const { data: session } = authClient.useSession();
   
-  // Get partner details if partnerId is provided
-  const { data: partner, error: partnerError } = useGetPartnerById(partnerId || "");
+  // Determine if this is an admin chat or partner chat
+  const isAdminChat = !!adminId;
+  const recipientId = isAdminChat ? adminId : partnerId;
+  const recipientName = isAdminChat ? adminName : partnerName;
+  
+  // Get partner details if partnerId is provided (not for admin chats)
+  const { data: partner, error: partnerError } = useGetPartnerById(
+    isAdminChat ? "" : (partnerId || "")
+  );
 
-  // Use the chat hook with partner information
+  // Use the chat hook with partner or admin information
   const {
     messages,
     isLoading,
@@ -59,16 +68,16 @@ export default function ChatConversationScreen() {
     sendImageMessage,
     loadChatHistory,
   } = useChat({
-    otherUserId: partnerId,
-    userType: "partner", // Assuming current user is a handyman chatting with partners
+    otherUserId: recipientId,
+    userType: isAdminChat ? "admin" : "partner",
   });
 
   // Load chat history when component mounts
   useEffect(() => {
-    if (partnerId) {
+    if (recipientId) {
       loadChatHistory();
     }
-  }, [partnerId, loadChatHistory]);
+  }, [recipientId, loadChatHistory]);
 
   // Scroll to bottom when new messages arrive, but only if user is already near bottom
   useEffect(() => {
@@ -93,7 +102,7 @@ export default function ChatConversationScreen() {
   };
 
   const handleSendMessage = async () => {
-    if (messageText.trim() && partnerId) {
+    if (messageText.trim() && recipientId) {
       try {
         // Temporarily enable auto-scroll for user's own message
         setShouldAutoScroll(true);
@@ -113,7 +122,7 @@ export default function ChatConversationScreen() {
   };
 
     const handleSendImage = async (imageUri: string) => {
-    if (partnerId) {
+    if (recipientId) {
       try {
         setIsUploadingImage(true);
         setUploadProgress(0);
@@ -152,7 +161,7 @@ export default function ChatConversationScreen() {
         }, 100);
         
         // Upload image using the new sendImageMessage function
-        await sendImageMessage(file, partnerId);
+        await sendImageMessage(file, recipientId);
         
         // Complete progress
         setUploadProgress(100);
@@ -258,7 +267,8 @@ export default function ChatConversationScreen() {
   }
   
 
-  const displayName = partnerName || partner?.name || partner?.partner_name || "Partner";
+  const displayName = recipientName || 
+    (isAdminChat ? t("chat.heyzackAdmin") : (partner?.name || partner?.partner_name || t("chat.partner")));
 
   if (isLoading) {
     return (

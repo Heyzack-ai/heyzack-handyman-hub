@@ -15,6 +15,7 @@ import {
   KeyboardAvoidingView,
   ActivityIndicator,
   RefreshControl,
+  Modal,
 } from "react-native";
 import { Image } from "expo-image";
 import { Stack, useRouter, useLocalSearchParams } from "expo-router";
@@ -37,6 +38,7 @@ import {
   ChevronDown,
   Book,
   FileText,
+  X,
 } from "lucide-react-native";
 import { useJobStore } from "@/store/job-store";
 import Colors from "@/constants/colors";
@@ -55,6 +57,7 @@ import { useSendContract } from "@/app/api/jobs/sendContract";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useCompleteJob } from "@/app/api/jobs/completeJob";
+import { useCancelJob } from "@/app/api/jobs/cancelJob";
 
 // Product Item Component that fetches its own data
 const ProductItem = ({ product }: { product: any }) => {
@@ -118,7 +121,10 @@ export default function JobDetailScreen() {
   const { mutate: sendContractMutation } = useSendContract();
   const queryClient = useQueryClient();
   const { mutate: completeJobMutation } = useCompleteJob();
+  const { mutate: cancelJobMutation } = useCancelJob();
   const [customerTuyaEmail, setCustomerTuyaEmail] = useState("");
+  const [cancelReason, setCancelReason] = useState("");
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   // console.log("Job details:", jobData?.installation);
   console.log("JobDetails installation:", jobDetails);
@@ -249,25 +255,25 @@ export default function JobDetailScreen() {
     const currentStatus = jobDetails?.installation?.status || job.status;
     switch (currentStatus) {
       case "job_request":
-        return "Job Request";
+        return t("jobDetails.jobRequest");
       case "accepted":
-        return "Accepted";
+        return t("jobDetails.accepted");
       case "stock_collected":
-        return "Stock Collected";
+        return t("jobDetails.stockCollected");
       case "en_route":
-        return "En Route";
+        return t("jobDetails.enRoute");
       case "contract_sent":
-        return "Contract Sent";
+        return t("jobDetails.contractSent");
       case "contract_signed":
-        return "Contract Signed";
+        return t("jobDetails.contractSigned");
       case "job_started":
-        return "Job Started";
+        return t("jobDetails.jobStarted");
       case "job_completed":
-        return "Job Completed";
+        return t("jobDetails.jobCompleted");
       case "job_approved":
-        return "Job Approved";
+        return t("jobDetails.jobApproved");
       default:
-        return "Accepted";
+        return t("jobDetails.accepted");
     }
   };
 
@@ -667,6 +673,46 @@ export default function JobDetailScreen() {
           },
         },
       ]
+    );
+  };
+
+  const handleCancelJob = () => {
+    setShowCancelModal(true);
+  };
+
+  const handleConfirmCancel = () => {
+    if (!cancelReason?.trim()) {
+      Alert.alert(
+        t("jobDetails.error"),
+        t("jobDetails.pleaseProvideCancelReason")
+      );
+      return;
+    }
+
+    cancelJobMutation(
+      {
+        jobId: robustJobId,
+        reason: cancelReason.trim(),
+      },
+      {
+        onSuccess: () => {
+          setShowCancelModal(false);
+          setCancelReason("");
+          
+          // Invalidate all job-related queries to trigger refetch
+          queryClient.invalidateQueries({ queryKey: ["get-jobs"] });
+          queryClient.invalidateQueries({ queryKey: ["get-pending-jobs"] });
+          
+          // Navigate back immediately
+          router.back();
+        },
+        onError: (error: any) => {
+          Alert.alert(
+            t("jobDetails.error"),
+            error?.response?.data?.message || t("jobDetails.failedToCancelJob")
+          );
+        },
+      }
     );
   };
 
@@ -1138,6 +1184,22 @@ export default function JobDetailScreen() {
           />
         </View>
 
+        {/* Cancel Job Button */}
+        {!["job_completed", "job_approved", "customer_approved", "job_canceled", "contract_sent", "contract_signed"].some(s => 
+          (jobDetails?.installation?.status || job.status)?.includes(s)
+        ) && (
+          <View style={styles.card}>
+            <Pressable
+              style={styles.cancelButton}
+              onPress={handleCancelJob}
+            >
+              <Text style={styles.cancelButtonText}>
+                {t("jobDetails.cancelJob")}
+              </Text>
+            </Pressable>
+          </View>
+        )}
+
         {/* Mark as Complete Button */}
         {/* {jobDetails?.installation?.completion_photos &&
           jobDetails?.installation?.completion_photos.length > 0 &&
@@ -1174,6 +1236,79 @@ export default function JobDetailScreen() {
 
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Cancel Job Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showCancelModal}
+        onRequestClose={() => {
+          setShowCancelModal(false);
+          setCancelReason("");
+        }}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => {
+            setShowCancelModal(false);
+            setCancelReason("");
+          }}
+        >
+          <Pressable
+            style={styles.modalContent}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{t("jobDetails.cancelJob")}</Text>
+              <Pressable
+                style={styles.modalCloseButton}
+                onPress={() => {
+                  setShowCancelModal(false);
+                  setCancelReason("");
+                }}
+              >
+                <X size={24} color={Colors.light.text} />
+              </Pressable>
+            </View>
+
+            <Text style={styles.modalDescription}>
+              {t("jobDetails.cancelJobDescription")}
+            </Text>
+
+            <TextInput
+              placeholder={t("jobDetails.cancelReasonPlaceholder")}
+              value={cancelReason}
+              onChangeText={setCancelReason}
+              style={[styles.input, styles.modalInput]}
+              placeholderTextColor={Colors.light.gray[400]}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+            />
+
+            <View style={styles.modalButtonContainer}>
+              <Pressable
+                style={[styles.modalButton, styles.modalCancelButton]}
+                onPress={() => {
+                  setShowCancelModal(false);
+                  setCancelReason("");
+                }}
+              >
+                <Text style={styles.modalCancelButtonText}>{t("common.cancel")}</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.modalButton, styles.modalConfirmButton]}
+                onPress={handleConfirmCancel}
+                disabled={!cancelReason?.trim()}
+              >
+                <Text style={[styles.modalConfirmButtonText, !cancelReason?.trim() && styles.modalButtonDisabled]}>
+                  {t("jobDetails.confirmCancel")}
+                </Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1473,6 +1608,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
+  cancelButton: {
+    backgroundColor: "#DC2626",
+    borderRadius: 25,
+    paddingVertical: 16,
+    alignItems: "center",
+    marginTop: 12,
+  },
+  cancelButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "600",
+  },
   loadingText: {
     fontSize: 18,
     color: Colors.light.text,
@@ -1507,5 +1654,72 @@ const styles = StyleSheet.create({
   photosContainer: {
     flexDirection: "row",
     alignItems: "center",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    backgroundColor: "white",
+    borderRadius: 20,
+    padding: 20,
+    width: "90%",
+    maxWidth: 400,
+    maxHeight: "80%",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: Colors.light.text,
+  },
+  modalCloseButton: {
+    padding: 4,
+  },
+  modalDescription: {
+    fontSize: 14,
+    color: Colors.light.gray[600],
+    marginBottom: 16,
+  },
+  modalInput: {
+    minHeight: 100,
+    marginBottom: 20,
+  },
+  modalButtonContainer: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalCancelButton: {
+    backgroundColor: Colors.light.gray[200],
+  },
+  modalConfirmButton: {
+    backgroundColor: "#DC2626",
+  },
+  modalCancelButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: Colors.light.text,
+  },
+  modalConfirmButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "white",
+  },
+  modalButtonDisabled: {
+    opacity: 0.5,
   },
 });
