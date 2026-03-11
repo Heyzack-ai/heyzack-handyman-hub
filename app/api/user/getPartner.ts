@@ -3,20 +3,9 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import * as SecureStore from 'expo-secure-store';
 import { Handyman } from "@/types/handyman";
-import { getUnassignedPartners } from "@/lib/partner-client";
+import { getUnassignedPartners, type Partner } from "@/lib/partner-client";
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
-
-type Partner = {
-  id: string;
-  name: string;
-  partner_name?: string;
-  partner_code?: string;
-  contact_person?: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-}
 
 export function useGetPartner(partnerCode: string) {
   return useQuery<Partner | null>({
@@ -27,7 +16,7 @@ export function useGetPartner(partnerCode: string) {
         if (!token) {
           throw new Error("Authentication token not found");
         }
-        
+
         // API returns { message: string; partner: Partner | null }
         const response = await axios.get<{ message: string; partner: Partner | null }>(`${BASE_URL}/profile/partner`, {
           headers: {
@@ -61,8 +50,8 @@ export function useGetPartnerById(name: string) {
         if (!token) {
           throw new Error("Authentication token not found");
         }
-       console.log("Fetching partner by ID:", name);
-        const response = await axios.get< Partner >(`${BASE_URL}/partners/${name}`, {
+        console.log("Fetching partner by ID:", name);
+        const response = await axios.get<Partner>(`${BASE_URL}/partners/${name}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -71,7 +60,7 @@ export function useGetPartnerById(name: string) {
 
         console.log(response.data);
 
-       
+
 
         return response.data;
       } catch (error) {

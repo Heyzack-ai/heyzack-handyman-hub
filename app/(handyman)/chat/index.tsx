@@ -23,37 +23,37 @@ import { Plus, Camera, Image as ImageIcon, X, Users, Image } from "lucide-react-
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
 import { useGetPartner } from "@/app/api/user/getPartner";
-import { getAssignedPartners } from "@/lib/partner-client";
+import { getAssignedPartners, type Partner } from "@/lib/partner-client";
 import { useChat } from "@/hooks/use-chat";
-import { getChatRooms, getUnreadCount, getUnreadCountDetailed, getChatConnections, getChatHistory, type ChatConnection, type UnreadByRoom } from "@/lib/chat-client";
+import { getChatRooms, getUnreadCount, getUnreadCountDetailed, getChatConnections, getChatHistory, type ChatConnection, type UnreadByRoom, type ChatRoom } from "@/lib/chat-client";
 import { authClient } from "@/lib/auth-client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "@/src/i18n/useTranslations";
+import { useAuth } from "@/lib/auth-context";
 
 export default function ChatScreen() {
   const router = useRouter();
-  const { data: session } = authClient.useSession();
+  const { data: session, isPending: sessionLoading } = authClient.useSession();
   const queryClient = useQueryClient();
   const [showPartnerList, setShowPartnerList] = useState(false);
   const [showMediaOptions, setShowMediaOptions] = useState(false);
   const { t } = useTranslations();
   // Get current user's partner data - this IS the assigned partner
   const { data: currentPartner, isLoading: currentPartnerLoading } = useGetPartner("None");
-
-  console.log("Current Partner:", currentPartner);
-  // console.log("Session:", session);
+  const { role } = useAuth();
 
   // Get chat data for the current partner
   const { messages: partnerMessages, loadChatHistory } = useChat({
-    otherUserId: currentPartner?.id,
+    otherUserId: currentPartner?.id ?? undefined,
     userType: "partner",
   });
 
-  // Get chat rooms to get unread counts
-  const { data: chatRooms, isLoading: chatRoomsLoading } = useQuery({
+  // NOTE: getChatRooms disabled - /chat/rooms endpoint not available (404)
+  // Fallback: use getChatConnections() and getUnreadCount() instead
+  const { data: chatRooms, isLoading: chatRoomsLoading } = useQuery<ChatRoom[]>({
     queryKey: ["chat-rooms"],
     queryFn: getChatRooms,
-    enabled: !!session?.user.id,
+    enabled: false, // Disabled until endpoint is available
   });
 
 
@@ -61,21 +61,23 @@ export default function ChatScreen() {
   const { data: totalUnreadCount, isLoading: unreadCountLoading } = useQuery({
     queryKey: ["unread-count"],
     queryFn: getUnreadCount,
-    enabled: !!session?.user.id,
+    enabled: !!session?.user?.id,
   });
 
   // Get detailed unread counts per room
   const { data: unreadByRoomData } = useQuery({
     queryKey: ["unread-count-detailed"],
     queryFn: getUnreadCountDetailed,
-    enabled: !!session?.user.id,
+    enabled: !!session?.user?.id,
   });
 
   // Create a map of userId to unread count for quick lookup
   const unreadCountMap = React.useMemo(() => {
     const map = new Map<string, number>();
-    unreadByRoomData?.byRoom.forEach((room: UnreadByRoom) => {
-      map.set(room.otherUserId, room.unreadCount);
+    unreadByRoomData?.byRoom.forEach((room: UnreadByRoom | null | undefined) => {
+      if (room) {
+        map.set(room.otherUserId, room.unreadCount);
+      }
     });
     return map;
   }, [unreadByRoomData]);
@@ -94,7 +96,8 @@ export default function ChatScreen() {
         loadChatHistory();
       }
       // Refetch chat-related queries to get fresh unread counts
-      queryClient.refetchQueries({ queryKey: ["chat-rooms"] });
+      // NOTE: chat-rooms disabled - /chat/rooms endpoint not available (404)
+      // queryClient.refetchQueries({ queryKey: ["chat-rooms"] });
       queryClient.refetchQueries({ queryKey: ["unread-count"] });
       queryClient.refetchQueries({ queryKey: ["unread-count-detailed"] });
     }, [currentPartner?.name, loadChatHistory, queryClient])
@@ -104,34 +107,23 @@ export default function ChatScreen() {
   const { data: unassignedPartners, isLoading: unassignedLoading } = useQuery({
     queryKey: ["unassigned-partners"],
     queryFn: () => getAssignedPartners("None"),
-    enabled: !!session?.user.id,
+    enabled: !!session?.user?.id,
   });
 
   // Get chat connections (partners, handymen, admin)
   const { data: chatConnections, isLoading: connectionsLoading, error: connectionsError } = useQuery({
     queryKey: ["chat-connections"],
     queryFn: getChatConnections,
-    enabled: !!session?.user.id,
+    enabled: !!session?.user?.id,
     retry: 1,
   });
-
-  console.log("Chat Connections Query State:", {
-    data: chatConnections,
-    isLoading: connectionsLoading,
-    error: connectionsError,
-  });
-
-  if (connectionsError) {
-    console.error("Error fetching chat connections:", connectionsError);
-  }
-
-  console.log("Chat Connections:", chatConnections);
 
   // Extract admin from connections API response or use hardcoded fallback
   const adminConnection = useMemo(() => {
     // First, try to find admin in connections from API response
     const admin = chatConnections?.connections?.find(
-      (conn: ChatConnection) => {
+      (conn: ChatConnection | null | undefined) => {
+        if (!conn) return false;
         const idLower = conn.id?.toLowerCase() || "";
         const nameLower = conn.name?.toLowerCase() || "";
         const emailLower = conn.email?.toLowerCase() || "";
@@ -154,14 +146,14 @@ export default function ChatScreen() {
 
     // Check chat rooms for admin room (from API response)
     if (chatRooms) {
-      const adminRoom = chatRooms.find(room =>
-        room.otherUser.type === "admin" ||
-        room.roomId.includes("admin") ||
-        room.otherUser.name?.toLowerCase().includes("admin") ||
-        room.otherUser.email?.toLowerCase().includes("admin")
+      const adminRoom = chatRooms.find((room: ChatRoom | null | undefined) =>
+        room?.otherUser?.type === "admin" ||
+        room?.roomId?.includes("admin") ||
+        room?.otherUser?.name?.toLowerCase().includes("admin") ||
+        room?.otherUser?.email?.toLowerCase().includes("admin")
       );
 
-      if (adminRoom) {
+      if (adminRoom && adminRoom.otherUser) {
         return {
           id: adminRoom.otherUser.id,
           name: adminRoom.otherUser.name || t("chat.heyzackAdmin"),
@@ -179,17 +171,15 @@ export default function ChatScreen() {
       email: "admin@heyzack.ai",
       image: null,
     };
-  }, [chatConnections, chatRooms]);
-
-  console.log("Admin Connection Found:", adminConnection);
+  }, [chatConnections, chatRooms, t]);
 
   // Check if admin room exists in chatRooms
   const adminRoomExists = useMemo(() => {
     if (!chatRooms || !adminConnection) return false;
-    return chatRooms.some(room =>
-      room.otherUser.type === "admin" ||
-      room.otherUser.id === adminConnection.id ||
-      (room.roomId && room.roomId.toLowerCase().includes("admin"))
+    return chatRooms.some((room: ChatRoom | null | undefined) =>
+      room?.otherUser?.type === "admin" ||
+      room?.otherUser?.id === adminConnection.id ||
+      (room?.roomId && room.roomId.toLowerCase().includes("admin"))
     );
   }, [chatRooms, adminConnection]);
 
@@ -202,27 +192,85 @@ export default function ChatScreen() {
     retry: 1,
   });
 
+  // Guard: Wait for session to be available
+  if (sessionLoading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <Text style={styles.title}>{t("chat.chat")}</Text>
+          </View>
+          <ChatListShimmer />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  console.log("Current Partner:", currentPartner);
+  // console.log("Session:", session);
+
+  console.log("Chat Connections Query State:", {
+    data: chatConnections,
+    isLoading: connectionsLoading,
+    error: connectionsError,
+  });
+
+  if (connectionsError) {
+    console.error("Error fetching chat connections:", connectionsError);
+  }
+
+  console.log("Chat Connections:", chatConnections);
+
+  console.log("Admin Connection Found:", adminConnection);
+
   const handleNewChat = () => {
     setShowPartnerList(true);
   };
 
-  const handlePartnerSelect = (partner: any) => {
+  const handlePartnerSelect = (partner: Partner) => {
     // Generate chat room ID and navigate to chat
-    const roomId = `chat_${session?.user.id}_${partner.id || partner.name}`;
-    router.push(`/chat/${roomId}?partnerId=${partner.id || partner.name}&partnerName=${partner.name || partner.partner_name}`);
+    const userId = session?.user?.id;
+    if (!userId) return;
+    const roomId = `chat_${userId}_${partner.id || partner.name}`;
+    router.push({
+      pathname: "/(handyman)/chat/[id]",
+      params: {
+        id: roomId,
+        partnerId: partner.id || partner.name || "",
+        partnerName: partner.name || partner.partner_name || "",
+      },
+    } as any);
     setShowPartnerList(false);
   };
 
-  const handlePartnerClick = (partner: any) => {
+  const handlePartnerClick = (partner: Partner) => {
     // Navigate directly to chat with this partner
-    const roomId = `chat_${session?.user.id}_${partner.id || partner.name}`;
-    router.push(`/chat/${roomId}?partnerId=${partner.id || partner.name}&partnerName=${partner.name || partner.partner_name}`);
+    const userId = session?.user?.id;
+    if (!userId) return;
+    const roomId = `chat_${userId}_${partner.id || partner.name}`;
+    router.push({
+      pathname: "/(handyman)/chat/[id]",
+      params: {
+        id: roomId,
+        partnerId: partner.id || partner.name || "",
+        partnerName: partner.name || partner.partner_name || "",
+      },
+    } as any);
   };
 
   const handleAdminClick = () => {
     if (adminConnection) {
-      const roomId = `chat_${session?.user.id}_${adminConnection.id}`;
-      router.push(`/chat/${roomId}?adminId=${adminConnection.id}&adminName=${adminConnection.name || t("chat.heyzackAdmin")}`);
+      const userId = session?.user?.id;
+      if (!userId) return;
+      const roomId = `chat_${userId}_${adminConnection.id}`;
+      router.push({
+        pathname: "/(handyman)/chat/[id]",
+        params: {
+          id: roomId,
+          adminId: adminConnection.id,
+          adminName: adminConnection.name || t("chat.heyzackAdmin") || "HeyZack Admin",
+        },
+      } as any);
     }
   };
 
@@ -283,7 +331,7 @@ export default function ChatScreen() {
     }
   };
 
-  const renderPartnerItem = (partner: any) => (
+  const renderPartnerItem = (partner: Partner) => (
     <TouchableOpacity
       key={partner.id || partner.name}
       style={styles.partnerItem}
@@ -301,7 +349,7 @@ export default function ChatScreen() {
     </TouchableOpacity>
   );
 
-  const renderAssignedPartnerItem = (partner: any) => {
+  const renderAssignedPartnerItem = (partner: Partner) => {
     // Get the latest message from the chat
     const latestMessage = partnerMessages.length > 0
       ? partnerMessages[partnerMessages.length - 1]
@@ -313,13 +361,13 @@ export default function ChatScreen() {
     // Get unread count from the detailed API response (most accurate)
     const partnerIdentifier = partner.id || partner.name;
     const unreadCountFromApi = unreadCountMap.get(partnerIdentifier) || unreadCountMap.get(partner.id || "");
-    
+
     // Fallback to chat rooms data if API doesn't have it
-    const partnerChatRoom = chatRooms?.find(room =>
-      room.otherUser.id === partnerIdentifier ||
-      room.otherUser.id === partner.id ||
-      room.roomId?.includes(partnerIdentifier) ||
-      room.roomId?.includes(partner.id || "")
+    const partnerChatRoom = chatRooms?.find((room: ChatRoom | null | undefined) =>
+      room?.otherUser?.id === partnerIdentifier ||
+      room?.otherUser?.id === partner.id ||
+      room?.roomId?.includes(partnerIdentifier) ||
+      room?.roomId?.includes(partner.id || "")
     );
 
     const unreadCount = unreadCountFromApi ?? partnerChatRoom?.unreadCount ?? 0;
@@ -400,25 +448,26 @@ export default function ChatScreen() {
 
             // Find admin chat room to get unread count and last message
             // Try multiple matching strategies to ensure we find the admin room
-            const adminChatRoom = chatRooms?.find(room => {
+            const adminChatRoom = chatRooms?.find((room: ChatRoom | null | undefined) => {
+              if (!room) return false;
 
               // Match by user type first (most reliable)
-              if (room.otherUser.type === "admin") return true;
+              if (room.otherUser?.type === "admin") return true;
 
               // Match by room ID containing "admin"
               if (room.roomId && (room.roomId.toLowerCase().includes("admin") || room.roomId.includes("admin_"))) return true;
 
               // Match by user ID
-              if (room.otherUser.id === adminConnection.id) return true;
+              if (room.otherUser?.id === adminConnection.id) return true;
 
               // Match by email
-              if (room.otherUser.email && (
+              if (room.otherUser?.email && (
                 room.otherUser.email.toLowerCase().includes("admin") ||
                 room.otherUser.email === adminConnection.email
               )) return true;
 
               // Match by name
-              if (room.otherUser.name && room.otherUser.name.toLowerCase().includes("admin")) return true;
+              if (room.otherUser?.name && room.otherUser.name.toLowerCase().includes("admin")) return true;
 
               return false;
             });
@@ -489,15 +538,17 @@ export default function ChatScreen() {
           })()}
 
           {/* Partner Chat */}
-          {!currentPartner ? (
+          {!currentPartner && role !== "partner" ? (
             <View style={styles.emptyContainer}>
               <Users size={48} color={Colors.light.gray[400]} />
               <Text style={styles.emptyTitle}>{t("chat.noAssignedPartner")}</Text>
-              <Text style={styles.emptySubtitle}>{t("chat.noAssignedPartnerText")}</Text>
+              <Text style={styles.emptySubtitle}>
+                {t("chat.noAssignedPartnerText")}
+              </Text>
             </View>
-          ) : (
+          ) : currentPartner ? (
             renderAssignedPartnerItem(currentPartner)
-          )}
+          ) : null}
         </ScrollView>
 
         {/* Partner List Modal */}

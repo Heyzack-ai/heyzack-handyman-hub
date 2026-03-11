@@ -67,7 +67,7 @@ export default function HomeScreen() {
   const queryClient = useQueryClient();
   const { mutate: acceptJob } = useAcceptJob();
   const { data: user, isLoading: isUserLoading } = useGetUser();
-  const { role } = useAuth();
+  const { role, switchAppMode } = useAuth();
 
   const today = getLocalDateString();
 
@@ -471,6 +471,19 @@ export default function HomeScreen() {
               </View>
             )}
           </TouchableOpacity>
+          {role === "partner" && (
+            <TouchableOpacity
+              style={styles.partnerModeButton}
+              onPress={async () => {
+                await switchAppMode("partner");
+                router.replace("/(partner)");
+              }}
+            >
+              <Text style={styles.partnerModeButtonText}>
+                {t("home.switchToPartner", "Partner Portal")}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
         <ShimmerSkeleton />
       </SafeAreaView>
@@ -509,6 +522,19 @@ export default function HomeScreen() {
             </View>
           )}
         </TouchableOpacity>
+        {role === "partner" && (
+          <TouchableOpacity
+            style={styles.partnerModeButton}
+            onPress={async () => {
+              await switchAppMode("partner");
+              router.replace("/(partner)");
+            }}
+          >
+            <Text style={styles.partnerModeButtonText}>
+              {t("home.switchToPartner", "Partner Portal")}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <ScrollView
@@ -778,5 +804,17 @@ const styles = StyleSheet.create({
     color: Colors.light.white,
     fontSize: 11,
     fontWeight: '700',
+  },
+  partnerModeButton: {
+    marginLeft: 10,
+    backgroundColor: Colors.light.secondary,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  partnerModeButtonText: {
+    color: Colors.light.white,
+    fontSize: 12,
+    fontWeight: "700",
   },
 });

@@ -2,12 +2,14 @@ import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 
 export interface Partner {
-	
 	name: string;
-	partner_name: string;
-	email: string;
-	phone: string;
+	partner_name?: string;
+	email?: string;
+	phone?: string;
 	id: string;
+	address?: string;
+	partner_code?: string;
+	contact_person?: string;
 }
 
 
@@ -20,7 +22,7 @@ const serverClient = axios.create({
 
 // Add request interceptor to add auth token
 serverClient.interceptors.request.use(async (config) => {
-	const token = await SecureStore.getItemAsync("auth_token");	
+	const token = await SecureStore.getItemAsync("auth_token");
 	if (token) {
 		config.headers.Authorization = `Bearer ${token}`;
 	}
@@ -63,7 +65,7 @@ export async function getPartners(partner_id: string): Promise<Partner[]> {
 			"partner_name",
 			"email",
 			"phone",
-		]),	
+		]),
 		filters: JSON.stringify([["partner", "=", partner_id]]),
 	};
 
@@ -81,7 +83,7 @@ export async function getAssignedPartners(partner_id: string): Promise<Partner[]
 			"partner_name",
 			"email",
 			"phone",
-		]),	
+		]),
 		filters: JSON.stringify([["partner", "=", partner_id]]),
 	};
 

@@ -183,7 +183,7 @@ export default Sentry.wrap(function RootLayout() {
   useEffect(() => {
     // Set up app state listener
     const subscription = AppState.addEventListener('change', onAppStateChange);
-    
+
     return () => {
       subscription.remove();
     };
@@ -231,6 +231,7 @@ function RootLayoutNav() {
           <Stack.Screen name="notifications" options={{ headerShown: false }} />
           <Stack.Screen name="modal" options={{ presentation: "modal" }} />
           <Stack.Screen name="auth" options={{ headerShown: false }} />
+          <Stack.Screen name="chat/[id]" options={{ headerShown: false }} />
         </Stack>
       </LanguageProvider>
     </QueryClientProvider>

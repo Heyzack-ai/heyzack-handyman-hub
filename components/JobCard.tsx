@@ -25,18 +25,18 @@ export default function JobCard({ job, disableNavigation = false }: JobCardProps
     if (disableNavigation) {
       return;
     }
-    
+
     // Only navigate to job details if the job is not pending
     if (job.status !== "pending") {
       // Verify the job exists in the store before navigating
-      
-        router.push({
-          pathname: `/jobs/job-details`,
-          params: {
-            job: JSON.stringify(job),
-          },
-        });
-      
+
+      router.push({
+        pathname: `/jobs/job-details`,
+        params: {
+          job: JSON.stringify(job),
+        },
+      });
+
     }
   };
 
@@ -46,19 +46,19 @@ export default function JobCard({ job, disableNavigation = false }: JobCardProps
     if (job.status !== "completed") {
       return null;
     }
-    
+
     // Default rating value if not present
     const rating = job.rating !== undefined ? job.rating : 4.5;
-    
+
     return (
       <View style={styles.ratingContainer}>
         <StarRatingDisplay
           rating={4.5}
-          onChange={() => {}}
+          onChange={() => { }}
           starSize={22}
           starStyle={{ marginRight: -4 }}
           maxStars={5}
-          // style={{borderWidth: 1, borderColor: "red", padding: 0, marginLeft: 0}}
+        // style={{borderWidth: 1, borderColor: "red", padding: 0, marginLeft: 0}}
 
         />
         <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
@@ -95,11 +95,11 @@ export default function JobCard({ job, disableNavigation = false }: JobCardProps
         </Text>
         <StatusBadge status={(job?.status || job?.installation?.status || "")} size="small" />
       </View>
-      
+
       <Text style={styles.description} numberOfLines={2}>
         {job.description}
       </Text>
-      
+
       <View style={styles.customerInfo}>
         <Text style={styles.customerName}>
           {typeof job.customer === 'object'
@@ -110,7 +110,7 @@ export default function JobCard({ job, disableNavigation = false }: JobCardProps
           {typeof job.customer === 'object' ? job.customer.address : ''}
         </Text>
       </View>
-      
+
       <View style={styles.scheduleContainer}>
         <View style={styles.scheduleRow}>
           <View style={styles.footerItem}>
@@ -122,7 +122,7 @@ export default function JobCard({ job, disableNavigation = false }: JobCardProps
             <Text style={styles.footerText}>{formattedTime}</Text>
           </View>
         </View>
-        
+
         {renderRating()}
       </View>
     </Pressable>

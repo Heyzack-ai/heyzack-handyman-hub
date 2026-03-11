@@ -1,11 +1,15 @@
 import { authClient } from "@/lib/auth-client";
+import { getOrderHistory } from "@/lib/api/partner-api";
 import { Product } from "@/types/job";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import * as SecureStore from 'expo-secure-store';
 // import { Job } from "@/types/job";
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+const BASE_URL =
+    process.env.EXPO_PUBLIC_API_URL ||
+    process.env.EXPO_PUBLIC_CHAT_API_URL ||
+    "https://api.heyzack.ai/api/v1";
 
 type ExtendedUser = {
     id: string;
@@ -173,5 +177,152 @@ export function useUpdateProductCollect() {
             queryClient.refetchQueries({ queryKey: ["product", id], type: "active" });
             queryClient.refetchQueries({ queryKey: ["stock", id], type: "active" });
         },
+    });
+}
+
+export type ProductCatalogItem = {
+    id: string;
+    item?: string;
+    item_name?: string;
+    name?: string;
+    sku?: string;
+};
+
+export function useGetProducts(searchTerm?: string) {
+    const search = String(searchTerm ?? "").trim();
+    return useQuery<ProductCatalogItem[]>({
+        queryKey: ["products-catalog", search],
+        queryFn: async () => {
+            try {
+                const token = await SecureStore.getItemAsync("auth_token");
+                if (!token) {
+                    throw new Error("Authentication token not found");
+                }
+
+                const productParams = new URLSearchParams();
+                if (search) productParams.append("search", search);
+                productParams.append("limit", "100");
+                const query = productParams.toString();
+
+                const requests = [
+                    `${BASE_URL}/products${query ? `?${query}` : ""}`,
+                    `${BASE_URL}/products`,
+                    `${BASE_URL}/product${query ? `?${query}` : ""}`,
+                    `${BASE_URL}/inventory/products${query ? `?${query}` : ""}`,
+                ];
+
+                let rawPayload: any = null;
+                for (const url of requests) {
+                    try {
+                        const response = await axios.get(url, {
+                            headers: {
+                                Authorization: `Bearer ${token}`,
+                                "Content-Type": "application/json",
+                            },
+                        });
+                        rawPayload = response?.data;
+                        if (rawPayload) break;
+                    } catch (error: any) {
+                        if (error?.response?.status !== 404) {
+                            throw error;
+                        }
+                    }
+                }
+
+                const rawList =
+                    rawPayload?.products ||
+                    rawPayload?.data?.products ||
+                    rawPayload?.data?.items ||
+                    rawPayload?.items ||
+                    rawPayload?.result?.products ||
+                    rawPayload?.data ||
+                    rawPayload;
+
+                const list = Array.isArray(rawList) ? rawList : [];
+                const normalizedList = list
+                    .map((entry: any) => {
+                        const id = String(
+                            entry?.id ??
+                            entry?._id ??
+                            entry?.item ??
+                            entry?.inventorycode ??
+                            entry?.sku ??
+                            ""
+                        ).trim();
+                        if (!id) return null;
+                        return {
+                            id,
+                            item: String(entry?.item ?? entry?.inventorycode ?? id),
+                            item_name: String(entry?.item_name ?? entry?.name ?? entry?.title ?? "").trim(),
+                            name: String(entry?.name ?? entry?.item_name ?? entry?.title ?? entry?.productName ?? "").trim(),
+                            sku: String(entry?.sku ?? "").trim() || undefined,
+                        } as ProductCatalogItem;
+                    })
+                    .filter(Boolean) as ProductCatalogItem[];
+
+                if (normalizedList.length > 0) {
+                    return normalizedList;
+                }
+
+                // Fallback: derive product options from Shopify order line-items if direct catalog APIs are unavailable.
+                try {
+                    const orders = await getOrderHistory();
+                    const derived: ProductCatalogItem[] = [];
+                    const seen = new Set<string>();
+
+                    for (const order of orders) {
+                        const items =
+                            order?.line_items ||
+                            order?.lineItems ||
+                            order?.items ||
+                            order?.products ||
+                            [];
+                        const arr = Array.isArray(items) ? items : [];
+
+                        for (const item of arr) {
+                            const name = String(
+                                item?.title ??
+                                item?.name ??
+                                item?.productName ??
+                                item?.item_name ??
+                                ""
+                            ).trim();
+                            const sku = String(item?.sku ?? item?.item ?? item?.inventorycode ?? "").trim();
+                            const id = String(item?.id ?? sku ?? name).trim();
+                            if (!id || !name) continue;
+
+                            const key = `${id}::${name}`;
+                            if (seen.has(key)) continue;
+                            seen.add(key);
+
+                            const entry: ProductCatalogItem = {
+                                id,
+                                item: sku || id,
+                                item_name: name,
+                                name,
+                                sku: sku || undefined,
+                            };
+
+                            if (search) {
+                                const hay = `${entry.item_name} ${entry.name} ${entry.item} ${entry.sku}`.toLowerCase();
+                                if (!hay.includes(search.toLowerCase())) continue;
+                            }
+
+                            derived.push(entry);
+                        }
+                    }
+
+                    return derived;
+                } catch (fallbackErr: any) {
+                    console.error("Failed fallback product derivation from orders:", fallbackErr?.response?.data || fallbackErr);
+                }
+
+                return [];
+            } catch (error: any) {
+                console.error("Failed to fetch products catalog:", error?.response?.data || error);
+                return [];
+            }
+        },
+        staleTime: 5 * 60 * 1000,
     });
 }

@@ -16,7 +16,14 @@
     "yes": "Oui",
     "no": "Non",
     "decline": "Refuser",
-    "accept": "Accepter"
+    "accept": "Accepter",
+    "all": "Tous",
+    "hide": "Masquer",
+    "info": "Info",
+    "refresh": "Actualiser",
+    "seeAll": "Voir tout",
+    "notAvailable": "Non disponible",
+    "id": "ID"
   },
   "auth": {
     "signIn": "Se connecter",
@@ -186,7 +193,8 @@
     "jobAccepted": "Travail accepté avec succès",
     "failedToAcceptJob": "Échec de l'acceptation du travail. Veuillez réessayer.",
     "failedToDeclineJob": "Échec du refus du travail. Veuillez réessayer.",
-    "jobRequests": "Demandes de travail"
+    "jobRequests": "Demandes de travail",
+    "switchToPartner": "Portail partenaire"
   },
   "jobs": {
     "searchJobs": "Rechercher des travaux, des clients ou des adresses",
@@ -243,7 +251,18 @@
     "gallery": "Galerie",
     "heyzackAdmin": "Administrateur Heyzack",
     "partner": "Partenaire",
-    "photo": "Photo"
+    "photo": "Photo",
+    "handyman": "Technicien",
+    "loadingHandymen": "Chargement des artisans...",
+    "noAvailableHandymen": "Aucun artisan disponible",
+    "noHandymen": "Aucun artisan trouvé",
+    "noHandymenAssigned": "Aucun technicien assigné pour le moment",
+    "noHandymenText": "Aucun technicien disponible pour discuter",
+    "selectHandyman": "Sélectionner un artisan",
+    "tapToChat": "Appuyez pour discuter",
+    "unknownHandyman": "Technicien inconnu",
+    "yourHandymen": "Vos artisans",
+    "you": "Vous"
   },
   "profile": {
     "profile": "Profil",
@@ -689,7 +708,14 @@
     "home": "Accueil",
     "jobs": "Emplois",
     "chat": "Chat",
-    "profile": "Profil"
+    "profile": "Profil",
+    "customers": "Clients",
+    "dashboard": "Tableau de bord",
+    "handymen": "Équipe",
+    "installations": "Travaux",
+    "inventory": "Stock",
+    "leads": "Prospects",
+    "settings": "Paramètres"
   },
   "status": {
     "scheduled": "Planifié",
@@ -712,5 +738,253 @@
     "job_approved": "Job Approuvé",
     "customer_approved": "Client Approuvé",
     "installation_in_progress": "En Cours"
+  },
+  "customers": {
+    "addressPlaceholder": "Adresse",
+    "call": "Appeler",
+    "contact": "Contact",
+    "contactInformation": "Informations de contact",
+    "created": "Créé le",
+    "customer": "Client",
+    "detailsSubtitle": "Détails du client",
+    "detailsTab": "Détails",
+    "editCustomer": "Modifier le client",
+    "email": "E-mail",
+    "emailPlaceholder": "E-mail",
+    "active": "Actif",
+    "installations": "Installations",
+    "meta": "Métadonnées",
+    "namePlaceholder": "Nom",
+    "noEmailAvailable": "Aucun e-mail disponible",
+    "noInstallations": "Aucune installation trouvée.",
+    "noPhoneAvailable": "Aucun téléphone disponible",
+    "notFound": "Client introuvable",
+    "partnerId": "ID partenaire",
+    "phonePlaceholder": "Téléphone",
+    "since": "Depuis",
+    "statusLabel": "Statut",
+    "updated": "Mis à jour",
+    "viewDetails": "Voir les détails",
+    "noCustomers": "Aucun client trouvé",
+    "search": "Rechercher des clients...",
+    "title": "Clients",
+    "total": "Total",
+    "status": {
+      "active": "Actif",
+      "inactive": "Inactif",
+      "pending": "En attente"
+    }
+  },
+  "dashboard": {
+    "activeJobs": "Travaux en cours",
+    "activateHandymanMode": "Mode technicien",
+    "availableCredit": "Crédit disponible",
+    "completed": "Terminés",
+    "monthlyRevenue": "Revenu mensuel",
+    "partnerPortal": "Portail Partenaire",
+    "recentCustomers": "Clients récents",
+    "noRecentCustomers": "Aucun client récent",
+    "satisfaction": "Satisfaction",
+    "team": "Équipe",
+    "totalCustomers": "Total clients",
+    "upcomingInstallations": "Installations à venir",
+    "noUpcomingJobs": "Aucun travail à venir",
+    "welcome": "Bienvenue"
+  },
+  "handyman": {
+    "allSkills": "Toutes les compétences",
+    "allStatus": "Tous les statuts",
+    "availability": {
+      "noData": "Aucune disponibilité trouvée",
+      "unavailableForDay": "Indisponible ce jour"
+    },
+    "details": {
+      "noSkills": "Aucune compétence",
+      "skills": "Compétences",
+      "title": "Détails du technicien"
+    },
+    "installations": {
+      "none": "Aucune installation trouvée"
+    },
+    "noResults": "Aucun technicien trouvé",
+    "searchPlaceholder": "Rechercher par nom ou compétence",
+    "status": {
+      "available": "Disponible",
+      "busy": "Occupé",
+      "unknown": "Inconnu"
+    },
+    "summary": {
+      "available": "Disponible",
+      "busy": "Occupé",
+      "onLeave": "En congé",
+      "total": "Total"
+    },
+    "tabs": {
+      "availability": "Disponibilité",
+      "details": "Détails",
+      "installations": "Installations"
+    },
+    "title": "Technicien",
+    "viewAvailability": "Voir les disponibilités"
+  },
+  "handymanAssignment": {
+    "assignToMyself": "M'assigner"
+  },
+  "installations": {
+    "approved": "Approuvé",
+    "detailsForOrder": "Détails pour la commande n°{{orderLabel}}",
+    "extraProductAdded": "Produit supplémentaire ajouté.",
+    "extraProductAddError": "Échec de l'ajout du produit.",
+    "inProgress": "En cours",
+    "noAddressProvided": "Aucune adresse fournie",
+    "noDescription": "Aucune description",
+    "noHandymanAssigned": "Aucun technicien assigné",
+    "noInstallations": "Aucune installation trouvée",
+    "notFound": "Installation introuvable.",
+    "reassign": "Réaffecter",
+    "reassignAvailable": "Réaffectation disponible",
+    "reassignError": "Échec de la réaffectation de l'installation.",
+    "reassignSuccess": "Installation réaffectée avec succès.",
+    "rejected": "Rejeté",
+    "rejectError": "Échec du rejet de l'installation.",
+    "rejectSuccess": "Installation rejetée.",
+    "rejectionReasonRequired": "Veuillez fournir un motif de rejet.",
+    "scheduled": "Planifié",
+    "selectProductValidation": "Veuillez sélectionner un produit.",
+    "search": "Rechercher des installations...",
+    "product": "Produit",
+    "titleSingle": "Installation",
+    "title": "Installations",
+    "total": "Total",
+    "validQuantityValidation": "Veuillez saisir une quantité valide.",
+    "validationTitle": "Validation"
+  },
+  "installationDetails": {
+    "add": "Ajouter",
+    "assignedHandyman": "Technicien assigné",
+    "callCustomer": "Appeler le client",
+    "cancel": "Annuler",
+    "cancellationPlaceholder": "Veuillez fournir une raison d'annulation",
+    "createdLabel": "Créé",
+    "customerInformation": "Informations client",
+    "emailCustomer": "Envoyer un e-mail au client",
+    "idLabel": "ID d'installation",
+    "noNotesAvailable": "Aucune note disponible",
+    "noTimelineEvents": "Aucun événement dans l'historique.",
+    "overviewSubtitle": "Détails clés en un coup d'œil",
+    "overviewTitle": "Vue d'ensemble de l'installation",
+    "partnerCode": "Code partenaire",
+    "partnerInformation": "Informations partenaire",
+    "productAllocation": {
+      "addProduct": "Ajouter un produit",
+      "emptyTitle": "Aucun produit ajouté",
+      "noProductsFound": "Aucun produit trouvé.",
+      "quantityLabel": "Quantité",
+      "searchPlaceholder": "Rechercher un produit par nom ou SKU"
+    },
+    "productCode": "Code produit",
+    "reject": "Rejeter",
+    "rejectButton": "Rejeter l'installation",
+    "scheduledLabel": "Date planifiée",
+    "tabs": {
+      "handyman": "Technicien",
+      "notes": "Notes",
+      "overview": "Vue d'ensemble",
+      "products": "Produits",
+      "timeline": "Historique"
+    },
+    "updated": "Mis à jour"
+  },
+  "orderDetails": {
+    "deliveredOn": "Livré le",
+    "dialogTitle": "Détails de la commande",
+    "orderId": "N° de commande",
+    "orderedOn": "Commandé le",
+    "placedOn": "Passée le",
+    "quantity": "Quantité",
+    "total": "Total"
+  },
+  "orderStatus": {
+    "all": "Tous",
+    "approved": "Approuvé",
+    "cancelled": "Annulé",
+    "delivered": "Livré",
+    "pending": "En attente"
+  },
+  "orderSummary": {
+    "approved": "Approuvé",
+    "cancelled": "Annulé",
+    "delivered": "Livré",
+    "pending": "En attente",
+    "total": "Total"
+  },
+  "orders": {
+    "description": "Suivez les commandes partenaires",
+    "listTitle": "Commandes",
+    "noOrders": "Aucune commande trouvée",
+    "searchPlaceholder": "Rechercher par commande ou article",
+    "shopNow": "Acheter maintenant",
+    "title": "Commandes",
+    "viewDetails": "Voir les détails"
+  },
+  "pagination": {
+    "next": "Suivant",
+    "previous": "Précédent"
+  },
+  "settings": {
+    "account": "Compte",
+    "description": "Gérez les paramètres de votre compte",
+    "general": {
+      "changePassword": {
+        "errors": {
+          "incorrectOldPassword": "Current password is incorrect",
+          "networkError": "Network error. Please try again",
+          "updateFailed": "Failed to update password"
+        },
+        "success": {
+          "passwordUpdated": "Password updated successfully"
+        },
+        "updatePassword": "Update Password",
+        "validation": {
+          "confirmPasswordRequired": "Please confirm your new password",
+          "newPasswordRequired": "New password is required",
+          "oldPasswordRequired": "Old password is required",
+          "passwordTooShort": "Password must be at least 8 characters",
+          "passwordsDoNotMatch": "New passwords do not match",
+          "samePassword": "New password must be different from old password"
+        }
+      },
+      "companyProfile": {
+        "address": "Address",
+        "companyName": "Company Name",
+        "email": "Email",
+        "phone": "Phone",
+        "title": "Company Profile"
+      },
+      "resetPassword": {
+        "button": "Change Password",
+        "confirmPassword": "Confirm New Password",
+        "newPassword": "New Password",
+        "oldPassword": "Current Password"
+      },
+      "saveError": "Failed to update profile",
+      "security": {
+        "title": "Security"
+      }
+    },
+    "noChanges": "Aucune modification à enregistrer",
+    "profile": "Modifier le profil",
+    "profileSubtitle": "Modifiez les informations de votre profil",
+    "saveChanges": "Enregistrer",
+    "saveSuccess": "Profil mis à jour avec succès",
+    "support": "Support",
+    "version": "Version",
+    "tabs": {
+      "general": "Général"
+    },
+    "title": "Paramètres"
+  },
+  "toastMessages": {
+    "failedLoadProfile": "Échec du chargement du profil"
   }
 }

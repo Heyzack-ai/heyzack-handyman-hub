@@ -1,6 +1,7 @@
 import { authClient } from "@/lib/auth-client";
 import type { ChatRoom, Message } from "@/lib/chat-client";
-import { getChatHistory, getChatRooms, sendMessage, sendImage } from "@/lib/chat-client";
+// import { getChatHistory, getChatRooms, sendMessage, sendImage } from "@/lib/chat-client";
+import { getChatHistory, sendMessage, sendImage } from "@/lib/chat-client";
 import { database } from "@/lib/firebase";
 import { off, onValue, onChildAdded, ref, onDisconnect, serverTimestamp, set, push, get } from "firebase/database";
 import { useCallback, useEffect, useState, useRef } from "react";
@@ -100,7 +101,7 @@ export function useChat({ otherUserId, userType }: UseChatProps = {}) {
 	 * Load chat history with a specific user
 	 */
 	const loadChatHistory = useCallback(async () => {
-		if (!otherUserId || !userType || !session?.user.id) return;
+		if (!otherUserId || !userType || !session?.user?.id) return;
 
 		console.log("Loading chat history for:", otherUserId, userType);
 
@@ -127,28 +128,32 @@ export function useChat({ otherUserId, userType }: UseChatProps = {}) {
 		} finally {
 			setIsLoading(false);
 		}
-	}, [otherUserId, userType, session?.user.id, firebaseRoomId, syncInitialMessagesToFirebase]);
+	}, [otherUserId, userType, session?.user?.id, firebaseRoomId, syncInitialMessagesToFirebase]);
 
 	/**
 	 * Load all chat rooms for the current user
+	 * NOTE: Disabled - /chat/rooms endpoint not available (404)
 	 */
 	const loadChatRooms = useCallback(async () => {
-		if (!session?.user.id) return;
+		// NOTE: getChatRooms API call disabled - endpoint returns 404
+		// Fallback: use getChatConnections() and getUnreadCount() instead
+		if (!session?.user?.id) return;
 
-		try {
-			const rooms = await getChatRooms();
-			setChatRooms(rooms);
-		} catch (error) {
-			console.error("Failed to fetch chat rooms:", error);
-			setChatRooms([]);
-		}
-	}, [session?.user.id]);
+		// try {
+		// 	const rooms = await getChatRooms();
+		// 	setChatRooms(rooms);
+		// } catch (error) {
+		// 	console.error("Failed to fetch chat rooms:", error);
+		// 	setChatRooms([]);
+		// }
+		setChatRooms([]);
+	}, [session?.user?.id]);
 
 	/**
 	 * Initialize Firebase chat room if it doesn't exist
 	 */
 	const initializeFirebaseRoom = useCallback(async () => {
-		if (!firebaseRoomId || !session?.user.id) return;
+		if (!firebaseRoomId || !session?.user?.id) return;
 
 		try {
 			const roomRef = ref(database, `chats/${firebaseRoomId}`);
@@ -169,7 +174,7 @@ export function useChat({ otherUserId, userType }: UseChatProps = {}) {
 		} catch (error) {
 			console.error("Failed to initialize Firebase room:", error);
 		}
-	}, [firebaseRoomId, session?.user.id]);
+	}, [firebaseRoomId, session?.user?.id]);
 
 	/**
 	 * Setup Firebase real-time listener with enhanced reliability
@@ -214,7 +219,7 @@ export function useChat({ otherUserId, userType }: UseChatProps = {}) {
 		initializeFirebaseRoom();
 		
 		// Set up presence indicator
-		const presenceRef = ref(database, `chats/${firebaseRoomId}/presence/${session?.user.id}`);
+		const presenceRef = ref(database, `chats/${firebaseRoomId}/presence/${session?.user?.id}`);
 		onDisconnect(presenceRef).remove();
 		
 		// Use get() to fetch initial messages from Firebase
@@ -307,7 +312,7 @@ export function useChat({ otherUserId, userType }: UseChatProps = {}) {
 		return () => {
 			newMessageUnsubscribe();
 		};
-	}, [firebaseRoomId, session?.user.id, initializeFirebaseRoom]);
+	}, [firebaseRoomId, session?.user?.id, initializeFirebaseRoom]);
 
 	/**
 	 * Send a message
@@ -404,7 +409,7 @@ export function useChat({ otherUserId, userType }: UseChatProps = {}) {
 				const response = await sendImage(
 					imageFile, 
 					recipientId, 
-					userType === "admin" ? "admin" : "partner"
+					userType
 				);
 				console.log("Image sent to backend:", response);
 

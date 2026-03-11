@@ -41,7 +41,7 @@ import { authClient } from "@/lib/auth-client";
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { signOut, deleteAccount, role } = useAuth();
+  const { signOut, deleteAccount, role, switchAppMode } = useAuth();
   const { t, currentLanguage } = useTranslations();
   const { data: user, isLoading } = useGetUser();
   const { data: skillsData, isLoading: skillsLoading, error: skillsError } = useGetSkills();
@@ -330,6 +330,16 @@ export default function ProfileScreen() {
             undefined,
             () => router.push("/profile/help")
           )}
+          {role === "partner" &&
+            renderMenuItem(
+              <Globe size={20} color={Colors.light.primary} />,
+              t("home.switchToPartner", "Partner Portal"),
+              undefined,
+              async () => {
+                await switchAppMode("partner");
+                router.replace("/(partner)");
+              }
+            )}
           {renderMenuItem(
             <LogOut size={20} color={Colors.light.error} />,
             t("profile.logOut"),

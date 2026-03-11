@@ -115,35 +115,46 @@ export const sendMessage = async (
 
 /**
  * Get all chat rooms for the current user
+ * Note: Returns empty array if endpoint doesn't exist (404) to allow fallback logic
  */
 export const getChatRooms = async (): Promise<ChatRoom[]> => {
-	const response = await serverClient.get<{ data: { rooms: ChatRoom[] } } | { data: ChatRoom[] }>(
-		"/chat/rooms",
-	);
-	console.log("Chat Rooms API Response:", JSON.stringify(response.data, null, 2));
+	try {
+		const response = await serverClient.get<{ data: { rooms: ChatRoom[] } } | { data: ChatRoom[] }>(
+			"/chat/rooms",
+		);
+		console.log("Chat Rooms API Response:", JSON.stringify(response.data, null, 2));
 
-	// Handle different response structures
-	let rooms: ChatRoom[] = [];
-	if (response.data) {
-		if (Array.isArray(response.data)) {
-			rooms = response.data;
-		} else if ((response.data as any).rooms && Array.isArray((response.data as any).rooms)) {
-			rooms = (response.data as any).rooms;
-		} else if ((response.data as any).data?.rooms && Array.isArray((response.data as any).data.rooms)) {
-			rooms = (response.data as any).data.rooms;
+		// Handle different response structures
+		let rooms: ChatRoom[] = [];
+		if (response.data) {
+			if (Array.isArray(response.data)) {
+				rooms = response.data;
+			} else if ((response.data as any).rooms && Array.isArray((response.data as any).rooms)) {
+				rooms = (response.data as any).rooms;
+			} else if ((response.data as any).data?.rooms && Array.isArray((response.data as any).data.rooms)) {
+				rooms = (response.data as any).data.rooms;
+			}
 		}
-	}
 
-	console.log("Parsed Chat Rooms:", rooms.length, "rooms");
-	rooms.forEach((room, index) => {
-		console.log(`Room ${index + 1}:`, {
-			roomId: room.roomId,
-			otherUserId: room.otherUser?.id,
-			otherUserName: room.otherUser?.name,
-			unreadCount: room.unreadCount,
+		console.log("Parsed Chat Rooms:", rooms.length, "rooms");
+		rooms.forEach((room, index) => {
+			console.log(`Room ${index + 1}:`, {
+				roomId: room.roomId,
+				otherUserId: room.otherUser?.id,
+				otherUserName: room.otherUser?.name,
+				unreadCount: room.unreadCount,
+			});
 		});
-	});
-	return rooms;
+		return rooms;
+	} catch (error: any) {
+		// If endpoint doesn't exist (404), return empty array
+		// The app uses fallback logic with chatConnections and unread-count endpoints
+		if (error?.response?.status === 404) {
+			console.log("Chat rooms endpoint not available (404), returning empty array");
+			return [];
+		}
+		throw error;
+	}
 };
 
 /**
@@ -159,19 +170,22 @@ export const getFirebaseToken = async (): Promise<FirebaseTokenResponse> => {
 export interface MarkAsReadRequest {
 	partnerId?: string;
 	adminId?: string;
+	handymanId?: string;
 }
 
 /**
  * Mark messages as read in a chat room
- * Uses /chat/mark-read endpoint with partnerId or adminId
+ * Uses /chat/mark-read endpoint with partnerId, adminId, or handymanId
  */
 export const markMessagesAsRead = async (
 	recipientId: string,
-	recipientType: "partner" | "admin",
+	recipientType: "partner" | "admin" | "handyman",
 ): Promise<void> => {
 	const body: MarkAsReadRequest = {};
 	if (recipientType === "admin") {
 		body.adminId = recipientId;
+	} else if (recipientType === "handyman") {
+		body.handymanId = recipientId;
 	} else {
 		body.partnerId = recipientId;
 	}
@@ -249,7 +263,7 @@ export const getUnreadCountDetailed = async (): Promise<UnreadCountResponse> => 
 export const sendImage = async (
 	imageFile: File | any,
 	recipientId: string,
-	recipientType: "partner" | "admin" = "partner",
+	recipientType: "partner" | "admin" | "handyman" = "partner",
 ): Promise<SendMessageResponse> => {
 	const formData = new FormData();
 
@@ -269,6 +283,8 @@ export const sendImage = async (
 	// Append the appropriate ID parameter based on recipient type
 	if (recipientType === "admin") {
 		formData.append('adminId', recipientId);
+	} else if (recipientType === "handyman") {
+		formData.append('handymanId', recipientId);
 	} else {
 		formData.append('partnerId', recipientId);
 	}

@@ -16,7 +16,14 @@
     "yes": "Yes",
     "no": "No",
     "decline": "Decline",
-    "accept": "Accept"
+    "accept": "Accept",
+    "all": "All",
+    "hide": "Hide",
+    "info": "Info",
+    "refresh": "Refresh",
+    "seeAll": "See all",
+    "notAvailable": "Not available",
+    "id": "ID"
   },
   "auth": {
     "signIn": "Sign In",
@@ -186,7 +193,8 @@
     "jobAccepted": "Job accepted successfully",
     "failedToAcceptJob": "Failed to accept job. Please try again.",
     "failedToDeclineJob": "Failed to decline job. Please try again.",
-    "jobRequests": "Job Requests"
+    "jobRequests": "Job Requests",
+    "switchToPartner": "Partner Portal"
   },
   "jobs": {
     "searchJobs": "Search jobs, customers, or addresses",
@@ -243,7 +251,18 @@
     "gallery": "Gallery",
     "heyzackAdmin": "Heyzack Admin",
     "partner": "Partner",
-    "photo": "Photo"
+    "photo": "Photo",
+    "handyman": "Handyman",
+    "loadingHandymen": "Loading handymen...",
+    "noAvailableHandymen": "No available handymen",
+    "noHandymen": "No handymen found",
+    "noHandymenAssigned": "No handymen assigned yet",
+    "noHandymenText": "No handymen available for chat",
+    "selectHandyman": "Select Handyman",
+    "tapToChat": "Tap to chat",
+    "unknownHandyman": "Unknown Handyman",
+    "yourHandymen": "Your Handymen",
+    "you": "You"
   },
   "profile": {
     "profile": "Profile",
@@ -689,7 +708,15 @@
     "home": "Home",
     "jobs": "Jobs",
     "Chat": "Chat",
-    "profile": "Profile"
+    "profile": "Profile",
+    "chat": "Chat",
+    "customers": "Customers",
+    "dashboard": "Dashboard",
+    "handymen": "Team",
+    "installations": "Jobs",
+    "inventory": "Stock",
+    "leads": "Leads",
+    "settings": "Settings"
   },
   "status": {
     "scheduled": "Scheduled",
@@ -712,5 +739,253 @@
     "job_approved": "Job Approved",
     "customer_approved": "Customer Approved",
     "installation_in_progress": "In Progress"
+  },
+  "customers": {
+    "addressPlaceholder": "Address",
+    "call": "Call",
+    "contact": "Contact",
+    "contactInformation": "Contact Information",
+    "created": "Created",
+    "customer": "Customer",
+    "detailsSubtitle": "Customer details",
+    "detailsTab": "Details",
+    "editCustomer": "Edit Customer",
+    "email": "Email",
+    "emailPlaceholder": "Email",
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "pending": "Pending"
+    },
+    "meta": "Meta",
+    "namePlaceholder": "Name",
+    "noEmailAvailable": "No email available",
+    "noInstallations": "No installations found.",
+    "noPhoneAvailable": "No phone available",
+    "notFound": "Customer not found",
+    "partnerId": "Partner ID",
+    "phonePlaceholder": "Phone",
+    "since": "Since",
+    "statusLabel": "Status",
+    "updated": "Updated",
+    "viewDetails": "View Details",
+    "active": "Active",
+    "installations": "Installations",
+    "noCustomers": "No customers found",
+    "search": "Search customers...",
+    "title": "Customers",
+    "total": "Total"
+  },
+  "dashboard": {
+    "activeJobs": "Active Jobs",
+    "activateHandymanMode": "Handyman Mode",
+    "availableCredit": "Available Credit",
+    "completed": "Completed",
+    "monthlyRevenue": "Monthly Revenue",
+    "partnerPortal": "Partner Portal",
+    "recentCustomers": "Recent Customers",
+    "noRecentCustomers": "No recent customers",
+    "satisfaction": "Satisfaction",
+    "team": "Team",
+    "totalCustomers": "Total Customers",
+    "upcomingInstallations": "Upcoming Installations",
+    "noUpcomingJobs": "No upcoming jobs",
+    "welcome": "Welcome"
+  },
+  "handyman": {
+    "allSkills": "All Skills",
+    "allStatus": "All Status",
+    "availability": {
+      "noData": "No availability data found",
+      "unavailableForDay": "Unavailable for this day"
+    },
+    "details": {
+      "noSkills": "No skills",
+      "skills": "Skills",
+      "title": "Handyman Details"
+    },
+    "installations": {
+      "none": "No installations found"
+    },
+    "noResults": "No handymen found",
+    "searchPlaceholder": "Search by name or skill",
+    "status": {
+      "available": "Available",
+      "busy": "Busy",
+      "unknown": "Unknown"
+    },
+    "summary": {
+      "available": "Available",
+      "busy": "Busy",
+      "onLeave": "On Leave",
+      "total": "Total"
+    },
+    "tabs": {
+      "availability": "Availability",
+      "details": "Details",
+      "installations": "Installations"
+    },
+    "title": "Handyman",
+    "viewAvailability": "View availability"
+  },
+  "handymanAssignment": {
+    "assignToMyself": "Assign to Myself"
+  },
+  "installations": {
+    "approved": "Approved",
+    "detailsForOrder": "Details for Order #{{orderLabel}}",
+    "extraProductAdded": "Extra product added.",
+    "extraProductAddError": "Failed to add product.",
+    "inProgress": "In Progress",
+    "noAddressProvided": "No Address Provided",
+    "noDescription": "No description",
+    "noHandymanAssigned": "No Handyman Assigned",
+    "noInstallations": "No installations found",
+    "notFound": "Installation not found.",
+    "reassign": "Reassign",
+    "reassignAvailable": "Reassign available",
+    "reassignError": "Failed to reassign installation.",
+    "reassignSuccess": "Installation reassigned successfully.",
+    "rejected": "Rejected",
+    "rejectError": "Failed to reject installation.",
+    "rejectSuccess": "Installation rejected.",
+    "rejectionReasonRequired": "Please provide rejection reason.",
+    "scheduled": "Scheduled",
+    "selectProductValidation": "Please select a product.",
+    "search": "Search installations...",
+    "product": "Product",
+    "titleSingle": "Installation",
+    "title": "Installations",
+    "total": "Total",
+    "validQuantityValidation": "Please enter a valid quantity.",
+    "validationTitle": "Validation"
+  },
+  "installationDetails": {
+    "add": "Add",
+    "assignedHandyman": "Assigned Handyman",
+    "callCustomer": "Call Customer",
+    "cancel": "Cancel",
+    "cancellationPlaceholder": "Please provide a reason for cancellation",
+    "createdLabel": "Created",
+    "customerInformation": "Customer Information",
+    "emailCustomer": "Email Customer",
+    "idLabel": "Installation ID",
+    "noNotesAvailable": "No notes available",
+    "noTimelineEvents": "No timeline events available.",
+    "overviewSubtitle": "Key details at a glance",
+    "overviewTitle": "Installation overview",
+    "partnerCode": "Partner Code",
+    "partnerInformation": "Partner Information",
+    "productAllocation": {
+      "addProduct": "Add Product",
+      "emptyTitle": "No products added yet",
+      "noProductsFound": "No products found.",
+      "quantityLabel": "Quantity",
+      "searchPlaceholder": "Search product by name or SKU"
+    },
+    "productCode": "Product Code",
+    "reject": "Reject",
+    "rejectButton": "Reject Installation",
+    "scheduledLabel": "Scheduled Date",
+    "tabs": {
+      "handyman": "Handyman",
+      "notes": "Notes",
+      "overview": "Overview",
+      "products": "Products",
+      "timeline": "Timeline"
+    },
+    "updated": "Updated"
+  },
+  "orderDetails": {
+    "deliveredOn": "Delivered on",
+    "dialogTitle": "Order Details",
+    "orderId": "Order ID",
+    "orderedOn": "Ordered on",
+    "placedOn": "Placed on",
+    "quantity": "Quantity",
+    "total": "Total"
+  },
+  "orderStatus": {
+    "all": "All",
+    "approved": "Approved",
+    "cancelled": "Cancelled",
+    "delivered": "Delivered",
+    "pending": "Pending"
+  },
+  "orderSummary": {
+    "approved": "Approved",
+    "cancelled": "Cancelled",
+    "delivered": "Delivered",
+    "pending": "Pending",
+    "total": "Total"
+  },
+  "orders": {
+    "description": "Track your partner orders",
+    "listTitle": "Orders",
+    "noOrders": "No orders found",
+    "searchPlaceholder": "Search by order or item",
+    "shopNow": "Shop Now",
+    "title": "Orders",
+    "viewDetails": "View Details"
+  },
+  "pagination": {
+    "next": "Next",
+    "previous": "Previous"
+  },
+  "settings": {
+    "account": "Account",
+    "description": "Manage your account settings",
+    "general": {
+      "changePassword": {
+        "errors": {
+          "incorrectOldPassword": "Current password is incorrect",
+          "networkError": "Network error. Please try again",
+          "updateFailed": "Failed to update password"
+        },
+        "success": {
+          "passwordUpdated": "Password updated successfully"
+        },
+        "updatePassword": "Update Password",
+        "validation": {
+          "confirmPasswordRequired": "Please confirm your new password",
+          "newPasswordRequired": "New password is required",
+          "oldPasswordRequired": "Old password is required",
+          "passwordTooShort": "Password must be at least 8 characters",
+          "passwordsDoNotMatch": "New passwords do not match",
+          "samePassword": "New password must be different from old password"
+        }
+      },
+      "companyProfile": {
+        "address": "Address",
+        "companyName": "Company Name",
+        "email": "Email",
+        "phone": "Phone",
+        "title": "Company Profile"
+      },
+      "resetPassword": {
+        "button": "Change Password",
+        "confirmPassword": "Confirm New Password",
+        "newPassword": "New Password",
+        "oldPassword": "Current Password"
+      },
+      "saveError": "Failed to update profile",
+      "security": {
+        "title": "Security"
+      }
+    },
+    "noChanges": "No changes to save",
+    "profile": "Edit Profile",
+    "profileSubtitle": "Edit your profile information",
+    "saveChanges": "Save Changes",
+    "saveSuccess": "Profile updated successfully",
+    "support": "Support",
+    "version": "Version",
+    "tabs": {
+      "general": "General"
+    },
+    "title": "Settings"
+  },
+  "toastMessages": {
+    "failedLoadProfile": "Failed to load profile"
   }
 }

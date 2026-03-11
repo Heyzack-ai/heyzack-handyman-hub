@@ -18,3 +18,15 @@ export interface Conversation {
   lastMessage?: Message;
   messages: Message[];
 }
+
+// For partner chat list
+export interface ChatConversation {
+  id: string;
+  participantId: string;
+  participantName: string;
+  participantAvatar?: string;
+  lastMessage?: string;
+  lastMessageTime?: string;
+  unreadCount: number;
+  isOnline?: boolean;
+}

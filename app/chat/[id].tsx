@@ -15,7 +15,7 @@ import {
   StatusBar,
   ActivityIndicator,
 } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter, useSegments } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { useQueryClient } from "@tanstack/react-query";
 import { Send, ArrowLeft, Paperclip, Camera, Image as ImageIcon, X } from "lucide-react-native";
@@ -32,15 +32,18 @@ import { sendImage, Message, markMessagesAsRead } from "@/lib/chat-client";
 import { useTranslation } from "react-i18next";
 
 export default function ChatConversationScreen() {
-  const { id, partnerId, partnerName, adminId, adminName } = useLocalSearchParams<{ 
+  const { id, partnerId, partnerName, adminId, adminName, handymanId, handymanName } = useLocalSearchParams<{ 
     id: string; 
     partnerId?: string; 
     partnerName?: string;
     adminId?: string;
     adminName?: string;
+    handymanId?: string;
+    handymanName?: string;
   }>();
 
   const router = useRouter();
+  const segments = useSegments();
   const scrollViewRef = useRef<ScrollView>(null);
   const [messageText, setMessageText] = useState("");
   const [showMediaOptions, setShowMediaOptions] = useState(false);
@@ -52,19 +55,20 @@ export default function ChatConversationScreen() {
   const { data: session } = authClient.useSession();
   const queryClient = useQueryClient();
   
-  // Determine if this is an admin chat or partner chat
+  // Determine chat type: admin, partner, or handyman
   const isAdminChat = !!adminId;
-  const recipientId = isAdminChat ? adminId : partnerId;
-  const recipientName = isAdminChat ? adminName : partnerName;
+  const isHandymanChat = !!handymanId;
+  const recipientId = isAdminChat ? adminId : isHandymanChat ? handymanId : partnerId;
+  const recipientName = isAdminChat ? adminName : isHandymanChat ? handymanName : partnerName;
   
-  // Get partner details if partnerId is provided (not for admin chats)
+  // Get partner details if partnerId is provided (not for admin or handyman chats)
   const { data: partner, error: partnerError } = useGetPartnerById(
-    isAdminChat ? "" : (partnerId || "")
+    isAdminChat || isHandymanChat ? "" : (partnerId || "")
   );
 
   // Determine recipient type based on who we're chatting with (not who we are)
-  // When chatting with admin, pass "admin"; when chatting with partner, pass "partner"
-  const recipientType = isAdminChat ? "admin" : "partner";
+  // When chatting with admin, pass "admin"; when chatting with handyman, pass "handyman"; when chatting with partner, pass "partner"
+  const recipientType = isAdminChat ? "admin" : isHandymanChat ? "handyman" : "partner";
 
   // Use the chat hook with partner or admin information
   const {
@@ -293,12 +297,40 @@ export default function ChatConversationScreen() {
   
 
   const displayName = recipientName || 
-    (isAdminChat ? t("chat.heyzackAdmin") : (partner?.name || partner?.partner_name || t("chat.partner")));
+    (isAdminChat ? t("chat.heyzackAdmin") : 
+     isHandymanChat ? t("chat.handyman") : 
+     (partner?.name || partner?.partner_name || t("chat.partner")));
+
+  const handleBackPress = () => {
+    const inPartnerFlow = segments[0] === "(partner)";
+    const inHandymanFlow = segments[0] === "(handyman)";
+
+    if (inPartnerFlow) {
+      if (router.canGoBack()) {
+        router.back();
+        return;
+      }
+      router.replace("/(partner)/chat");
+      return;
+    }
+
+    if (inHandymanFlow) {
+      router.replace("/(handyman)/chat");
+      return;
+    }
+
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+
+    router.replace("/(handyman)/chat");
+  };
 
   if (isLoading) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <Header title={t("chat.chat")} onBack={() => router.back()} />
+        <Header title={t("chat.chat")} onBack={handleBackPress} />
         <View style={styles.messagesContainer}>
           <ChatShimmer count={8} />
         </View>
@@ -313,7 +345,7 @@ export default function ChatConversationScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
       >
-        <Header title={displayName} onBack={() => router.back()} />
+        <Header title={displayName} onBack={handleBackPress} />
         
         <ScrollView
           ref={scrollViewRef}
@@ -341,9 +373,9 @@ export default function ChatConversationScreen() {
                     content: isImage ? extendedMessage.imageUrl || '' : message.message,
                     type: isImage ? "image" : "text",
                     timestamp: message.createdAt,
-                    isFromMe: message.senderId === session?.user.id,
+                    isFromMe: message.senderId === session?.user?.id,
                     status: "read",
-                    senderName: message.senderId === session?.user.id ? "You" : displayName,
+                    senderName: message.senderId === session?.user?.id ? "You" : displayName,
                     senderId: message.senderId,
                   }} 
                 />
