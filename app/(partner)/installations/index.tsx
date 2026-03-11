@@ -79,7 +79,7 @@ const fetchInstallations = async (): Promise<Installation[]> => {
       return [];
     }
 
-    const mapped = installations.map((inst: any) => {
+    return installations.map((inst: any) => {
       // Normalize nested payload shapes from API
       const customerNameValue =
         typeof inst?.customer?.customerName === "string"
@@ -124,8 +124,7 @@ const fetchInstallations = async (): Promise<Installation[]> => {
         description: inst?.description || "",
         name: inst?.name || "",
       };
-    });
-    return mapped.filter((inst) => !!inst.id);
+    }).filter((inst) => !!inst.id);
   } catch (error) {
     console.error("Failed to fetch installations:", error);
     return [];
