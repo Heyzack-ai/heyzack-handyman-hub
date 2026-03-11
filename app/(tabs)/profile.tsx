@@ -38,19 +38,20 @@ import { useGetUser } from "@/app/api/user/getUser";
 import { useGetSkills } from "@/app/api/user/addskills";
 import { authClient } from "@/lib/auth-client";
 
+
 export default function ProfileScreen() {
   const router = useRouter();
-  const { signOut, deleteAccount } = useAuth();
+  const { signOut, deleteAccount, role } = useAuth();
   const { t, currentLanguage } = useTranslations();
   const { data: user, isLoading } = useGetUser();
   const { data: skillsData, isLoading: skillsLoading, error: skillsError } = useGetSkills();
   const BASE_URL = process.env.EXPO_PUBLIC_ASSET_URL;
-  
+
   // Determine selected language label based on currentLanguage
   const selectedLanguageLabel = (currentLanguage || "fr-FR").startsWith("fr")
     ? t("language.french")
     : t("language.english");
-  
+
 
   // Show skeleton while loading
   if (isLoading) {
@@ -64,12 +65,12 @@ export default function ProfileScreen() {
 
   // Process skills data from useGetSkills hook
   let processedSkills: Skill[] = [];
-  
+
   if (skillsData) {
     try {
       // Check if skills are in skillsData.data.skills or directly in skillsData.skills
       let skillsArray = skillsData.data?.skills || skillsData.skills;
-      
+
       if (skillsArray) {
         // If it's already an array, use it directly
         if (Array.isArray(skillsArray)) {
@@ -134,7 +135,7 @@ export default function ProfileScreen() {
   interface Skills {
     skills: Skill[]
   }
-  
+
   interface Skill {
     name: string
   }
@@ -199,35 +200,38 @@ export default function ProfileScreen() {
           </Pressable>
         </View>
 
-        <View style={styles.skillsContainer}>
-          <View style={styles.skillsHeader}>
-            <Text style={styles.skillsTitle}>{t("profile.skills")}</Text>
-            <Pressable onPress={() => router.push("/profile/skills")}>
-              <Text style={styles.addSkillText}>+ {t("profile.add")}</Text>
-            </Pressable>
+        {role !== "partner" && (
+          <View style={styles.skillsContainer}>
+            <View style={styles.skillsHeader}>
+              <Text style={styles.skillsTitle}>{t("profile.skills")}</Text>
+              <Pressable onPress={() => router.push("/profile/skills")}>
+                <Text style={styles.addSkillText}>+ {t("profile.add")}</Text>
+              </Pressable>
+            </View>
+            <View style={styles.skillTags}>
+              {skillsLoading ? (
+                <Text style={[styles.skillText, { color: Colors.light.gray[600] }]}>
+                  Loading skills...
+                </Text>
+              ) : skillsError ? (
+                <Text style={[styles.skillText, { color: Colors.light.error }]}>
+                  Error loading skills
+                </Text>
+              ) : technician.skills.skills.length > 0 ? (
+                technician.skills.skills.map((skill, index) => (
+                  <View key={index} style={styles.skillTag}>
+                    <Text style={styles.skillText}>{t(`addSkills.${skill.name}`)}</Text>
+                  </View>
+                ))
+              ) : (
+                <Text style={[styles.skillText, { color: Colors.light.gray[600] }]}>
+                  No skills added yet
+                </Text>
+              )}
+            </View>
           </View>
-          <View style={styles.skillTags}>
-            {skillsLoading ? (
-              <Text style={[styles.skillText, { color: Colors.light.gray[600] }]}>
-                Loading skills...
-              </Text>
-            ) : skillsError ? (
-              <Text style={[styles.skillText, { color: Colors.light.error }]}>
-                Error loading skills
-              </Text>
-            ) : technician.skills.skills.length > 0 ? (
-              technician.skills.skills.map((skill, index) => (
-                <View key={index} style={styles.skillTag}>
-                  <Text style={styles.skillText}>{t(`addSkills.${skill.name}`)}</Text>
-                </View>
-              ))
-            ) : (
-              <Text style={[styles.skillText, { color: Colors.light.gray[600] }]}>
-                No skills added yet
-              </Text>
-            )}
-          </View>
-        </View>
+        )}
+
 
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
@@ -242,7 +246,7 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{t("profile.payments")}</Text>
+          <Text style={styles.sectionTitle}>{t("profile.payments")}</Text>
           {/* {renderMenuItem(
             <CreditCard size={20} color={Colors.light.primary} />,
             t("profile.payments"),
@@ -277,32 +281,34 @@ export default function ProfileScreen() {
           )} */}
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t("profile.workPreferences")}</Text>
-          {renderMenuItem(
-            <Clock size={20} color={Colors.light.gray[600]} />,
-            t("profile.availability"),
-            t("profile.setWorkingHours"),
-            () => router.push("/profile/availability")
-          )}
-          {renderMenuItem(
-            <Globe size={20} color={Colors.light.gray[600]} />,
-            t("profile.serviceArea"),
-            t("profile.defineServiceRadius"),
-            () => router.push("/profile/service-area")
-          )}
-          {renderMenuItem(
-            <Link size={20} color={Colors.light.gray[600]} />,
-            t("profile.partners"),
-            t("profile.managePartnerConnections"),
-            () => router.push({
-              pathname: "/profile/partners",
-              params: {
-                user: JSON.stringify(user),
-              },
-            })
-          )}
-        </View>
+        {role !== "partner" && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t("profile.workPreferences")}</Text>
+            {renderMenuItem(
+              <Clock size={20} color={Colors.light.gray[600]} />,
+              t("profile.availability"),
+              t("profile.setWorkingHours"),
+              () => router.push("/profile/availability")
+            )}
+            {renderMenuItem(
+              <Globe size={20} color={Colors.light.gray[600]} />,
+              t("profile.serviceArea"),
+              t("profile.defineServiceRadius"),
+              () => router.push("/profile/service-area")
+            )}
+            {renderMenuItem(
+              <Link size={20} color={Colors.light.gray[600]} />,
+              t("profile.partners"),
+              t("profile.managePartnerConnections"),
+              () => router.push({
+                pathname: "/profile/partners",
+                params: {
+                  user: JSON.stringify(user),
+                },
+              })
+            )}
+          </View>
+        )}
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t("profile.settings")}</Text>
@@ -337,39 +343,41 @@ export default function ProfileScreen() {
               }
             }
           )}
-          <Pressable
-            style={styles.deleteAccountButton}
-            onPress={async () => {
-              try {
-                // Show delete account confirmation
-                const confirmed = await new Promise<boolean>((resolve) => {
-                  Alert.alert(
-                    t("profile.deleteAccount"),
-                    t("profile.deleteAccountConfirmation"),
-                    [
-                      {
-                        text: t("common.cancel"),
-                        style: "cancel",
-                        onPress: () => resolve(false),
-                      },
-                      {
-                        text: t("profile.delete"),
-                        style: "destructive",
-                        onPress: async () => {
-                          await deleteAccount();
-                          resolve(true);
+          {role !== "partner" && (
+            <Pressable
+              style={styles.deleteAccountButton}
+              onPress={async () => {
+                try {
+                  // Show delete account confirmation
+                  const confirmed = await new Promise<boolean>((resolve) => {
+                    Alert.alert(
+                      t("profile.deleteAccount"),
+                      t("profile.deleteAccountConfirmation"),
+                      [
+                        {
+                          text: t("common.cancel"),
+                          style: "cancel",
+                          onPress: () => resolve(false),
                         },
-                      },
-                    ]
-                  );
-                });
-              } catch (error) {
-                console.error(error);
-              }
-            }}
-          >
-            <Text style={styles.deleteAccountText}>{t("profile.deleteAccount")}</Text>
-          </Pressable>
+                        {
+                          text: t("profile.delete"),
+                          style: "destructive",
+                          onPress: async () => {
+                            await deleteAccount();
+                            resolve(true);
+                          },
+                        },
+                      ]
+                    );
+                  });
+                } catch (error) {
+                  console.error(error);
+                }
+              }}
+            >
+              <Text style={styles.deleteAccountText}>{t("profile.deleteAccount")}</Text>
+            </Pressable>
+          )}
         </View>
 
         <Text style={styles.version}>{t("profile.version", { version: "1.0.0" })}</Text>

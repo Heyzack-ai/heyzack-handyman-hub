@@ -1,14 +1,14 @@
-export type JobStatus = 
+export type JobStatus =
   | "pending"
-  | "scheduled" 
-  | "stock_collected"   
-  | "en_route" 
-  | "started" 
+  | "scheduled"
+  | "stock_collected"
+  | "en_route"
+  | "started"
   | "completed"
   | "declined"
   | "sent"
-  |"job_request"
-  |"accepted"
+  | "job_request"
+  | "accepted"
   | "not_sent"
   | "contract_sent"
   | "draft"
@@ -17,7 +17,8 @@ export type JobStatus =
   | "job_completed"
   | "job_approved"
   | "customer_approved"
-  | "assigned";
+  | "assigned"
+  | "installation_in_progress";
 
 
 

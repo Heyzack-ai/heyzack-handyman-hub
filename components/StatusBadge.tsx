@@ -48,6 +48,10 @@ export default function StatusBadge({ status, size = "medium" }: StatusBadgeProp
         return Colors.light.info;
       case "customer_approved":
         return Colors.light.info;
+      case "installation_in_progress":
+        return Colors.light.info;
+      case "installation_completed":
+        return Colors.light.success;
       default:
         return Colors.light.gray[500];
     }
@@ -83,10 +87,15 @@ export default function StatusBadge({ status, size = "medium" }: StatusBadgeProp
         return t("status.accepted");
       case "job_completed":
         return t("status.job_completed");
+      case "installation_completed":
+        return t("status.job_completed");
       case "job_approved":
         return t("status.job_approved");
       case "customer_approved":
         return t("status.customer_approved");
+      case "installation_in_progress":
+        return t("status.installation_in_progress");
+
       default:
         return t("status.unknown");
     }

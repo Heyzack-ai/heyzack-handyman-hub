@@ -28,6 +28,7 @@ import axios from "axios";
 import * as DocumentPicker from "expo-document-picker";
 import { t } from "i18next";
 import * as Linking from "expo-linking";
+import { useAuth } from "@/lib/auth-context";
 
 export default function EditProfileScreen() {
   const router = useRouter();
@@ -46,6 +47,7 @@ export default function EditProfileScreen() {
   );
   const queryClient = useQueryClient();
   const BASE_URL = process.env.EXPO_PUBLIC_ASSET_URL;
+  const { role } = useAuth();
 
   React.useEffect(() => {
     if (parsedUser) {
@@ -69,7 +71,7 @@ export default function EditProfileScreen() {
 
         setIsVerified(
           String(parsedUser?.is_verified) === "1" ||
-            String(parsedUser?.is_verified) === "true"
+          String(parsedUser?.is_verified) === "true"
         );
       }
     }
@@ -528,40 +530,42 @@ export default function EditProfileScreen() {
           </View>
         </View>
 
-        <View style={styles.kycSection}>
-          <Text style={styles.sectionTitle}>
-            {t("editProfile.identityVerification")}
-          </Text>
-          <Text style={styles.kycDescription}>
-            {t("editProfile.kycDescription")} Maximum file size: 5MB.
-          </Text>
-        </View>
-
-        <Pressable
-          style={[styles.kycButton, isUploading && styles.kycButtonDisabled]}
-          onPress={uploadKycDocument}
-          disabled={isUploading}
-        >
-          {isUploading ? (
-            <View style={styles.uploadingContainer}>
-              <ActivityIndicator size="small" color={Colors.light.primary} />
-              <Text style={styles.kycButtonText}>
-                {t("editProfile.uploadingPleaseWait")}
+        {role !== "partner" && (
+          <>
+            <View style={styles.kycSection}>
+              <Text style={styles.sectionTitle}>
+                {t("editProfile.identityVerification")}
+              </Text>
+              <Text style={styles.kycDescription}>
+                {t("editProfile.kycDescription")} Maximum file size: 5MB.
               </Text>
             </View>
-          ) : (
-            <>
-              <Upload size={20} color={Colors.light.primary} />
-              <Text style={styles.kycButtonText}>
-                {kycDocument
-                  ? t("editProfile.changeDocument")
-                  : t("editProfile.uploadDocument")}
-              </Text>
-            </>
-          )}
-        </Pressable>
 
-        {/* {kycDocument && (
+            <Pressable
+              style={[styles.kycButton, isUploading && styles.kycButtonDisabled]}
+              onPress={uploadKycDocument}
+              disabled={isUploading}
+            >
+              {isUploading ? (
+                <View style={styles.uploadingContainer}>
+                  <ActivityIndicator size="small" color={Colors.light.primary} />
+                  <Text style={styles.kycButtonText}>
+                    {t("editProfile.uploadingPleaseWait")}
+                  </Text>
+                </View>
+              ) : (
+                <>
+                  <Upload size={20} color={Colors.light.primary} />
+                  <Text style={styles.kycButtonText}>
+                    {kycDocument
+                      ? t("editProfile.changeDocument")
+                      : t("editProfile.uploadDocument")}
+                  </Text>
+                </>
+              )}
+            </Pressable>
+
+            {/* {kycDocument && (
             <View style={styles.documentPreview}>
               <Image
                 source={{ uri: kycDocument }}
@@ -581,41 +585,43 @@ export default function EditProfileScreen() {
           )}
         </View> */}
 
-        {kycDocument && (
-          <View style={styles.documentPreview}>
-            {documentType === "pdf" ? (
-              <View style={styles.pdfPreview}>
-                <FileText size={48} color={Colors.light.primary} />
-                <Text style={styles.pdfText}>PDF Document</Text>
-                <Text style={styles.pdfSubtext} numberOfLines={1}>
-                  {kycDocument.split("/").pop()}
-                </Text>
+            {kycDocument && (
+              <View style={styles.documentPreview}>
+                {documentType === "pdf" ? (
+                  <View style={styles.pdfPreview}>
+                    <FileText size={48} color={Colors.light.primary} />
+                    <Text style={styles.pdfText}>PDF Document</Text>
+                    <Text style={styles.pdfSubtext} numberOfLines={1}>
+                      {kycDocument.split("/").pop()}
+                    </Text>
+                  </View>
+                ) : (
+                  <Image
+                    source={{ uri: kycDocument }}
+                    style={styles.documentImage}
+                    contentFit="cover"
+                  />
+                )}
+
+                {/* View Document Button */}
+                <Pressable style={styles.viewDocumentButton} onPress={openDocument}>
+                  <Text style={styles.viewDocumentText}>
+                    {t("editProfile.viewDocument")}
+                  </Text>
+                </Pressable>
+
+                <View style={styles.documentStatus}>
+                  <Text style={styles.documentStatusText}>
+                    {isVerified
+                      ? t("editProfile.verified")
+                      : isUploading
+                        ? t("editProfile.uploading...")
+                        : t("editProfile.pendingVerification")}
+                  </Text>
+                </View>
               </View>
-            ) : (
-              <Image
-                source={{ uri: kycDocument }}
-                style={styles.documentImage}
-                contentFit="cover"
-              />
             )}
-
-            {/* View Document Button */}
-            <Pressable style={styles.viewDocumentButton} onPress={openDocument}>
-              <Text style={styles.viewDocumentText}>
-                {t("editProfile.viewDocument")}
-              </Text>
-            </Pressable>
-
-            <View style={styles.documentStatus}>
-              <Text style={styles.documentStatusText}>
-                {isVerified
-                  ? t("editProfile.verified")
-                  : isUploading
-                  ? t("editProfile.uploading...")
-                  : t("editProfile.pendingVerification")}
-              </Text>
-            </View>
-          </View>
+          </>
         )}
 
         <Pressable

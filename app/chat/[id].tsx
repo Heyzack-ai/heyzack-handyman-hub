@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { 
   StyleSheet, 
   Text, 
@@ -16,6 +16,8 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
+import { useQueryClient } from "@tanstack/react-query";
 import { Send, ArrowLeft, Paperclip, Camera, Image as ImageIcon, X } from "lucide-react-native";
 import Colors from "@/constants/colors";
 import Header from "@/components/Header";
@@ -26,7 +28,7 @@ import * as Haptics from "expo-haptics";
 import { useChat } from "@/hooks/use-chat";
 import { authClient } from "@/lib/auth-client";
 import { useGetPartnerById } from "@/app/api/user/getPartner";
-import { sendImage, Message } from "@/lib/chat-client";  
+import { sendImage, Message, markMessagesAsRead } from "@/lib/chat-client";  
 import { useTranslation } from "react-i18next";
 
 export default function ChatConversationScreen() {
@@ -48,6 +50,7 @@ export default function ChatConversationScreen() {
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
   const { t } = useTranslation();
   const { data: session } = authClient.useSession();
+  const queryClient = useQueryClient();
   
   // Determine if this is an admin chat or partner chat
   const isAdminChat = !!adminId;
@@ -59,6 +62,10 @@ export default function ChatConversationScreen() {
     isAdminChat ? "" : (partnerId || "")
   );
 
+  // Determine recipient type based on who we're chatting with (not who we are)
+  // When chatting with admin, pass "admin"; when chatting with partner, pass "partner"
+  const recipientType = isAdminChat ? "admin" : "partner";
+
   // Use the chat hook with partner or admin information
   const {
     messages,
@@ -69,7 +76,7 @@ export default function ChatConversationScreen() {
     loadChatHistory,
   } = useChat({
     otherUserId: recipientId,
-    userType: isAdminChat ? "admin" : "partner",
+    userType: recipientType as "handyman" | "partner" | "admin",
   });
 
   // Load chat history when component mounts
@@ -85,6 +92,24 @@ export default function ChatConversationScreen() {
       scrollToBottom();
     }
   }, [messages, shouldAutoScroll, isNearBottom]);
+
+  // Mark messages as read when screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      if (recipientId && recipientType) {
+        console.log("Marking messages as read for:", { recipientId, recipientType });
+        markMessagesAsRead(recipientId, recipientType)
+          .then(() => {
+            console.log("Messages marked as read successfully");
+            // Invalidate unread count query to update the badge
+            queryClient.invalidateQueries({ queryKey: ["unread-count"] });
+          })
+          .catch((error) => {
+            console.error("Failed to mark messages as read:", error);
+          });
+      }
+    }, [recipientId, recipientType, queryClient])
+  );
 
   const scrollToBottom = () => {
     setTimeout(() => {

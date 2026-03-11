@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { 
-  StyleSheet, 
-  Text, 
-  View, 
-  ScrollView, 
-  SafeAreaView, 
-  Pressable, 
+import {
+  StyleSheet,
+  Text,
+  View,
+  ScrollView,
+  SafeAreaView,
+  Pressable,
   Modal,
   TouchableOpacity,
   Alert,
@@ -25,7 +25,7 @@ import * as Haptics from "expo-haptics";
 import { useGetPartner } from "@/app/api/user/getPartner";
 import { getAssignedPartners } from "@/lib/partner-client";
 import { useChat } from "@/hooks/use-chat";
-import { getChatRooms, getUnreadCount, getChatConnections, getChatHistory, type ChatConnection } from "@/lib/chat-client";
+import { getChatRooms, getUnreadCount, getUnreadCountDetailed, getChatConnections, getChatHistory, type ChatConnection, type UnreadByRoom } from "@/lib/chat-client";
 import { authClient } from "@/lib/auth-client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "@/src/i18n/useTranslations";
@@ -39,7 +39,7 @@ export default function ChatScreen() {
   const { t } = useTranslations();
   // Get current user's partner data - this IS the assigned partner
   const { data: currentPartner, isLoading: currentPartnerLoading } = useGetPartner("None");
-  
+
   console.log("Current Partner:", currentPartner);
   // console.log("Session:", session);
 
@@ -64,6 +64,22 @@ export default function ChatScreen() {
     enabled: !!session?.user.id,
   });
 
+  // Get detailed unread counts per room
+  const { data: unreadByRoomData } = useQuery({
+    queryKey: ["unread-count-detailed"],
+    queryFn: getUnreadCountDetailed,
+    enabled: !!session?.user.id,
+  });
+
+  // Create a map of userId to unread count for quick lookup
+  const unreadCountMap = React.useMemo(() => {
+    const map = new Map<string, number>();
+    unreadByRoomData?.byRoom.forEach((room: UnreadByRoom) => {
+      map.set(room.otherUserId, room.unreadCount);
+    });
+    return map;
+  }, [unreadByRoomData]);
+
   // Load chat history when current partner is available
   useEffect(() => {
     if (currentPartner?.name) {
@@ -77,10 +93,10 @@ export default function ChatScreen() {
       if (currentPartner?.name) {
         loadChatHistory();
       }
-      // Invalidate and refetch chat-related queries to get fresh data
-      queryClient.invalidateQueries({ queryKey: ["chat-rooms"] });
-      queryClient.invalidateQueries({ queryKey: ["unread-count"] });
-      queryClient.invalidateQueries({ queryKey: ["chat-connections"] });
+      // Refetch chat-related queries to get fresh unread counts
+      queryClient.refetchQueries({ queryKey: ["chat-rooms"] });
+      queryClient.refetchQueries({ queryKey: ["unread-count"] });
+      queryClient.refetchQueries({ queryKey: ["unread-count-detailed"] });
     }, [currentPartner?.name, loadChatHistory, queryClient])
   );
 
@@ -111,36 +127,42 @@ export default function ChatScreen() {
 
   console.log("Chat Connections:", chatConnections);
 
-  // Extract admin from connections - try multiple methods with useMemo for stability
+  // Extract admin from connections API response or use hardcoded fallback
   const adminConnection = useMemo(() => {
-    // First, try to find admin in connections
-    let admin = chatConnections?.connections?.find(
+    // First, try to find admin in connections from API response
+    const admin = chatConnections?.connections?.find(
       (conn: ChatConnection) => {
         const idLower = conn.id?.toLowerCase() || "";
         const nameLower = conn.name?.toLowerCase() || "";
         const emailLower = conn.email?.toLowerCase() || "";
-        
+
         return (
-          idLower.includes("admin") || 
+          idLower.includes("admin") ||
           nameLower.includes("admin") ||
           emailLower.includes("admin") ||
           emailLower === "admin@heyzack.ai" ||
-          emailLower === "admin@heyzack.com"
+          emailLower === "admin@heyzack.com" ||
+          /^admin[_-]/.test(conn.id || "")
         );
       }
     );
 
-    // If admin not found in connections, check chat rooms for admin room
-    if (!admin && chatRooms) {
-      const adminRoom = chatRooms.find(room => 
+    // If found in API response, use it
+    if (admin) {
+      return admin;
+    }
+
+    // Check chat rooms for admin room (from API response)
+    if (chatRooms) {
+      const adminRoom = chatRooms.find(room =>
         room.otherUser.type === "admin" ||
         room.roomId.includes("admin") ||
         room.otherUser.name?.toLowerCase().includes("admin") ||
         room.otherUser.email?.toLowerCase().includes("admin")
       );
-      
+
       if (adminRoom) {
-        admin = {
+        return {
           id: adminRoom.otherUser.id,
           name: adminRoom.otherUser.name || t("chat.heyzackAdmin"),
           email: adminRoom.otherUser.email || "admin@heyzack.ai",
@@ -149,22 +171,9 @@ export default function ChatScreen() {
       }
     }
 
-    // If still no admin found but connections exist, try to find by checking all connections
-    if (!admin && chatConnections?.connections) {
-      admin = chatConnections.connections.find((conn: ChatConnection) => {
-        const idLower = conn.id?.toLowerCase() || "";
-        const nameLower = conn.name?.toLowerCase() || "";
-        const emailLower = conn.email?.toLowerCase() || "";
-        // Check if ID format matches admin pattern (admin_xxx, admin-xxx, etc.)
-        return /^admin[_-]/.test(conn.id || "") || 
-               /admin/i.test(nameLower) ||
-               /admin/i.test(emailLower);
-      });
-    }
-
-    // Fallback: Always provide a default admin connection
-    // Handymen should always have access to admin support
-    return admin || {
+    // Hardcoded fallback - admin_heyzack
+    // This ensures admin chat is always available even if not in API response
+    return {
       id: "admin_heyzack",
       name: t("chat.heyzackAdmin"),
       email: "admin@heyzack.ai",
@@ -177,7 +186,7 @@ export default function ChatScreen() {
   // Check if admin room exists in chatRooms
   const adminRoomExists = useMemo(() => {
     if (!chatRooms || !adminConnection) return false;
-    return chatRooms.some(room => 
+    return chatRooms.some(room =>
       room.otherUser.type === "admin" ||
       room.otherUser.id === adminConnection.id ||
       (room.roomId && room.roomId.toLowerCase().includes("admin"))
@@ -185,10 +194,11 @@ export default function ChatScreen() {
   }, [chatRooms, adminConnection]);
 
   // Fetch admin chat history to get the last message when chatRooms doesn't include admin room
+  // Pass "admin" as recipientType since we're chatting with an admin
   const { data: adminChatHistory } = useQuery({
-    queryKey: ["admin-chat-history", adminConnection.id],
-    queryFn: () => getChatHistory(adminConnection.id, "admin", 1, 50), // Fetch recent messages to get the last one
-    enabled: !!adminConnection.id && adminConnection.id !== "admin_heyzack" && !adminRoomExists, // Only fetch if admin room not found in chatRooms
+    queryKey: ["admin-chat-history", adminConnection?.id],
+    queryFn: () => adminConnection ? getChatHistory(adminConnection.id, "admin", 1, 50) : Promise.resolve(null), // recipientType is "admin" since we're chatting with admin
+    enabled: !!adminConnection?.id && !adminRoomExists, // Only fetch if admin exists and room not found in chatRooms
     retry: 1,
   });
 
@@ -219,18 +229,18 @@ export default function ChatScreen() {
   const handleTakePhoto = async () => {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      
+
       if (status !== "granted") {
         Alert.alert(t("chat.permissionRequired"), t("chat.cameraPermissionRequired"));
         return;
       }
-      
+
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         quality: 0.8,
         allowsEditing: true,
       });
-      
+
       if (!result.canceled && result.assets && result.assets.length > 0) {
         if (Platform.OS !== "web") {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -247,19 +257,19 @@ export default function ChatScreen() {
   const handlePickImage = async () => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
+
       if (status !== "granted") {
         Alert.alert(t("chat.permissionRequired"), t("chat.galleryPermissionRequired"));
         return;
       }
-      
+
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         quality: 0.8,
         allowsMultipleSelection: false,
         allowsEditing: true,
       });
-      
+
       if (!result.canceled && result.assets && result.assets.length > 0) {
         if (Platform.OS !== "web") {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -293,25 +303,26 @@ export default function ChatScreen() {
 
   const renderAssignedPartnerItem = (partner: any) => {
     // Get the latest message from the chat
-    const latestMessage = partnerMessages.length > 0 
-      ? partnerMessages[partnerMessages.length - 1] 
+    const latestMessage = partnerMessages.length > 0
+      ? partnerMessages[partnerMessages.length - 1]
       : null;
 
     // Check if the latest message is an image
     const isImageMessage = latestMessage && (latestMessage as any).messageType === 'image';
 
-    // Find the chat room for this partner to get unread count
+    // Get unread count from the detailed API response (most accurate)
     const partnerIdentifier = partner.id || partner.name;
-    const partnerChatRoom = chatRooms?.find(room => 
-      room.otherUser.id === partnerIdentifier || 
+    const unreadCountFromApi = unreadCountMap.get(partnerIdentifier) || unreadCountMap.get(partner.id || "");
+    
+    // Fallback to chat rooms data if API doesn't have it
+    const partnerChatRoom = chatRooms?.find(room =>
+      room.otherUser.id === partnerIdentifier ||
       room.otherUser.id === partner.id ||
       room.roomId?.includes(partnerIdentifier) ||
       room.roomId?.includes(partner.id || "")
     );
 
-    const unreadCount = (partnerChatRoom?.unreadCount !== undefined && partnerChatRoom?.unreadCount !== null) 
-      ? partnerChatRoom.unreadCount 
-      : 0;
+    const unreadCount = unreadCountFromApi ?? partnerChatRoom?.unreadCount ?? 0;
 
     return (
       <TouchableOpacity
@@ -377,39 +388,41 @@ export default function ChatScreen() {
                 </Text>
               </View>
             )}
-           
+
           </View>
         </View>
-        
+
         <ScrollView style={styles.conversationsList} showsVerticalScrollIndicator={false}>
-          {/* Admin Chat */}
+          {/* Admin Chat - only show if admin exists in API response */}
           {(() => {
+            // Don't render if no admin connection from API
+            if (!adminConnection) return null;
+
             // Find admin chat room to get unread count and last message
             // Try multiple matching strategies to ensure we find the admin room
             const adminChatRoom = chatRooms?.find(room => {
-              if (!adminConnection) return false;
-              
+
               // Match by user type first (most reliable)
               if (room.otherUser.type === "admin") return true;
-              
+
               // Match by room ID containing "admin"
               if (room.roomId && (room.roomId.toLowerCase().includes("admin") || room.roomId.includes("admin_"))) return true;
-              
+
               // Match by user ID
               if (room.otherUser.id === adminConnection.id) return true;
-              
+
               // Match by email
               if (room.otherUser.email && (
                 room.otherUser.email.toLowerCase().includes("admin") ||
                 room.otherUser.email === adminConnection.email
               )) return true;
-              
+
               // Match by name
               if (room.otherUser.name && room.otherUser.name.toLowerCase().includes("admin")) return true;
-              
+
               return false;
             });
-            
+
             console.log("Admin Chat Room Search:", {
               chatRooms: chatRooms?.length,
               adminConnection: adminConnection?.id,
@@ -420,14 +433,16 @@ export default function ChatScreen() {
               } : null,
               chatHistoryLastMessage: adminChatHistory?.messages?.[0],
             });
-            
-            const adminUnreadCount = adminChatRoom?.unreadCount || 0;
+
+            // Get admin unread count from detailed API (most accurate), fallback to chat rooms
+            const adminUnreadCountFromApi = unreadCountMap.get(adminConnection.id);
+            const adminUnreadCount = adminUnreadCountFromApi ?? adminChatRoom?.unreadCount ?? 0;
             // Use lastMessage from chatRooms if available, otherwise use the most recent message from chat history
             let adminLastMessage = adminChatRoom?.lastMessage;
             if (!adminLastMessage && adminChatHistory?.messages && adminChatHistory.messages.length > 0) {
               // Messages might be in chronological (oldest first) or reverse chronological (newest first) order
               // Get the message with the most recent createdAt timestamp
-              const sortedMessages = [...adminChatHistory.messages].sort((a, b) => 
+              const sortedMessages = [...adminChatHistory.messages].sort((a, b) =>
                 new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
               );
               adminLastMessage = sortedMessages[0]; // Most recent message
@@ -492,26 +507,26 @@ export default function ChatScreen() {
           visible={showPartnerList}
           onRequestClose={() => setShowPartnerList(false)}
         >
-          <Pressable 
-            style={styles.modalOverlay} 
+          <Pressable
+            style={styles.modalOverlay}
             onPress={() => setShowPartnerList(false)}
           >
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>{t("chat.selectPartner")}</Text>
-                <TouchableOpacity 
-                  style={styles.closeButton} 
+                <TouchableOpacity
+                  style={styles.closeButton}
                   onPress={() => setShowPartnerList(false)}
                 >
                   <X size={20} color={Colors.light.gray[600]} />
                 </TouchableOpacity>
               </View>
-              
+
               <ScrollView style={styles.partnerList}>
                 {unassignedLoading ? (
                   <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={Colors.light.primary} />
-                        <Text style={styles.loadingText}>{t("chat.loadingPartners")}</Text>
+                    <Text style={styles.loadingText}>{t("chat.loadingPartners")}</Text>
                   </View>
                 ) : !unassignedPartners || unassignedPartners.length === 0 ? (
                   <View style={styles.emptyContainer}>
@@ -533,24 +548,24 @@ export default function ChatScreen() {
           visible={showMediaOptions}
           onRequestClose={() => setShowMediaOptions(false)}
         >
-          <Pressable 
-            style={styles.modalOverlay} 
+          <Pressable
+            style={styles.modalOverlay}
             onPress={() => setShowMediaOptions(false)}
           >
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>{t("chat.shareMedia")}</Text>
-                <TouchableOpacity 
-                  style={styles.closeButton} 
+                <TouchableOpacity
+                  style={styles.closeButton}
                   onPress={() => setShowMediaOptions(false)}
                 >
                   <X size={20} color={Colors.light.gray[600]} />
                 </TouchableOpacity>
               </View>
-              
+
               <View style={styles.mediaOptions}>
-                <TouchableOpacity 
-                  style={styles.mediaOption} 
+                <TouchableOpacity
+                  style={styles.mediaOption}
                   onPress={handleTakePhoto}
                 >
                   <View style={[styles.mediaIconContainer, { backgroundColor: Colors.light.primary }]}>
@@ -558,9 +573,9 @@ export default function ChatScreen() {
                   </View>
                   <Text style={styles.mediaOptionText}>Camera</Text>
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={styles.mediaOption} 
+
+                <TouchableOpacity
+                  style={styles.mediaOption}
                   onPress={handlePickImage}
                 >
                   <View style={[styles.mediaIconContainer, { backgroundColor: Colors.light.secondary }]}>
@@ -568,9 +583,9 @@ export default function ChatScreen() {
                   </View>
                   <Text style={styles.mediaOptionText}>Gallery</Text>
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={styles.mediaOption} 
+
+                <TouchableOpacity
+                  style={styles.mediaOption}
                   onPress={handleNewChat}
                 >
                   <View style={[styles.mediaIconContainer, { backgroundColor: Colors.light.success }]}>

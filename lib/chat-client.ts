@@ -65,22 +65,28 @@ export interface FirebaseTokenResponse {
 
 /**
  * Fetch chat history with a specific user
+ * @param otherUserId - The ID of the user you're chatting with
+ * @param recipientType - The role of the recipient ("partner", "handyman", or "admin")
+ * @param page - Page number for pagination
+ * @param limit - Number of messages per page
  */
 export const getChatHistory = async (
 	otherUserId: string,
-	userType: "partner" | "handyman" | "admin",
+	recipientType: "partner" | "handyman" | "admin",
 	page = 1,
 	limit = 50,
 ): Promise<ChatHistory> => {
+	// Query parameter is based on who you're chatting WITH, not your own role
+	// e.g., when chatting with admin, use adminId; when chatting with handyman, use handymanId
 	let queryParam: string;
-	if (userType === "partner") {
-		queryParam = "partnerId";
-	} else if (userType === "admin") {
+	if (recipientType === "admin") {
 		queryParam = "adminId";
+	} else if (recipientType === "partner") {
+		queryParam = "partnerId";
 	} else {
 		queryParam = "handymanId";
 	}
-	console.log("queryParam", otherUserId);
+	console.log("Fetching chat history with:", { otherUserId, recipientType, queryParam, page, limit });
 	const response = await serverClient.get<{ data: ChatHistory }>(
 		"/chat/history",
 		{
@@ -115,7 +121,7 @@ export const getChatRooms = async (): Promise<ChatRoom[]> => {
 		"/chat/rooms",
 	);
 	console.log("Chat Rooms API Response:", JSON.stringify(response.data, null, 2));
-	
+
 	// Handle different response structures
 	let rooms: ChatRoom[] = [];
 	if (response.data) {
@@ -127,7 +133,7 @@ export const getChatRooms = async (): Promise<ChatRoom[]> => {
 			rooms = (response.data as any).data.rooms;
 		}
 	}
-	
+
 	console.log("Parsed Chat Rooms:", rooms.length, "rooms");
 	rooms.forEach((room, index) => {
 		console.log(`Room ${index + 1}:`, {
@@ -150,45 +156,63 @@ export const getFirebaseToken = async (): Promise<FirebaseTokenResponse> => {
 	return response.data.data;
 };
 
+export interface MarkAsReadRequest {
+	partnerId?: string;
+	adminId?: string;
+}
+
 /**
  * Mark messages as read in a chat room
+ * Uses /chat/mark-read endpoint with partnerId or adminId
  */
 export const markMessagesAsRead = async (
-	roomId: string,
-	messageIds: string[],
+	recipientId: string,
+	recipientType: "partner" | "admin",
 ): Promise<void> => {
-	await serverClient.post(`/chat/read/${roomId}`, {
-		messageIds,
-	});
+	const body: MarkAsReadRequest = {};
+	if (recipientType === "admin") {
+		body.adminId = recipientId;
+	} else {
+		body.partnerId = recipientId;
+	}
+	
+	await serverClient.post("/chat/mark-read", body);
 };
+
+export interface UnreadByRoom {
+	roomId: string;
+	unreadCount: number;
+	otherUserId: string;
+	otherUserName: string;
+}
+
+export interface UnreadCountResponse {
+	totalUnread: number;
+	byRoom: UnreadByRoom[];
+}
 
 /**
  * Get unread message count for all chat rooms
+ * Response format: { data: { totalUnread: number, byRoom: [...] } }
  */
 export const getUnreadCount = async (): Promise<number> => {
-	const response = await serverClient.get<{ data: { count: number } } | { data: number } | { count: number }>(
-		"/chat/unread-count",
-	);
+	const data = await getUnreadCountDetailed();
+	return data.totalUnread;
+};
+
+/**
+ * Get detailed unread counts per room
+ */
+export const getUnreadCountDetailed = async (): Promise<UnreadCountResponse> => {
+	const response = await serverClient.get<{
+		data: UnreadCountResponse;
+	}>("/chat/unread-count");
+	
 	console.log("Unread Count API Response:", JSON.stringify(response.data, null, 2));
-	
-	// Handle different response structures
-	let count = 0;
-	if (response.data) {
-		if (typeof response.data === 'number') {
-			count = response.data;
-		} else if ((response.data as any).count !== undefined) {
-			count = (response.data as any).count;
-		} else if ((response.data as any).data) {
-			if (typeof (response.data as any).data === 'number') {
-				count = (response.data as any).data;
-			} else if ((response.data as any).data?.count !== undefined) {
-				count = (response.data as any).data.count;
-			}
-		}
-	}
-	
-	console.log("Parsed Unread Count:", count);
-	return count;
+
+	const result = response.data?.data ?? { totalUnread: 0, byRoom: [] };
+	console.log("Parsed Unread Count:", result.totalUnread, "across", result.byRoom.length, "rooms");
+	return result;
 };
 
 // export const sendImage = async (
@@ -196,7 +220,7 @@ export const getUnreadCount = async (): Promise<number> => {
 // 	partnerId: string,
 // ): Promise<SendMessageResponse> => {
 // 	const formData = new FormData();
-	
+
 // 	// Handle both web File objects and React Native file-like objects
 // 	if (imageFile.uri) {
 // 		// React Native file object
@@ -205,7 +229,7 @@ export const getUnreadCount = async (): Promise<number> => {
 // 		// Web File object
 // 		formData.append('image', imageFile);
 // 	}
-	
+
 // 	formData.append('partnerId', partnerId);
 
 // 	console.log("formData", formData?.get('image'));
@@ -228,7 +252,7 @@ export const sendImage = async (
 	recipientType: "partner" | "admin" = "partner",
 ): Promise<SendMessageResponse> => {
 	const formData = new FormData();
-	
+
 	// Handle both web File objects and React Native file-like objects
 	if (imageFile.uri) {
 		// React Native file object
@@ -241,7 +265,7 @@ export const sendImage = async (
 		// Web File object
 		formData.append('image', imageFile);
 	}
-	
+
 	// Append the appropriate ID parameter based on recipient type
 	if (recipientType === "admin") {
 		formData.append('adminId', recipientId);

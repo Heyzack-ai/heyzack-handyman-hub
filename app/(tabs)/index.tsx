@@ -32,6 +32,7 @@ import { useGetNotificationCount } from "@/app/api/notifications/getNotification
 import { useGetUser } from "@/app/api/user/getUser";
 import Job from "@/components/Job";
 import { useAcceptJob } from "../api/jobs/acceptJob";
+import { useAuth } from '@/lib/auth-context';
 
 // Global flag that persists across component unmounts/remounts
 let hasCheckedKYCGlobal = false;
@@ -66,6 +67,7 @@ export default function HomeScreen() {
   const queryClient = useQueryClient();
   const { mutate: acceptJob } = useAcceptJob();
   const { data: user, isLoading: isUserLoading } = useGetUser();
+  const { role } = useAuth();
 
   const today = getLocalDateString();
 
@@ -74,7 +76,7 @@ export default function HomeScreen() {
     if (!jobsData) return [];
     return jobsData
       .map((job: JobType) => job.customer)
-      .filter((customer: JobType['customer'], index: number, arr: JobType['customer'][]) => 
+      .filter((customer: JobType['customer'], index: number, arr: JobType['customer'][]) =>
         customer && typeof customer === 'string' && arr.indexOf(customer) === index
       );
   }, [jobsData]);
@@ -86,20 +88,20 @@ export default function HomeScreen() {
       queryFn: async () => {
         const token = await SecureStore.getItemAsync('auth_token');
         if (!token) throw new Error("Authentication token not found");
-        
+
         const axios = require('axios');
         const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
         const searchParams = new URLSearchParams();
         searchParams.append('filter', `[["name", "=", "${customerCode}"]]`);
         searchParams.append('fields', JSON.stringify(['name', 'phone', 'email', 'address', 'customer_name']));
-        
+
         const response = await axios.get(`${BASE_URL}/erp/resource/Heyzack Customer?${searchParams.toString()}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         });
-        
+
         return response.data?.data?.[0] || null;
       },
       enabled: !!customerCode,
@@ -137,7 +139,7 @@ export default function HomeScreen() {
     if (job.customer && typeof job.customer === 'object' && job.customer.customer_name) {
       return job.customer;
     }
-    
+
     // If job has customer_name directly, use it
     if (job.customer_name) {
       return {
@@ -148,12 +150,12 @@ export default function HomeScreen() {
         address: job.customer_address || ''
       };
     }
-    
+
     // If we have fetched customer data for this customer code, use it
     if (job.customer && typeof job.customer === 'string' && customersMap.has(job.customer)) {
       return customersMap.get(job.customer);
     }
-    
+
     // Fallback to basic customer object
     return {
       name: job.customer ?? '',
@@ -196,21 +198,21 @@ export default function HomeScreen() {
 
   const COMPLETED_STATUSES = ['job_approved', 'job_completed', 'customer_approved'] as const;
   const PENDING_STATUSES = [
-  "scheduled",
-  'pending',
-  'stock_collected',
-  'en_route',
-  'started',
-  'assigned',
-  'accepted',
-  'contract_sent' // Added this as it seems to be a pre-completion step
-] as const;
-  const completedJobsCount = (jobsData || []).filter((job: any) => 
-  COMPLETED_STATUSES.includes(job.installation?.status)
-).length;
-  const pendingJobsCount = (jobsData || []).filter((job: any) => 
-  PENDING_STATUSES.includes(job.installation?.status)
-).length;
+    "scheduled",
+    'pending',
+    'stock_collected',
+    'en_route',
+    'started',
+    'assigned',
+    'accepted',
+    'contract_sent' // Added this as it seems to be a pre-completion step
+  ] as const;
+  const completedJobsCount = (jobsData || []).filter((job: any) =>
+    COMPLETED_STATUSES.includes(job.installation?.status)
+  ).length;
+  const pendingJobsCount = (jobsData || []).filter((job: any) =>
+    PENDING_STATUSES.includes(job.installation?.status)
+  ).length;
   const earnings =
     (jobsData || [])
       ?.filter((job: any) => COMPLETED_STATUSES.includes(job.installation?.status))
@@ -222,16 +224,25 @@ export default function HomeScreen() {
     if (!isUserLoading && user && !hasCheckedKYCGlobal) {
       // Mark as checked first to prevent re-entry (using global flag that persists across unmounts)
       hasCheckedKYCGlobal = true;
-      
+
       // Check if KYC document is missing
-      if (!user.kyc_document) {
+      // (role !== 'partner') {
+      //   if (!user.kyc_document) {
+      //   router.push({
+      //     pathname: "/profile/upload-document",
+      //   });
+      // }
+      // }
+
+      if (role !== "partner" && !user?.kyc_document) {
         router.push({
           pathname: "/profile/upload-document",
         });
       }
+
     }
   }, [isUserLoading]); // Only depend on loading state, not user object
-  
+
   // Show loading screen while user data loads
   // if (isUserLoading || (user && !user.kyc_document)) {
   //   return (
@@ -260,7 +271,7 @@ export default function HomeScreen() {
       job?.scheduledDate ||
       job?.installation?.scheduledDate
     );
-    
+
     // Show only if date matches AND status is NOT a job request status
     return dateStr === selectedDate && !JOB_REQUEST_STATUSES.includes(status);
   }) || [];
@@ -275,20 +286,20 @@ export default function HomeScreen() {
   });
 
   const upcomingJobs = (jobsData || [])
-  .filter((job: any) => {
-    const status = job?.installation?.status || job?.status;
-    const dateStr = extractLocalDate(
-      job?.scheduled_date ||
-      job?.scheduledDate ||
-      job?.installation?.scheduledDate
-    );
-    
-    // Show only if date is in future AND status is NOT a job request status
-    return dateStr > today && !JOB_REQUEST_STATUSES.includes(status);
-  })
-  .slice(0, 3);
+    .filter((job: any) => {
+      const status = job?.installation?.status || job?.status;
+      const dateStr = extractLocalDate(
+        job?.scheduled_date ||
+        job?.scheduledDate ||
+        job?.installation?.scheduledDate
+      );
 
-  
+      // Show only if date is in future AND status is NOT a job request status
+      return dateStr > today && !JOB_REQUEST_STATUSES.includes(status);
+    })
+    .slice(0, 3);
+
+
 
   const handleAcceptJob = (jobId: string) => {
     Alert.alert(t("home.acceptJob"), t("home.acceptJobConfirmation"), [
@@ -303,16 +314,16 @@ export default function HomeScreen() {
                 try {
                   // Invalidate and refetch queries to ensure immediate UI update
                   await queryClient.invalidateQueries({ queryKey: ["get-jobs"] });
-                  await queryClient.refetchQueries({ 
+                  await queryClient.refetchQueries({
                     queryKey: ["get-jobs"],
                     type: "active",
-                    exact: true 
+                    exact: true
                   });
                   await queryClient.invalidateQueries({ queryKey: ["get-pending-jobs"] });
-                  await queryClient.refetchQueries({ 
+                  await queryClient.refetchQueries({
                     queryKey: ["get-pending-jobs"],
                     type: "active",
-                    exact: true 
+                    exact: true
                   });
                   Alert.alert(t("common.success"), t("home.jobAccepted"));
                 } catch (error) {
@@ -330,7 +341,7 @@ export default function HomeScreen() {
       },
     ]);
   };
-  
+
   const handleDeclineJob = (jobId: string) => {
     Alert.alert(t("home.declineJob"), t("home.declineJobConfirmation"), [
       { text: t("common.cancel"), style: "cancel" },
@@ -344,16 +355,16 @@ export default function HomeScreen() {
                 try {
                   // Invalidate and refetch queries to ensure immediate UI update
                   await queryClient.invalidateQueries({ queryKey: ["get-jobs"] });
-                  await queryClient.refetchQueries({ 
+                  await queryClient.refetchQueries({
                     queryKey: ["get-jobs"],
                     type: "active",
-                    exact: true 
+                    exact: true
                   });
                   await queryClient.invalidateQueries({ queryKey: ["get-pending-jobs"] });
-                  await queryClient.refetchQueries({ 
+                  await queryClient.refetchQueries({
                     queryKey: ["get-pending-jobs"],
                     type: "active",
-                    exact: true 
+                    exact: true
                   });
                   Alert.alert(t("common.success"), t("home.jobDeclined"));
                 } catch (error) {
@@ -380,22 +391,22 @@ export default function HomeScreen() {
       job?.scheduledDate ||
       job?.installation?.scheduledDate
     );
-    
+
     // Treat only truly active statuses as non-pending (exclude 'assigned' from active)
     const activeStatuses = new Set(["started", "in_progress", "completed", "accepted", "contract_sent", "customer_approved", "job_completed", "job_approved"]);
-    
+
     const isPendingByStatus = status === "draft" || status === "pending" || status === "request" || status === "assigned";
     const isPendingByResponse = response === "pending" || response === "assigned";
     const isActive = activeStatuses.has(status) || response === "accepted" || response === "rejected";
-    
+
     // Show only if status is 'assigned', matches date, is pending, and NOT active
     return (
       dateStr === selectedDate &&
-      (isPendingByStatus || isPendingByResponse) && 
+      (isPendingByStatus || isPendingByResponse) &&
       !isActive
     );
   });
-  
+
 
   // Calculate stats
   // const completedJobs = jobs.filter((j) => j.status === "completed").length;
@@ -607,8 +618,8 @@ export default function HomeScreen() {
             />
           </View>
         )}
-        
-        
+
+
 
         {upcomingJobs.length > 0 && (
           <View style={styles.section}>

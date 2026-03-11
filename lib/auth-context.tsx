@@ -11,6 +11,7 @@ type AuthContextType = {
   isLoading: boolean;
   isAuthenticated: boolean;
   isInitialSetup: boolean;
+  role: string | null;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -19,6 +20,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isInitialSetup, setIsInitialSetup] = useState(false);
+  const [role, setRole] = useState<string | null>(null);
   const segments = useSegments();
   const router = useRouter();
 
@@ -48,6 +50,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Check if we have a valid session
       if (session.data) {
         setIsAuthenticated(true);
+        // Load stored role
+        const storedRole = await SecureStore.getItemAsync('user_role');
+        setRole(storedRole);
         return;
       }
 
@@ -64,6 +69,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (restoredSession.data) {
           setIsAuthenticated(true);
+          // Load stored role
+          const storedRole = await SecureStore.getItemAsync('user_role');
+          setRole(storedRole);
           return;
         }
       }
@@ -88,6 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await SecureStore.deleteItemAsync('myapp_access_token');
       await SecureStore.deleteItemAsync('myapp_token');
       await SecureStore.deleteItemAsync('myapp_auth');
+      await SecureStore.deleteItemAsync('user_role');
     } catch (error) {
       console.error('Error clearing session data:', error);
     }
@@ -105,6 +114,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (!response.data) {
         throw new Error('No data received from sign in');
+      }
+
+      // Store user role from response
+      const userRole = (response.data as any)?.user?.role;
+      if (userRole) {
+        await SecureStore.setItemAsync('user_role', userRole);
+        setRole(userRole);
       }
 
       // Verify the session was created
@@ -161,17 +177,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await clearSessionData();
       setIsAuthenticated(false);
+      setRole(null);
       router.replace('/auth/signin');
     } catch (error) {
       console.error('Sign out error:', error);
       setIsAuthenticated(false);
+      setRole(null);
       router.replace('/auth/signin');
       throw error;
     }
   };
 
   return (
-    <AuthContext.Provider value={{ signIn, signUp, signOut, deleteAccount, isLoading, isAuthenticated, isInitialSetup }}>
+    <AuthContext.Provider value={{ signIn, signUp, signOut, deleteAccount, isLoading, isAuthenticated, isInitialSetup, role }}>
       {children}
     </AuthContext.Provider>
   );

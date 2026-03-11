@@ -31,7 +31,7 @@ export default function JobsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const { data: jobsData, isLoading, refetch: refetchJobs } = useGetJobs();
 
- 
+
 
   const { data: requestedJobs, refetch: refetchPendingJobs } = useGetPendingJobs()
   const queryClient = useQueryClient();
@@ -49,11 +49,11 @@ export default function JobsScreen() {
   );
   const inProgressJobs = filteredJobs?.filter(
     (job: any) =>
-    ["started", "in_progress", "contract_sent", "contract_signed"].includes(job?.installation?.status)
+      ["started", "in_progress", "contract_sent", "contract_signed", "installation_in_progress"].includes(job?.installation?.status)
   );
   const completedJobs = filteredJobs?.filter(
     (job: any) =>
-    ["job_completed", "job_approved", "customer_approved"].includes(job?.installation?.status)
+      ["job_completed", "job_approved", "customer_approved"].includes(job?.installation?.status)
   );
 
   // Helper to normalize job identifier across different shapes
@@ -80,7 +80,7 @@ export default function JobsScreen() {
     const isDuplicated = scheduledIds.has(id) || inProgressIds.has(id) || completedIds.has(id);
 
     // Apply search filter to pending job requests
-    const matchesSearch = searchQuery === "" || 
+    const matchesSearch = searchQuery === "" ||
       (job.installation?.title || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
       (job.installation?.customer?.customerName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
       (job.installation?.customer?.address || job.installationAddress || "").toLowerCase().includes(searchQuery.toLowerCase());
@@ -90,7 +90,7 @@ export default function JobsScreen() {
 
   // Total jobs count for empty state check
   const totalJobsCount = (filteredJobs?.length || 0) + (pendingJobRequests?.length || 0);
-  
+
 
 
   const handleAcceptJob = (jobId: string) => {
@@ -226,53 +226,54 @@ export default function JobsScreen() {
                 {pendingJobRequests.map((job: any) => {
                   const id = getJobId(job);
                   return (
-                  <View key={id} style={styles.jobRequestCard}>
-                    <JobCard
-                      job={{
-                        id: id,
-                        name: id,
-                        title: job.installation?.title || t("jobs.untitledJob"),
-                        description: job.installation?.description || t("jobs.noDescriptionAvailable"),
-                        scheduled_date: job.scheduledDate || job.installation?.scheduledDate || "",
-                        status: job.installation?.status || job.status || "pending",
-                        customer: {
+                    <View key={id} style={styles.jobRequestCard}>
+                      <JobCard
+                        job={{
                           id: id,
-                          name: job.installation?.customer?.customerName || t("jobs.unknownCustomer"),
-                          customer_name: job.installation?.customer?.customerName || t("jobs.unknownCustomer"),
-                          phone: job.installation?.customer?.phone || job.customerPhone || "",
-                          email: job.installation?.customer?.email || "",
-                          address: job.installation?.customer?.address || job.installationAddress || t("jobs.noAddressProvided")
-                        },
-                        installation: job.installation || {},
-                        products: job.installation?.products || [],
-                        partner: job.installation?.partner || t("jobs.unknownPartner"),
-                        duration: job.estimatedDuration || "",
-                        rating: 0,
-                        completion_photos: [],
-                        notes: [],
-                        contractsent: false,
-                        type: "job_request",
-                        scheduledTime: job.scheduledTime || "",
-                        installationPhotos: []
-                      }}
-                      disableNavigation={true}
-                    />
-                    <View style={styles.jobRequestActions}>
-                      <ActionButton
-                        title={t("jobs.decline")}
-                        variant="outline"
-                        onPress={() => handleDeclineJob(id)}
-                        style={styles.declineButton}
+                          name: id,
+                          title: job.installation?.title || t("jobs.untitledJob"),
+                          description: job.installation?.description || t("jobs.noDescriptionAvailable"),
+                          scheduled_date: job.scheduledDate || job.installation?.scheduledDate || "",
+                          status: job.installation?.status || job.status || "pending",
+                          customer: {
+                            id: id,
+                            name: job.installation?.customer?.customerName || t("jobs.unknownCustomer"),
+                            customer_name: job.installation?.customer?.customerName || t("jobs.unknownCustomer"),
+                            phone: job.installation?.customer?.phone || job.customerPhone || "",
+                            email: job.installation?.customer?.email || "",
+                            address: job.installation?.customer?.address || job.installationAddress || t("jobs.noAddressProvided")
+                          },
+                          installation: job.installation || {},
+                          products: job.installation?.products || [],
+                          partner: job.installation?.partner || t("jobs.unknownPartner"),
+                          duration: job.estimatedDuration || "",
+                          rating: 0,
+                          completion_photos: [],
+                          notes: [],
+                          contractsent: false,
+                          type: "job_request",
+                          scheduledTime: job.scheduledTime || "",
+                          installationPhotos: []
+                        }}
+                        disableNavigation={true}
                       />
-                      <ActionButton
-                        title={t("jobs.accept")}
-                        variant="primary"
-                        onPress={() => handleAcceptJob(id)}
-                        style={styles.acceptButton}
-                      />
+                      <View style={styles.jobRequestActions}>
+                        <ActionButton
+                          title={t("jobs.decline")}
+                          variant="outline"
+                          onPress={() => handleDeclineJob(id)}
+                          style={styles.declineButton}
+                        />
+                        <ActionButton
+                          title={t("jobs.accept")}
+                          variant="primary"
+                          onPress={() => handleAcceptJob(id)}
+                          style={styles.acceptButton}
+                        />
+                      </View>
                     </View>
-                  </View>
-                );})}
+                  );
+                })}
               </View>
             )}
 

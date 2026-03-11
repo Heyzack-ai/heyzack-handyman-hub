@@ -24,8 +24,31 @@ serverClient.interceptors.request.use(async (config) => {
 	if (token) {
 		config.headers.Authorization = `Bearer ${token}`;
 	}
+	console.log("API Request:", {
+		url: config.url,
+		baseURL: config.baseURL,
+		method: config.method,
+		params: config.params,
+		hasAuth: !!token,
+	});
 	return config;
 });
+
+// Add response interceptor for debugging
+serverClient.interceptors.response.use(
+	(response) => response,
+	(error) => {
+		console.error("API Error:", {
+			url: error.config?.url,
+			baseURL: error.config?.baseURL,
+			method: error.config?.method,
+			params: error.config?.params,
+			status: error.response?.status,
+			data: error.response?.data,
+		});
+		return Promise.reject(error);
+	}
+);
 
 export const sendInviteLink = async (partnerId: string): Promise<void> => {
 	await serverClient.post("/user/send-invite-link", {
