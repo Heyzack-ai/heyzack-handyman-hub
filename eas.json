@@ -4,8 +4,6 @@
     "appVersionSource": "remote"
   },
   "build": {
-    "node": "22.18.0",
-    "npm": "10.9.3",
     "development": {
       "developmentClient": true,
       "distribution": "internal",
